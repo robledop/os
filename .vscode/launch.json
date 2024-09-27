@@ -1,0 +1,46 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch with GDB",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/os.bin",
+            "cwd": "${workspaceRoot}",
+            "args": [],
+            // "sourceFileMap": {
+            //     "/home/robledo/source/os": "${workspaceRoot}"
+            // },
+            "targetArchitecture": "x86",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "miDebuggerArgs": "-d /home/robledo/source/os/src",
+            "customLaunchSetupCommands": [
+                {
+                    "text": "target remote localhost:1234",
+                    "description": "Connect to QEMU remote debugger"
+                }
+                // {
+                //     "text": "target remote | qemu-system-x86_64 -hda boot.bin -S -gdb stdio",
+                //     "description": "Connect to QEMU remote debugger"
+                // }
+            ],
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "text": "add-symbol-file /home/robledo/source/os/build/kernelfull.o 0x100000",
+                    "description": "Add kernelfull.o symbols"
+                },
+                {
+                    "text": "break isr_handler",
+                    "description": "Break on exception handler."
+                }
+            ],
+            "preLaunchTask": "Launch QEMU"
+        }
+    ]
+}
