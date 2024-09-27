@@ -1,4 +1,9 @@
 #include "kernel.h"
+#include "idt/idt.h"
+#include "io/io.h"
+
+// Divide by zero error
+extern void cause_problem();
 
 uint16_t *video_memory = 0;
 
@@ -43,9 +48,11 @@ void terminal_write_char(char c, uint8_t color)
     }
 }
 
-void print(const  char* str){
+void print(const char *str)
+{
     size_t len = strlen(str);
-    for(int i = 0; i < len; i++){
+    for (int i = 0; i < len; i++)
+    {
         terminal_write_char(str[i], 0x0F);
     }
 }
@@ -66,4 +73,5 @@ void kernel_main()
 {
     terminal_initialize();
     print("Hello, World! \nThis is a new line!");
+    idt_init();
 }
