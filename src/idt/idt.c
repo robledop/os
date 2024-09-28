@@ -1,8 +1,9 @@
 #include "idt.h"
 #include "config.h"
 #include "memory/memory.h"
-#include "kernel.h"
+#include "kernel/kernel.h"
 #include "io/io.h"
+#include "terminal/terminal.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 

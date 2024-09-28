@@ -1,21 +1,8 @@
-#include "kernel.h"
-#include "idt/idt.h"
-#include "io/io.h"
-
-// Divide by zero error
-extern void cause_problem();
+#include "terminal.h"
+#include "string/string.h"
+#include "config.h"
 
 uint16_t *video_memory = 0;
-
-size_t strlen(const char *str)
-{
-    size_t len = 0;
-    while (str[len])
-    {
-        len++;
-    }
-    return len;
-}
 
 uint16_t terminal_make_char(char c, uint8_t color)
 {
@@ -57,7 +44,7 @@ void print(const char *str)
     }
 }
 
-void terminal_initialize()
+void terminal_clear()
 {
     video_memory = (uint16_t *)(0xB8000);
     for (int y = 0; y < VGA_HEIGHT; y++)
@@ -67,11 +54,4 @@ void terminal_initialize()
             terminal_putchar(' ', 0x0F, x, y);
         }
     }
-}
-
-void kernel_main()
-{
-    terminal_initialize();
-    print("Hello, World! \nThis is a new line!");
-    idt_init();
 }

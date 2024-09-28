@@ -1,2 +1,6 @@
 {
+    "files.associations": {
+        ".env*": "dotenv",
+        "kernel.h": "c"
+    }
 }
