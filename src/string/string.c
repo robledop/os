@@ -1,13 +1,92 @@
 #include "string.h"
 
-size_t strlen(const char *str)
+// Gets the length of a string
+size_t strlen(const char *s)
 {
-    size_t len = 0;
-    while (str[len])
+    int n;
+
+    for (n = 0; s[n]; n++)
+        ;
+    return n;
+}
+
+// Gets the length of a string
+size_t strnlen(const char *s, size_t maxlen)
+{
+    int n;
+
+    for (n = 0; s[n]; n++)
     {
-        len++;
+        if (n == maxlen)
+        {
+            break;
+        }
     }
-    return len;
+    return n;
+}
+
+// Compare two memory blocks
+int memcmp(const void *v1, const void *v2, unsigned int n)
+{
+    const unsigned char *s1, *s2;
+
+    s1 = v1;
+    s2 = v2;
+    while (n-- > 0)
+    {
+        if (*s1 != *s2)
+        {
+            return *s1 - *s2;
+        }
+        s1++, s2++;
+    }
+
+    return 0;
+}
+
+// Compare two strings
+int strncmp(const char *p, const char *q, unsigned int n)
+{
+    while (n > 0 && *p && *p == *q)
+    {
+        n--, p++, q++;
+    }
+    if (n == 0)
+    {
+        return 0;
+    }
+    return (unsigned char)*p - (unsigned char)*q;
+}
+
+// Copy string t to s
+char *strncpy(char *s, const char *t, int n)
+{
+    char *os;
+
+    os = s;
+    while (n-- > 0 && (*s++ = *t++) != 0)
+        ;
+    while (n-- > 0)
+    {
+        *s++ = 0;
+    }
+    return os;
+}
+
+// Like strncpy but guaranteed to NUL-terminate.
+char *safestrcpy(char *s, const char *t, int n)
+{
+    char *os;
+
+    os = s;
+    if (n <= 0)
+    {
+        return os;
+    }
+    while (--n > 0 && (*s++ = *t++) != 0)
+        ;
+    *s = 0;
+    return os;
 }
 
 char *hex_to_string(uint32_t num)
@@ -64,4 +143,14 @@ char *int_to_string(int num)
     }
     str[i] = '\0';
     return str;
+}
+
+bool isdigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+
+int tonumericdigit(char c)
+{
+    return c - 48;
 }

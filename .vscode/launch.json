@@ -14,7 +14,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d /home/robledo/source/os/src -d /home/robledo/source/os/src/kernel -d /home/robledo/source/os/src/memory/paging",
+            "miDebuggerArgs": "-d /home/robledo/source/os/src -d /home/robledo/source/os/src/kernel -d /home/robledo/source/os/src/memory/paging -d ~/source/os/src/disk",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",

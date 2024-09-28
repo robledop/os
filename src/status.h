@@ -8,5 +8,7 @@
 #define EINVARG 2
 // Out of memory
 #define ENOMEM 3
+// Invalid path
+#define EBADPATH 4
 
 #endif

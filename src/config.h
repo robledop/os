@@ -15,4 +15,7 @@
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 20
 
+#define SECTOR_SIZE 512
+#define MAX_PATH_LENGTH 256
+
 #endif

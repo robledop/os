@@ -6,5 +6,6 @@
 
 void terminal_clear();
 void print(const char *str);
+void print_line(const char *str);
 
 #endif

@@ -44,6 +44,12 @@ void print(const char *str)
     }
 }
 
+void print_line(const char *str)
+{
+    print(str);
+    print("\n");
+}
+
 void terminal_clear()
 {
     video_memory = (uint16_t *)(0xB8000);

@@ -5,6 +5,8 @@
 #include "memory/heap/kheap.h"
 #include "memory/paging/paging.h"
 #include "string/string.h"
+#include "disk/disk.h"
+#include "fs/pparser.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -18,11 +20,17 @@ void kernel_main()
     print("Initializing kernel heap\n");
     kheap_init();
 
+    print("Initializing disk\n");
+    disk_search_and_init();
+
     print("Initializing interrupt descriptor table\n");
     idt_init();
 
     print("Allocating kernel memory chunk\n");
-    kernel_chunk = paging_new_4gb(PAGING_IS_WRITABLE | PAGING_IS_PRESENT | PAGING_ACCESS_FROM_ALL);
+    kernel_chunk = paging_new_4gb(
+        PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
+        PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+        PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     print("Switching paging to kernel memory chunk\n");
     paging_switch(kernel_chunk);
 
@@ -32,6 +40,12 @@ void kernel_main()
 
     print("Enabling interrupts\n");
     enable_interrupts();
+
+    struct path_root *root_path = pathparser_parse("0:/test/shell.bin", 0);
+
+    if(root_path){
+        
+    }
 }
 
 void paging_demo()
@@ -43,7 +57,10 @@ void paging_demo()
     paging_set(
         paging_get_directory(kernel_chunk),
         (void *)0x1000,
-        (uint32_t)ptr1 | PAGING_IS_PRESENT | PAGING_IS_WRITABLE | PAGING_ACCESS_FROM_ALL);
+        (uint32_t)ptr1 |
+            PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+            PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
+            PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
     char *ptr2 = (char *)0x1000;
 
@@ -69,15 +86,4 @@ void paging_demo()
     print("ptr2: ");
     print(ptr2);
     print("\n");
-
-}
-
-void print_enabling_paging()
-{
-    print("Enabling paging\n");
-}
-
-void print_loading_directory()
-{
-    print("Loading page directory\n");
 }
