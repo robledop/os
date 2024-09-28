@@ -215,7 +215,7 @@ void heap_mark_blocks_free(struct heap *heap, uint32_t start_block)
 // Convert an address to a block number
 int heap_address_to_block(struct heap *heap, void *address)
 {
-    return ((uintptr_t)address - (uintptr_t)heap->start) / HEAP_BLOCK_SIZE;
+    return ((uint32_t)address - (uint32_t)heap->start) / HEAP_BLOCK_SIZE;
 }
 
 void *heap_malloc(struct heap *heap, size_t size)

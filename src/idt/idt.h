@@ -17,7 +17,7 @@ struct idt_desc
 struct idtr_desc
 {
     uint16_t limit; // size of idt
-    uintptr_t base; // base address of idt
+    uint32_t base; // base address of idt
 } __attribute__((packed));
 
 void idt_init();

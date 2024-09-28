@@ -37,7 +37,7 @@ void idt_zero()
 void idt_set(int interrupt, void *handler)
 {
     struct idt_desc *desc = &idt_descriptors[interrupt];
-    desc->offset_1 = (uintptr_t)handler & 0x0000FFFF;
+    desc->offset_1 = (uint32_t)handler & 0x0000FFFF;
     desc->selector = CODE_SELECTOR;
     desc->zero = 0;
 
@@ -49,7 +49,7 @@ void idt_set(int interrupt, void *handler)
     // The last four bits (1110) specify the type of gate (e.g., 32-bit interrupt gate).
     desc->type_attr = 0b11101110; // 0xEE
 
-    desc->offset_2 = (uintptr_t)handler >> 16;
+    desc->offset_2 = (uint32_t)handler >> 16;
 }
 
 void idt_init()

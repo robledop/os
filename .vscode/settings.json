@@ -1,6 +1,7 @@
 {
     "files.associations": {
         ".env*": "dotenv",
-        "kernel.h": "c"
+        "kernel.h": "c",
+        "kheap.h": "c"
     }
 }
