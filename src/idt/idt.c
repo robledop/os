@@ -44,7 +44,7 @@ void idt_set(int interrupt, void *handler)
     // This value configures various attributes of the interrupt descriptor, such as the type,
     // privilege level, and whether the descriptor is present.  In this context:
     // The first bit (1) indicates that the descriptor is present.
-    // The next two bits (11) set the privilege level (DPL) to 3 (ring 3).
+    // The next two bits (11) set the privilege level (DPL) to 3
     // The next bit (1) is always set to 1.
     // The last four bits (1110) specify the type of gate (e.g., 32-bit interrupt gate).
     desc->type_attr = 0b11101110; // 0xEE

@@ -2,8 +2,11 @@
 #define STATUS_H
 
 #define ALL_OK 0
-#define EIO 1     // Input/output error
-#define EINVARG 2 // Invalid argument
-#define ENOMEM 3  // Out of memory
+// Input/output error
+#define EIO 1
+// Invalid argument
+#define EINVARG 2
+// Out of memory
+#define ENOMEM 3
 
 #endif

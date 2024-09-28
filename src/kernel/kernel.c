@@ -15,6 +15,7 @@ void kernel_main()
     kheap_init();
 
     idt_init();
+    enable_interrupts();
 
     void *ptr = kmalloc(100);
     void *ptr2 = kmalloc(500);
