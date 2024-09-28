@@ -7,6 +7,7 @@
 #include "string/string.h"
 #include "disk/disk.h"
 #include "fs/pparser.h"
+#include "disk/stream.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -41,10 +42,12 @@ void kernel_main()
     print("Enabling interrupts\n");
     enable_interrupts();
 
-    struct path_root *root_path = pathparser_parse("0:/test/shell.bin", 0);
-
-    if(root_path){
-        
+    struct disk_stream *stream = disk_stream_create(0);
+    disk_stream_seek(stream, 0x201);
+    unsigned char c = 0;
+    disk_stream_read(stream, &c, 1);
+    while (1)
+    {
     }
 }
 
