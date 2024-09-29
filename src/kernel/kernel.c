@@ -34,6 +34,14 @@ void kernel_main()
 
     enable_interrupts();
 
+    print_line("Kernel is running");
+
+    int fd = fopen("0:/test/hello.txt", "r");
+    if (fd)
+    {
+        print("File opened\n");
+    }
+
     while (1)
     {
     }

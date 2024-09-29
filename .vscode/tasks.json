@@ -4,7 +4,7 @@
         {
             "label": "Launch QEMU",
             "type": "shell",
-            "command": "~/source/os/build.sh && qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize"
+            "command": "~/source/os/build.sh && qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize -display gtk,zoom-to-fit=on"
         }
     ]
 }

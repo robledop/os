@@ -37,12 +37,12 @@ struct file_descriptor
     int index;
     struct file_system *fs;
     // Private data for internal file descriptor use
-    void* fs_data;
-    struct disk* disk;
+    void *fs_data;
+    struct disk *disk;
 };
 
 void fs_init();
-int fopen(const char *path, FILE_MODE mode);
+int fopen(const char *path, const char *mode);
 void fs_insert_file_system(struct file_system *fs);
 struct file_system *fs_resolve(struct disk *disk);
 

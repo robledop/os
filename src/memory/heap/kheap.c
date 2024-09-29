@@ -12,19 +12,20 @@ struct heap_table kernel_heap_table;
 
 void kheap_init()
 {
-    print("Initializing kernel heap\n");
+    // print("Initializing kernel heap\n");
     int total_table_entries = HEAP_SIZE_BYTES / HEAP_BLOCK_SIZE;
-    print("Total table entries: ");
-    print(int_to_string(total_table_entries));
-    print("\n");
     kernel_heap_table.entries = (HEAP_BLOCK_TABLE_ENTRY *)HEAP_TABLE_ADDRESS;
-    print("Heap table address: ");
-    print(hex_to_string((uint32_t)kernel_heap_table.entries));
-    print("\n");
     kernel_heap_table.total = total_table_entries;
-    print("Heap table total entries: ");
-    print(int_to_string(kernel_heap_table.total));
-    print("\n");
+
+    // print("Total table entries: ");
+    // print(int_to_string(total_table_entries));
+    // print("\n");
+    // print("Heap table address: ");
+    // print(hex_to_string((uint32_t)kernel_heap_table.entries));
+    // print("\n");
+    // print("Heap table total entries: ");
+    // print(int_to_string(kernel_heap_table.total));
+    // print("\n");
 
     void *end = (void *)(HEAP_ADDRESS + HEAP_SIZE_BYTES);
     int res = heap_create(&kernel_heap, (void *)HEAP_ADDRESS, end, &kernel_heap_table);

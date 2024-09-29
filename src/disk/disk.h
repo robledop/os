@@ -8,10 +8,13 @@ typedef unsigned int DISK_TYPE;
 
 struct disk
 {
+    int id;
     DISK_TYPE type;
     int sector_size;
 
     struct file_system *fs;
+
+    void* fs_private;
 };
 
 void disk_search_and_init();

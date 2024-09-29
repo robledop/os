@@ -9,6 +9,9 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
 	sudo cp ./hello.txt /mnt/d
+	sudo cp ./file2.txt /mnt/d
+	sudo mkdir /mnt/d/test
+	sudo cp ./hello.txt /mnt/d/test
 	sudo umount /mnt/d
 
 ./bin/kernel.bin: $(FILES)

@@ -35,6 +35,15 @@ void terminal_write_char(char c, uint8_t color)
     }
 }
 
+void sprint(const char *str, int max)
+{
+    size_t len = strnlen(str, max);
+    for (int i = 0; i < len; i++)
+    {
+        terminal_write_char(str[i], 0x0F);
+    }
+}
+
 void print(const char *str)
 {
     size_t len = strlen(str);
@@ -42,6 +51,12 @@ void print(const char *str)
     {
         terminal_write_char(str[i], 0x0F);
     }
+}
+
+void sprint_line(const char *str, int max)
+{
+    sprint(str, max);
+    print("\n");
 }
 
 void print_line(const char *str)

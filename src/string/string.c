@@ -1,4 +1,5 @@
 #include "string.h"
+#include "memory/heap/kheap.h"
 
 // Gets the length of a string
 size_t strlen(const char *s)
@@ -18,6 +19,20 @@ size_t strnlen(const char *s, size_t maxlen)
     for (n = 0; s[n]; n++)
     {
         if (n == maxlen)
+        {
+            break;
+        }
+    }
+    return n;
+}
+
+int strnlen_terminator(const char *s, size_t maxlen, char terminator)
+{
+    int n;
+
+    for (n = 0; s[n]; n++)
+    {
+        if (n == maxlen || s[n] == terminator || s[n] == '\0')
         {
             break;
         }
@@ -56,6 +71,33 @@ int strncmp(const char *p, const char *q, unsigned int n)
         return 0;
     }
     return (unsigned char)*p - (unsigned char)*q;
+}
+
+char tolower(char s1)
+{
+    if (s1 >= 65 && s1 <= 90)
+    {
+        s1 += 32;
+    }
+
+    return s1;
+}
+
+// Compare two strings ignoring case
+int istrncmp(const char *s1, const char *s2, int n)
+{
+    unsigned char u1, u2;
+    while (n-- > 0)
+    {
+        u1 = (unsigned char)*s1++;
+        u2 = (unsigned char)*s2++;
+        if (u1 != u2 && tolower(u1) != tolower(u2))
+            return u1 - u2;
+        if (u1 == '\0')
+            return 0;
+    }
+
+    return 0;
 }
 
 // Copy string t to s
@@ -153,4 +195,41 @@ bool isdigit(char c)
 int tonumericdigit(char c)
 {
     return c - 48;
+}
+
+bool isspace(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
+
+// Trim leading and trailing whitespaces
+char *trim(char *str)
+{
+    char *end;
+    while (isspace(*str))
+    {
+        str++;
+    }
+    if (*str == 0)
+    {
+        return str;
+    }
+    end = str + strlen(str) - 1;
+    while (end > str && isspace(*end))
+    {
+        end--;
+    }
+    end[1] = '\0';
+    return str;
+}
+
+char *substring(char *str, int start, int end)
+{
+    char *substr = (char *)kmalloc(sizeof(char) * (end - start + 2));
+    for (int i = start; i <= end; i++)
+    {
+        substr[i - start] = str[i];
+    }
+    substr[end - start + 1] = '\0';
+    return substr;
 }

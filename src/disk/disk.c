@@ -41,10 +41,11 @@ int disk_read_sector(int lba, int total, void *buffer)
 
 void disk_search_and_init()
 {
-    print("Initializing disk\n");
+    // print("Initializing disk\n");
     memset(&disk, 0, sizeof(disk));
     disk.type = DISK_TYPE_PHYSICAL;
     disk.sector_size = SECTOR_SIZE;
+    disk.id = 0;
     disk.fs = fs_resolve(&disk);
 }
 
@@ -58,9 +59,9 @@ struct disk *disk_get(int index)
     return &disk;
 }
 
-int disk_read_block(struct disk* idisk, unsigned int lba, int total, void *buffer)
+int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffer)
 {
-    if(idisk != &disk)
+    if (idisk != &disk)
     {
         return -EIO;
     }

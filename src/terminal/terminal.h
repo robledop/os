@@ -8,4 +8,7 @@ void terminal_clear();
 void print(const char *str);
 void print_line(const char *str);
 
+void sprint(const char *str, int max);
+void sprint_line(const char *str, int max);
+
 #endif

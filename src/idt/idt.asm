@@ -13,16 +13,16 @@ global disable_interrupts
 
 enable_interrupts:
     sti
-    push message1
-    call print_line
-    add esp, 4
+    ; push message1
+    ; call print_line
+    ; add esp, 4
     ret
 
 disable_interrupts:
     cli
-    push message2
-    call print_line
-    add esp, 4
+    ; push message2
+    ; call print_line
+    ; add esp, 4
     ret
 
 idt_load:
@@ -53,6 +53,6 @@ no_interrupt:
     sti
     iret
 
-section .data
-message1 db "Interrupts enabled", 0
-message2 db "Interrupts disabled", 0
+; section .data
+; message1 db "Interrupts enabled", 0
+; message2 db "Interrupts disabled", 0

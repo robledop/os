@@ -10,5 +10,9 @@
 #define ENOMEM 3
 // Invalid path
 #define EBADPATH 4
+// File system not supported
+#define EFSNOTUS 5
+// Read only file system
+#define ERDONLY 6
 
 #endif
