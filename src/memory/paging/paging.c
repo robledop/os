@@ -11,6 +11,7 @@ void paging_load_directory(uint32_t *directory);
 
 struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 {
+    print("Allocating kernel memory chunk\n");
     uint32_t *directory = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
     int offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++)
@@ -31,6 +32,7 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 
 void paging_switch(struct paging_4gb_chunk *chunk)
 {
+    print("Switching paging to kernel memory chunk\n");
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
 }

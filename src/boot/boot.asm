@@ -5,12 +5,34 @@
   CODE_SEG equ gdt_code - gdt_start
   DATA_SEG equ gdt_data - gdt_start
 
-  ; Fake BIOS Paramater Block
+  ; BIOS Paramater Block
   ; https://wiki.osdev.org/FAT#Boot_Record
-_start:
   jmp short start
   nop
-  times 33 db 0
+
+  ; FAT16 Header
+OEMID            db 'OSDEV   '   ; OEM Identifier
+ByterPerSector   dw 0x200        ; 512 bytes per sector
+SectorPerCluster db 0x80         ; 128 sectors per cluster
+ReservedSectors  dw 200          ; 200 reserved sectors
+FATCopies        db 2            ; 2 FAT copies
+RootDirEntries   dw 0x40         ; 64 root directory entries
+NumSectors       dw 0x00         ; 0 sectors
+MediaType        db 0xf8         ; Media type
+SectorsPerFAT    dw 0x100        ; 256 sectors per FAT
+SectorsPerTrack  dw 0x20         ; 32 sectors per track
+NumberOfHeads    dw 0x40         ; 64 heads
+HiddenSectors    dd 0x00         ; 0 hidden sectors
+SectorsBig       dd 0x773594      
+
+  ; Extended BPB (DOS 4.0)
+DriveNumber      db 0x80         ; Drive number
+WinNTBit         db 0x00         ; Windows NT bit
+Signature        db 0x29         ; Signature
+VolumeID         dd 0xD105       ; Volume ID
+VolumeIDString   db 'NO NAME    '; Volume ID String
+SystemIDString   db 'FAT16   '   ; System ID String
+
 
 start:
   jmp 0x0:step2

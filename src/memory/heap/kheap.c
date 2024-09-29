@@ -12,6 +12,7 @@ struct heap_table kernel_heap_table;
 
 void kheap_init()
 {
+    print("Initializing kernel heap\n");
     int total_table_entries = HEAP_SIZE_BYTES / HEAP_BLOCK_SIZE;
     print("Total table entries: ");
     print(int_to_string(total_table_entries));

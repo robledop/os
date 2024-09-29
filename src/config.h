@@ -17,5 +17,7 @@
 
 #define SECTOR_SIZE 512
 #define MAX_PATH_LENGTH 256
+#define MAX_FILE_SYSTEMS 10
+#define MAX_FILE_DESCRIPTORS 512
 
 #endif

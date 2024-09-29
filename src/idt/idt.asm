@@ -2,6 +2,7 @@ section .asm
 
 extern int21h_handler
 extern no_interrupt_handler
+extern print_line
 
 global int21h
 global idt_load
@@ -9,12 +10,19 @@ global no_interrupt
 global enable_interrupts
 global disable_interrupts
 
+
 enable_interrupts:
     sti
+    push message1
+    call print_line
+    add esp, 4
     ret
 
 disable_interrupts:
     cli
+    push message2
+    call print_line
+    add esp, 4
     ret
 
 idt_load:
@@ -44,3 +52,7 @@ no_interrupt:
     popad
     sti
     iret
+
+section .data
+message1 db "Interrupts enabled", 0
+message2 db "Interrupts disabled", 0

@@ -8,6 +8,7 @@
 #include "disk/disk.h"
 #include "fs/pparser.h"
 #include "disk/stream.h"
+#include "fs/file.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -17,35 +18,22 @@ static struct paging_4gb_chunk *kernel_chunk = 0;
 void kernel_main()
 {
     terminal_clear();
-
-    print("Initializing kernel heap\n");
     kheap_init();
-
-    print("Initializing disk\n");
+    fs_init();
     disk_search_and_init();
-
-    print("Initializing interrupt descriptor table\n");
     idt_init();
-
-    print("Allocating kernel memory chunk\n");
     kernel_chunk = paging_new_4gb(
         PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
         PAGING_DIRECTORY_ENTRY_IS_PRESENT |
         PAGING_DIRECTORY_ENTRY_SUPERVISOR);
-    print("Switching paging to kernel memory chunk\n");
     paging_switch(kernel_chunk);
 
     enable_paging();
 
     // paging_demo();
 
-    print("Enabling interrupts\n");
     enable_interrupts();
 
-    struct disk_stream *stream = disk_stream_create(0);
-    disk_stream_seek(stream, 0x201);
-    unsigned char c = 0;
-    disk_stream_read(stream, &c, 1);
     while (1)
     {
     }

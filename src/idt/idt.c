@@ -54,6 +54,7 @@ void idt_set(int interrupt, void *handler)
 
 void idt_init()
 {
+    print("Initializing interrupt descriptor table\n");
     memset(idt_descriptors, 0, sizeof(idt_descriptors));
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
     idtr_descriptor.base = (uintptr_t)idt_descriptors;

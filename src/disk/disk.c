@@ -4,6 +4,7 @@
 #include "memory/memory.h"
 #include "config.h"
 #include "status.h"
+#include "terminal/terminal.h"
 
 struct disk disk;
 
@@ -40,9 +41,11 @@ int disk_read_sector(int lba, int total, void *buffer)
 
 void disk_search_and_init()
 {
+    print("Initializing disk\n");
     memset(&disk, 0, sizeof(disk));
     disk.type = DISK_TYPE_PHYSICAL;
     disk.sector_size = SECTOR_SIZE;
+    disk.fs = fs_resolve(&disk);
 }
 
 struct disk *disk_get(int index)
