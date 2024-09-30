@@ -1,3 +1,4 @@
+$(shell mkdir -p ./bin)
 SRC_DIRS := $(shell find ./src -type d ! -path './src/boot' ! -path './src/include')
 BUILD_DIRS := $(patsubst ./src/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))
@@ -7,7 +8,27 @@ ASM_OBJS := $(ASM_FILES:./src/%.asm=./build/%.asm.o)
 C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
 INCLUDES = -I ./src/include
-FLAGS = -g -ffreestanding -O0 -nostdlib -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostartfiles -nodefaultlibs -Iinc -Wall
+FLAGS = -g \
+	-ffreestanding \
+	-O0 \
+	-nostdlib \
+	-falign-jumps \
+	-falign-functions \
+	-falign-labels \
+	-falign-loops \
+	-fstrength-reduce \
+	-fomit-frame-pointer \
+	-finline-functions \
+	-Wno-unused-function \
+	-fno-builtin \
+	-Werror \
+	-Wno-unused-label \
+	-Wno-cpp \
+	-Wno-unused-parameter \
+	-nostartfiles \
+	-nodefaultlibs \
+	-Iinc \
+	-Wall
 
 all: ./bin/boot.bin ./bin/kernel.bin
 	rm -rf ./bin/os.bin
