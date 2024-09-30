@@ -21,8 +21,8 @@ static struct paging_4gb_chunk *kernel_chunk = 0;
 void panic(const char *msg)
 {
     warningf("KERNEL PANIC: %s\n", msg);
-    print_color("KERNEL PANIC: ", 0x04);
-    print_line(msg);
+    kprint(KRED "KERNEL PANIC:" KWHT);
+    kprint("%s\n", msg);
     while (1)
     {
         asm volatile("hlt");
@@ -42,19 +42,11 @@ void kernel_main()
         PAGING_DIRECTORY_ENTRY_IS_PRESENT |
         PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     paging_switch(kernel_chunk);
-
     enable_paging();
-
     enable_interrupts();
 
-    print_line("Kernel is running");
-
-    // paging_demo();
-    fs_demo();
-
+    kprint(KCYN"Kernel is running\n");
     dbgprintf("Kernel is running");
-
-    // cause_problem();
 
     while (1)
     {

@@ -4,12 +4,18 @@
 #include <stdint.h>
 #include <stddef.h>
 
-void terminal_clear();
-void print(const char *str);
-void print_color(const char *str, uint8_t color);
-void print_line(const char *str);
+#define KNRM "\x1B[0m"
+#define KRED "\x1B[31m"
+#define KGRN "\x1B[32m"
+#define KYEL "\x1B[33m"
+#define KBLU "\x1B[34m"
+#define KMAG "\x1B[35m"
+#define KCYN "\x1B[36m"
+#define KWHT "\x1B[37m"
 
-void sprint(const char *str, int max);
-void sprint_line(const char *str, int max);
+void terminal_clear();
+void kprint(char *fmt, ...);
+
+void ksprint(const char *str, int max);
 
 #endif

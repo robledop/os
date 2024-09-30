@@ -17,7 +17,7 @@ extern void no_interrupt();
 
 void int21h_handler()
 {
-    print("Keyboard pressed!\n");
+    kprint("Keyboard pressed!\n");
     dbgprintf("Keyboard pressed!\n");   
 
     outb(0x20, 0x20);

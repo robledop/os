@@ -36,11 +36,14 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
+	echo "Hello, World!" > hello.txt
 	sudo cp ./hello.txt /mnt/d
+	echo "This is a test file." > file2.txt
 	sudo cp ./file2.txt /mnt/d
 	sudo mkdir /mnt/d/test
 	sudo cp ./hello.txt /mnt/d/test
 	sudo umount /mnt/d
+	rm -rf ./hello.txt ./file2.txt
 
 ./bin/kernel.bin: $(FILES)
 	i686-elf-ld -g -relocatable $(FILES) -o ./build/kernelfull.o
@@ -54,7 +57,7 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	nasm -f elf -g $< -o $@
 
 ./build/%.o: ./src/%.c
-	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu99 -c $< -o $@
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 clean:
 	rm -rf ./bin/boot.bin ./bin/kernel.bin ./bin/os.bin $(FILES) ./build/kernelfull.o

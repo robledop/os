@@ -6,7 +6,7 @@
 #define KDEBUG_SERIAL
 
 #define PORT 0x3f8 // COM1
-#define MAX_FMT_STR_SIZE 50
+#define MAX_FMT_STR 50
 static int serial_init_done = 0;
 
 // extern int __cli_cnt;
@@ -54,10 +54,9 @@ int32_t serial_printf(char *fmt, ...)
     int written = 0;
 #ifdef KDEBUG_SERIAL
 
-    // ENTER_CRITICAL();
     va_list args;
 
-    char str[MAX_FMT_STR_SIZE];
+    char str[MAX_FMT_STR];
     int num = 0;
 
     va_start(args, fmt);
@@ -66,7 +65,7 @@ int32_t serial_printf(char *fmt, ...)
         switch (*fmt)
         {
         case '%':
-            memset(str, 0, MAX_FMT_STR_SIZE);
+            memset(str, 0, MAX_FMT_STR);
             switch (*(fmt + 1))
             {
             case 'd':
@@ -98,7 +97,6 @@ int32_t serial_printf(char *fmt, ...)
         }
         fmt++;
     }
-    // LEAVE_CRITICAL();
 #endif
     return written;
 }
@@ -107,6 +105,7 @@ void init_serial()
 {
 #ifdef KDEBUG_SERIAL
 
+    // https://stackoverflow.com/questions/69481715/initialize-serial-port-with-x86-assembly
     outb(PORT + 1, 0x00); // Disable all interrupts
     outb(PORT + 3, 0x80); // Enable DLAB (set baud rate divisor)
     outb(PORT + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud

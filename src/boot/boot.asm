@@ -36,7 +36,7 @@ SystemIDString   db 'FAT16   '   ; System ID String
 
 start:
   jmp 0x0:step2
-  cli ; clear interrupts
+  cli
 
 step2:
   mov ax, 0x00
@@ -44,7 +44,6 @@ step2:
   mov es, ax ; set extra segment
   mov ss, ax ; set stack segment
   mov sp, 0x7c00 ; set stack pointer
-
 
   sti ; Enables interrupts
 

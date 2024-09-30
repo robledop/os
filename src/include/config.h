@@ -22,4 +22,6 @@
 
 #define KDEBUG_SERIAL
 
+#define MAX_FMT_STR 256
+
 #endif
