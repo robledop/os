@@ -1,22 +1,37 @@
 #include "kernel.h"
-#include "idt/idt.h"
-#include "io/io.h"
-#include "terminal/terminal.h"
-#include "memory/heap/kheap.h"
-#include "memory/paging/paging.h"
-#include "string/string.h"
-#include "disk/disk.h"
-#include "fs/pparser.h"
-#include "disk/stream.h"
-#include "fs/file.h"
+#include "idt.h"
+#include "io.h"
+#include "terminal.h"
+#include "kheap.h"
+#include "paging.h"
+#include "string.h"
+#include "disk.h"
+#include "pparser.h"
+#include "stream.h"
+#include "file.h"
+#include "serial.h"
 
 // Divide by zero error
 extern void cause_problem();
 void paging_demo();
+void fs_demo();
 
 static struct paging_4gb_chunk *kernel_chunk = 0;
+
+void panic(const char *msg)
+{
+    warningf("KERNEL PANIC: %s\n", msg);
+    print_color("KERNEL PANIC: ", 0x04);
+    print_line(msg);
+    while (1)
+    {
+        asm volatile("hlt");
+    }
+}
+
 void kernel_main()
 {
+    init_serial();
     terminal_clear();
     kheap_init();
     fs_init();
@@ -30,20 +45,46 @@ void kernel_main()
 
     enable_paging();
 
-    // paging_demo();
-
     enable_interrupts();
 
     print_line("Kernel is running");
 
-    int fd = fopen("0:/test/hello.txt", "r");
-    if (fd)
-    {
-        print("File opened\n");
-    }
+    // paging_demo();
+    fs_demo();
+
+    dbgprintf("Kernel is running");
+
+    // cause_problem();
 
     while (1)
     {
+        asm volatile("hlt");
+    }
+}
+
+void fs_demo()
+{
+    int fd = fopen("0:/test/hello.txt", "r");
+    if (fd)
+    {
+        dbgprintf("File opened\n");
+        char buffer[14];
+        // fseek(fd, 2, SEEK_SET);
+        fread(buffer, 13, 1, fd);
+        buffer[13] = 0x00;
+        dbgprintf("File contents: %s\n", buffer);
+
+        struct file_stat stat;
+        fstat(fd, &stat);
+
+        dbgprintf("File size: %d bytes\n", stat.size);
+
+        dbgprintf("File flags: %s\n", hex_to_string(stat.flags));
+
+        if (fclose(fd) == 0)
+        {
+            dbgprintf("File closed");
+        }
     }
 }
 
@@ -63,26 +104,13 @@ void paging_demo()
 
     char *ptr2 = (char *)0x1000;
 
-    print("*ptr1: ");
-    print(hex_to_string((uint32_t)ptr1));
-    print("\n");
-
-    print("*ptr2: ");
-    print(hex_to_string((uint32_t)ptr2));
-    print("\n");
-
-    print("ptr1 before: ");
-    print(ptr1);
-    print("\n");
+    dbgprintf("*ptr1: %x\n", ptr1);
+    dbgprintf("*ptr2: %x\n", ptr2);
+    dbgprintf("ptr1 before: %x\n", ptr1);
 
     ptr2[0] = 'A';
     ptr2[1] = 'B';
 
-    print("ptr1 after: ");
-    print(ptr1);
-    print("\n");
-
-    print("ptr2: ");
-    print(ptr2);
-    print("\n");
+    dbgprintf("ptr1 after: %s\n", ptr1);
+    dbgprintf("ptr2: %s\n", ptr2);
 }

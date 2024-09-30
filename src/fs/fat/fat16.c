@@ -1,14 +1,14 @@
 #include "fat16.h"
 #include "status.h"
-#include "string/string.h"
-#include "memory/memory.h"
-#include "terminal/terminal.h"
+#include "string.h"
+#include "memory.h"
 #include <stdint.h>
-#include "disk/disk.h"
-#include "disk/stream.h"
-#include "memory/heap/kheap.h"
-#include "kernel/kernel.h"
+#include "disk.h"
+#include "stream.h"
+#include "kheap.h"
+#include "kernel.h"
 #include "config.h"
+#include "serial.h"
 
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 2
@@ -120,16 +120,23 @@ struct fat_private
 
 int fat16_resolve(struct disk *disk);
 void *fat16_open(struct disk *disk, struct path_part *path, FILE_MODE mode);
+int fat16_read(struct disk *disk, void *private_data, uint32_t size, uint32_t nmemb, char *out);
+int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE whence);
+int fat16_stat(struct disk *disk, void *private, struct file_stat *stat);
+int fat16_close(void *private);
 
 struct file_system fat16_fs = {
     .resolve = fat16_resolve,
     .open = fat16_open,
-};
+    .read = fat16_read,
+    .seek = fat16_seek,
+    .stat = fat16_stat,
+    .close = fat16_close};
 
 struct file_system *fat16_init()
 {
     strncpy(fat16_fs.name, "FAT16", 20);
-    // print_line(fat16_fs.name);
+    dbgprintf("File system name %s\n", fat16_fs.name);
     return &fat16_fs;
 }
 
@@ -160,7 +167,7 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     struct disk_stream *stream = fat_private->directory_stream;
     if (disk_stream_seek(stream, directory_start_pos) != ALL_OK)
     {
-        print_line("Failed to seek to directory start");
+        dbgprintf("Failed to seek to directory start");
         res = -EIO;
         goto out;
     }
@@ -169,7 +176,7 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     {
         if (disk_stream_read(stream, &entry, sizeof(entry)) != ALL_OK)
         {
-            print_line("Failed to read directory entry");
+            dbgprintf("Failed to read directory entry");
             res = -EIO;
             goto out;
         }
@@ -186,17 +193,14 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
             continue;
         }
 
-        // print("Reading entry: ");
-        // char *name = trim(substring((char *)entry.name, 0, 7));
-        // print(name);
-        // print(".");
-        // sprint_line((char *)entry.ext, 3);
-        // print("Entry attributes: ");
-        // print_line(hex_to_string(entry.attributes));
-        // print("Entry size: ");
-        // print_line(int_to_string(sizeof(entry)));
+        char *name = trim(substring((char *)entry.name, 0, 7));
+        char *ext = trim(substring((char *)entry.ext, 0, 2));
+        dbgprintf("Reading entry: %s.%s\n", name, ext);
+        dbgprintf("Entry attributes: %x\n", entry.attributes);
+        dbgprintf("Entry size: %d\n", entry.size);
 
-        // kfree(name);
+        kfree(name);
+        kfree(ext);
 
         i++;
     }
@@ -224,7 +228,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     struct fat_directory_entry *dir = kzalloc(total_items * sizeof(struct fat_directory_entry));
     if (!dir)
     {
-        print_line("Failed to allocate memory for root directory");
+        warningf("Failed to allocate memory for root directory\n");
         res = -ENOMEM;
         goto out;
     }
@@ -232,14 +236,14 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     struct disk_stream *stream = fat_private->directory_stream;
     if (disk_stream_seek(stream, fat16_sector_to_absolute(disk, root_dir_sector_pos)) != ALL_OK)
     {
-        print_line("Failed to seek to root directory");
+        warningf("Failed to seek to root directory\n");
         res = -EIO;
         goto out;
     }
 
     if (disk_stream_read(stream, dir, root_dir_size) != ALL_OK)
     {
-        print_line("Failed to read root directory");
+        warningf("Failed to read root directory\n");
         res = -EIO;
         goto out;
     }
@@ -255,14 +259,9 @@ out:
 
 int fat16_resolve(struct disk *disk)
 {
-    // print("Disk type: ");
-    // print_line(int_to_string(disk->type));
-    // print("Disk sector size: ");
-    // print_line(int_to_string(disk->sector_size));
-    // print("Disk fs: ");
-    // print_line(int_to_string((int)disk->fs));
-    // print("Disk fs name: ");
-    // print_line(disk->fs->name);
+    dbgprintf("Disk type: %d\n", disk->type);
+    dbgprintf("Disk sector size: %d\n", disk->sector_size);
+    dbgprintf("Disk fs name: %s\n", disk->fs->name);
 
     int res = 0;
 
@@ -275,23 +274,22 @@ int fat16_resolve(struct disk *disk)
     struct disk_stream *stream = disk_stream_create(disk->id);
     if (!stream)
     {
-        print_line("Failed to create disk stream");
+        warningf("Failed to create disk stream");
         res = -ENOMEM;
         goto out;
     }
 
     if (disk_stream_read(stream, &fat_private->header, sizeof(fat_private->header)) != ALL_OK)
     {
-        print_line("Failed to read FAT16 header");
+        warningf("Failed to read FAT16 header\n");
         res = -EIO;
         goto out;
     }
 
     if (fat_private->header.shared.extended_header.signature != 0x29)
     {
-        print("Invalid FAT16 signature: ");
-        print_line(int_to_string(fat_private->header.shared.extended_header.signature));
-        print("File system not supported\n");
+        warningf("Invalid FAT16 signature: %x\n", fat_private->header.shared.extended_header.signature);
+        warningf("File system not supported\n");
 
         res = -EFSNOTUS;
         goto out;
@@ -299,28 +297,25 @@ int fat16_resolve(struct disk *disk)
 
     if (fat16_get_root_directory(disk, fat_private, &fat_private->root_directory) != ALL_OK)
     {
-        print_line("Failed to get root directory");
+        warningf("Failed to get root directory\n");
         res = -EIO;
         goto out;
     }
 
-    // print("OEM Name: ");
-    // char *oem_name = trim(substring((char *)fat_private->header.primary_header.oem_name, 0, 7));
-    // sprint_line(oem_name, 8);
+    char *oem_name = trim(substring((char *)fat_private->header.primary_header.oem_name, 0, 7));
+    dbgprintf("OEM Name: %s\n", oem_name);
 
-    // print("Volume label: ");
-    // char *volume_label = trim(substring((char *)fat_private->header.shared.extended_header.volume_label, 0, 10));
-    // sprint_line(volume_label, 11);
+    char *volume_label = trim(substring((char *)fat_private->header.shared.extended_header.volume_label, 0, 10));
+    dbgprintf("Volume label: %s\n", volume_label);
 
-    // print("System ID: ");
-    // char* system_id = trim(substring((char *)fat_private->header.shared.extended_header.system_id_string, 0, 10));
-    // sprint_line(system_id, 11);
-    // print("Root directory entries: ");
-    // print_line(int_to_string(fat_private->root_directory.entry_count));
+    char *system_id = trim(substring((char *)fat_private->header.shared.extended_header.system_id_string, 0, 10));
+    dbgprintf("System ID: %s\n", system_id);
 
-    // kfree(oem_name);
-    // kfree(system_id);
-    // kfree(volume_label);
+    dbgprintf("Root directory entries: %d\n", fat_private->root_directory.entry_count);
+
+    kfree(oem_name);
+    kfree(system_id);
+    kfree(volume_label);
 
 out:
     if (stream)
@@ -344,9 +339,10 @@ void fat16_to_proper_string(char **out, const char *in, size_t size)
         **out = *in;
         *out += 1;
         in += 1;
-        // We cant process anymore since we have exceeded the input buffer size
+
         if (i >= size - 1)
         {
+            dbgprintf("Exceeded the input buffer size. i: %d, size: %d\n", i, size);
             break;
         }
         i++;
@@ -372,14 +368,14 @@ struct fat_directory_entry *fat16_clone_fat_directory_entry(struct fat_directory
     struct fat_directory_entry *new_entry = 0;
     if (size < sizeof(struct fat_directory_entry))
     {
-        print_line("Invalid size for cloning directory entry");
+        warningf("Invalid size for cloning directory entry\n");
         return 0;
     }
 
     new_entry = kzalloc(size);
     if (!new_entry)
     {
-        print_line("Failed to allocate memory for new entry");
+        warningf("Failed to allocate memory for new entry\n");
         return 0;
     }
 
@@ -411,7 +407,7 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     struct disk_stream *stream = fs_private->fat_read_stream;
     if (!stream)
     {
-        print_line("Invalid FAT stream");
+        warningf("Invalid FAT stream\n");
         res = -EIO;
         goto out;
     }
@@ -420,7 +416,7 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     res = disk_stream_seek(stream, fat_table_position * (cluster * FAT16_FAT_ENTRY_SIZE));
     if (res < 0)
     {
-        print_line("Failed to seek to FAT table position");
+        warningf("Failed to seek to FAT table position\n");
         goto out;
     }
 
@@ -428,7 +424,7 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     res = disk_stream_read(stream, &result, sizeof(result));
     if (res < 0)
     {
-        print_line("Failed to read FAT table");
+        warningf("Failed to read FAT table\n");
         goto out;
     }
 
@@ -458,27 +454,28 @@ static int fat16_get_cluster_for_offset(struct disk *disk, int start_cluster, in
         if (entry == 0xFF8 || entry == 0xFFF)
         {
             // end of file
+            dbgprintf("End of file\n");
             res = -EIO;
             goto out;
         }
 
         if (entry == FAT16_FAT_BAD_SECTOR)
         {
-            print_line("Bad sector found in FAT table");
+            warningf("Bad sector found in FAT table\n");
             res = -EIO;
             goto out;
         }
 
         if (entry == 0xFF0 || entry == 0xFF6)
         {
-            print_line("Reserved sector found in FAT table");
+            warningf("Reserved sector found in FAT table\n");
             res = -EIO;
             goto out;
         }
 
         if (entry == FAT16_UNUSED)
         {
-            print_line("Corrupted sector found in FAT table");
+            warningf("Corrupted sector found in FAT table\n");
             res = -EIO;
             goto out;
         }
@@ -500,7 +497,7 @@ static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream
     int cluster_to_use = fat16_get_cluster_for_offset(disk, start_cluster, offset);
     if (cluster_to_use < 0)
     {
-        print_line("Failed to get cluster for offset");
+        warningf("Failed to get cluster for offset\n");
         res = cluster_to_use;
         goto out;
     }
@@ -508,20 +505,19 @@ static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream
     int offset_in_cluster = offset % size_of_cluster;
     int start_sector = fat16_cluster_to_sector(fs_private, cluster_to_use);
     int start_position = (start_sector * disk->sector_size) + offset_in_cluster;
-    // int start_position = (start_sector * disk->sector_size) * offset_in_cluster;
     int total_bytes_read = total > size_of_cluster ? size_of_cluster : total;
 
     res = disk_stream_seek(stream, start_position);
     if (res != ALL_OK)
     {
-        print_line("Failed to seek to start position");
+        warningf("Failed to seek to start position\n");
         goto out;
     }
 
     res = disk_stream_read(stream, out, total_bytes_read);
     if (res != ALL_OK)
     {
-        print_line("Failed to read from stream");
+        warningf("Failed to read from stream\n");
         goto out;
     }
 
@@ -583,14 +579,14 @@ struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_dir
     struct fat_private *fat_private = disk->fs_private;
     if (!(entry->attributes & FAT_FILE_SUBDIRECTORY))
     {
-        print_line("Invalid directory entry");
+        warningf("Invalid directory entry\n");
         res = -EINVARG;
     }
 
     directory = kzalloc(sizeof(struct fat_directory));
     if (!directory)
     {
-        print_line("Failed to allocate memory for directory");
+        warningf("Failed to allocate memory for directory\n");
         res = -ENOMEM;
         goto out;
     }
@@ -603,7 +599,7 @@ struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_dir
     directory->entries = kzalloc(directory_size);
     if (!directory->entries)
     {
-        print_line("Failed to allocate memory for directory entries");
+        warningf("Failed to allocate memory for directory entries\n");
         res = -ENOMEM;
         goto out;
     }
@@ -611,7 +607,7 @@ struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_dir
     res = fat16_read_internal(disk, cluster, 0x00, directory_size, directory->entries);
     if (res != ALL_OK)
     {
-        print_line("Failed to read directory entries");
+        warningf("Failed to read directory entries\n");
         goto out;
     }
 
@@ -628,7 +624,7 @@ struct fat_item *fat16_new_fat_item_for_directory_entry(struct disk *disk, struc
     struct fat_item *f_item = kzalloc(sizeof(struct fat_item));
     if (!f_item)
     {
-        print_line("Failed to allocate memory for fat item");
+        warningf("Failed to allocate memory for fat item\n");
         return NULL;
     }
 
@@ -668,8 +664,7 @@ struct fat_item *fat16_get_directory_entry(struct disk *disk, struct path_part *
 
     if (!root_item)
     {
-        print("Failed to find item: ");
-        print_line(path->part);
+        warningf("Failed to find item: %s\n", path->part);
         goto out;
     }
 
@@ -697,21 +692,21 @@ void *fat16_open(struct disk *disk, struct path_part *path, FILE_MODE mode)
 {
     if (mode != FILE_MODE_READ)
     {
-        print_line("Only read mode is supported for FAT16");
+        warningf("Only read mode is supported for FAT16\n");
         return ERROR(-ERDONLY);
     }
 
     struct fat_file_descriptor *descriptor = kzalloc(sizeof(struct fat_file_descriptor));
     if (!descriptor)
     {
-        print_line("Failed to allocate memory for file descriptor");
+        warningf("Failed to allocate memory for file descriptor\n");
         return ERROR(-ENOMEM);
     }
 
     descriptor->item = fat16_get_directory_entry(disk, path);
     if (!descriptor->item)
     {
-        print_line("Failed to get directory entry");
+        warningf("Failed to get directory entry\n");
         kfree(descriptor);
         return ERROR(-EIO);
     }
@@ -719,4 +714,116 @@ void *fat16_open(struct disk *disk, struct path_part *path, FILE_MODE mode)
     descriptor->position = 0;
 
     return descriptor;
+}
+
+// typedef int (*FS_READ_FUNCTION)(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out);
+int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmemb, char *out)
+{
+    int res = 0;
+
+    struct fat_file_descriptor *fat_desc = descriptor;
+    struct fat_directory_entry *entry = fat_desc->item->item;
+    int offset = fat_desc->position;
+
+    for (uint32_t i = 0; i < nmemb; i++)
+    {
+        res = fat16_read_internal(disk, fat16_get_first_cluster(entry), offset, size, out);
+        if (ISERR(res))
+        {
+            warningf("Failed to read from file\n");
+            goto out;
+        }
+
+        out += size;
+        offset += size;
+    }
+
+    res = nmemb;
+
+out:
+    return res;
+}
+
+int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode)
+{
+    int res = 0;
+
+    struct fat_file_descriptor *fat_desc = private;
+    struct fat_item *desc_item = fat_desc->item;
+    if (desc_item->type != FAT_ITEM_TYPE_FILE)
+    {
+        warningf("Invalid file descriptor\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct fat_directory_entry *entry = desc_item->item;
+    if (offset > entry->size)
+    {
+        warningf("Offset exceeds file size\n");
+        res = -EIO;
+        goto out;
+    }
+
+    switch (seek_mode)
+    {
+    case SEEK_SET:
+        fat_desc->position = offset;
+        break;
+    case SEEK_CURRENT:
+        fat_desc->position += offset;
+        break;
+    case SEEK_END:
+        res = -EUNIMP;
+        break;
+    default:
+        warningf("Invalid seek mode: %d\n", seek_mode);
+        res = -EINVARG;
+        break;
+    }
+
+out:
+    return res;
+}
+
+int fat16_stat(struct disk *disk, void *private, struct file_stat *stat)
+{
+    int res = 0;
+
+    struct fat_file_descriptor *fat_desc = (struct fat_file_descriptor *)private;
+    struct fat_item *desc_item = fat_desc->item;
+    if (desc_item->type != FAT_ITEM_TYPE_FILE)
+    {
+        warningf("Invalid file descriptor\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct fat_directory_entry *entry = desc_item->item;
+    stat->size = entry->size;
+    stat->flags = 0;
+    if (entry->attributes & FAT_FILE_READ_ONLY)
+    {
+        stat->flags |= FILE_STAT_IS_READ_ONLY;
+    }
+
+out:
+    return res;
+}
+
+static void fat16_free_file_descriptor(struct fat_file_descriptor *descriptor)
+{
+    if (!descriptor)
+    {
+        return;
+    }
+
+    fat16_fat_item_free(descriptor->item);
+    kfree(descriptor);
+}
+
+int fat16_close(void *private)
+{
+    fat16_free_file_descriptor((struct fat_file_descriptor *)private);
+    return ALL_OK;
 }

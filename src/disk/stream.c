@@ -1,6 +1,6 @@
 #include "stream.h"
 #include "config.h"
-#include "memory/heap/kheap.h"
+#include "kheap.h"
 
 struct disk_stream *disk_stream_create(int disk_index)
 {

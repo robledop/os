@@ -1,6 +1,6 @@
 #include "heap.h"
 #include "status.h"
-#include "memory/memory.h"
+#include "memory.h"
 #include <stdbool.h>
 
 // https://wiki.osdev.org/Memory_Map_(x86)

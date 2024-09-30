@@ -35,7 +35,9 @@ _start:
 
   call kernel_main
 
-  jmp $
+ null_loop:
+    hlt
+    jmp null_loop
 
   ; divide by zero
 cause_problem:

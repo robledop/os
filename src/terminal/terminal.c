@@ -1,6 +1,7 @@
 #include "terminal.h"
-#include "string/string.h"
+#include "string.h"
 #include "config.h"
+#include "serial.h"
 
 uint16_t *video_memory = 0;
 
@@ -53,6 +54,15 @@ void print(const char *str)
     }
 }
 
+void print_color(const char *str, uint8_t color)
+{
+    size_t len = strlen(str);
+    for (int i = 0; i < len; i++)
+    {
+        terminal_write_char(str[i], color);
+    }
+}
+
 void sprint_line(const char *str, int max)
 {
     sprint(str, max);
@@ -67,6 +77,8 @@ void print_line(const char *str)
 
 void terminal_clear()
 {
+    dbgprintf("Clearing terminal\n");
+    
     video_memory = (uint16_t *)(0xB8000);
     for (int y = 0; y < VGA_HEIGHT; y++)
     {

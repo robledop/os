@@ -1,10 +1,9 @@
 #include "disk.h"
-#include "io/io.h"
-#include "disk/disk.h"
-#include "memory/memory.h"
+#include "io.h"
+#include "memory.h"
 #include "config.h"
 #include "status.h"
-#include "terminal/terminal.h"
+#include <terminal.h>
 
 struct disk disk;
 
@@ -22,16 +21,16 @@ int disk_read_sector(int lba, int total, void *buffer)
     for (int b = 0; b < total; b++)
     {
         // Wait for the drive to be ready to send data
-        char status = insb(0x1F7);
+        char status = inb(0x1F7);
         while ((status & 0x08) == 0)
         {
-            status = insb(0x1F7);
+            status = inb(0x1F7);
         }
 
         // Read data
         for (int i = 0; i < 256; i++)
         {
-            *ptr = insw(0x1F0);
+            *ptr = inw(0x1F0);
             ptr++;
         }
     }

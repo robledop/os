@@ -1,7 +1,7 @@
 #include "pparser.h"
-#include "string/string.h"
+#include "string.h"
 #include "config.h"
-#include "memory/heap/kheap.h"
+#include "kheap.h"
 #include "status.h"
 
 static int path_valid_format(const char *path)

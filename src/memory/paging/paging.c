@@ -1,8 +1,8 @@
 #include "paging.h"
-#include "memory/heap/kheap.h"
+#include "kheap.h"
 #include "status.h"
-#include "string/string.h"
-#include "terminal/terminal.h"
+#include "string.h"
+#include "serial.h"
 
 // https://wiki.osdev.org/Paging
 
@@ -11,7 +11,7 @@ void paging_load_directory(uint32_t *directory);
 
 struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 {
-    // print("Allocating kernel memory chunk\n");
+    dbgprintf("Allocating kernel memory chunk\n");
     uint32_t *directory = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
     int offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++)
@@ -32,7 +32,7 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 
 void paging_switch(struct paging_4gb_chunk *chunk)
 {
-    // print("Switching paging to kernel memory chunk\n");
+    dbgprintf("Switching paging to kernel memory chunk\n");
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
 }
@@ -65,11 +65,8 @@ out:
 
 int paging_set(uint32_t *directory, void *virtual_address, uint32_t value)
 {
-    print("Setting page at virtual address ");
-    print(hex_to_string((uint32_t)virtual_address));
-    print(" to value ");
-    print(hex_to_string(value));
-    print("\n");
+    dbgprintf("Setting page at virtual address %x to value %x\n", virtual_address, value);
+
     if (!paging_is_aligned(virtual_address))
     {
         return -EINVARG;

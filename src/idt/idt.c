@@ -1,9 +1,10 @@
 #include "idt.h"
 #include "config.h"
-#include "memory/memory.h"
-#include "kernel/kernel.h"
-#include "io/io.h"
-#include "terminal/terminal.h"
+#include "memory.h"
+#include "kernel.h"
+#include "io.h"
+#include "terminal.h"
+#include "serial.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 
@@ -17,6 +18,8 @@ extern void no_interrupt();
 void int21h_handler()
 {
     print("Keyboard pressed!\n");
+    dbgprintf("Keyboard pressed!\n");   
+
     outb(0x20, 0x20);
 }
 
@@ -30,8 +33,7 @@ void no_interrupt_handler()
 // We simply print an error message and halt the CPU.
 void idt_zero()
 {
-    print("Division by zero error!\n");
-    asm("hlt");
+    panic("Division by zero error");
 }
 
 void idt_set(int interrupt, void *handler)
@@ -54,7 +56,7 @@ void idt_set(int interrupt, void *handler)
 
 void idt_init()
 {
-    // print("Initializing interrupt descriptor table\n");
+    dbgprintf("Initializing interrupt descriptor table\n");
     memset(idt_descriptors, 0, sizeof(idt_descriptors));
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
     idtr_descriptor.base = (uintptr_t)idt_descriptors;
@@ -67,6 +69,5 @@ void idt_init()
     idt_set(0, idt_zero);
     idt_set(0x21, int21h);
 
-    // Load the IDT
     idt_load(&idtr_descriptor);
 }

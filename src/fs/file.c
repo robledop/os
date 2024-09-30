@@ -1,13 +1,13 @@
 #include "file.h"
 #include "config.h"
-#include "memory/memory.h"
-#include "memory/heap/kheap.h"
+#include "memory.h"
+#include "kheap.h"
 #include "status.h"
-#include "terminal/terminal.h"
-#include "fs/fat/fat16.h"
-#include "string/string.h"
-#include "disk/disk.h"
-#include "kernel/kernel.h"
+#include "fat16.h"
+#include "string.h"
+#include "disk.h"
+#include "kernel.h"
+#include "serial.h"
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
@@ -32,7 +32,7 @@ void fs_insert_file_system(struct file_system *filesystem)
     fs = fs_get_free_file_system();
     if (!fs)
     {
-        print("Problem inserting filesystem");
+        dbgprintf("Problem inserting filesystem");
         while (1)
         {
         }
@@ -54,9 +54,15 @@ void fs_load()
 
 void fs_init()
 {
-    // print("Initializing file system\n");
+    dbgprintf("Initializing file system\n");
     memset(file_descriptors, 0, sizeof(file_descriptors));
     fs_load();
+}
+
+static void file_free_descriptor(struct file_descriptor *desc)
+{
+    file_descriptors[desc->index - 1] = 0x00;
+    kfree(desc);
 }
 
 static int file_new_descriptor(struct file_descriptor **desc_out)
@@ -67,11 +73,11 @@ static int file_new_descriptor(struct file_descriptor **desc_out)
         if (file_descriptors[i] == 0)
         {
             struct file_descriptor *desc = (struct file_descriptor *)kzalloc(sizeof(struct file_descriptor));
-            // if (desc == 0)
-            // {
-            //     res = -ENOMEM;
-            //     break;
-            // }
+            if (desc == 0)
+            {
+                res = -ENOMEM;
+                break;
+            }
 
             // Descriptors start at 1
             desc->index = i + 1;
@@ -137,24 +143,21 @@ FILE_MODE file_get_mode_from_string(const char *mode)
 //  - a: append
 int fopen(const char *path, const char *mode)
 {
-    print("fopen: ");
-    print(path);
-    print(", mode: ");
-    print_line(mode);
+    dbgprintf("fopen: %s, mode: %s\n", path, mode);
 
     int res = 0;
 
     struct path_root *root_path = pathparser_parse(path, NULL);
     if (!root_path)
     {
-        print_line("Failed to parse path");
+        warningf("Failed to parse path\n");
         res = -EBADPATH;
         goto out;
     }
 
     if (!root_path->first)
     {
-        print_line("Path does not contain a file");
+        warningf("Path does not contain a file\n");
         res = -EBADPATH;
         goto out;
     }
@@ -162,14 +165,14 @@ int fopen(const char *path, const char *mode)
     struct disk *disk = disk_get(root_path->drive_number);
     if (!disk)
     {
-        print_line("Failed to get disk");
+        warningf("Failed to get disk\n");
         res = -EIO;
         goto out;
     }
 
     if (disk->fs == NULL)
     {
-        print_line("Disk has no file system");
+        warningf("Disk has no file system\n");
         res = -EIO;
         goto out;
     }
@@ -177,7 +180,7 @@ int fopen(const char *path, const char *mode)
     FILE_MODE file_mode = file_get_mode_from_string(mode);
     if (file_mode == FILE_MODE_INVALID)
     {
-        print_line("Invalid file mode");
+        warningf("Invalid file mode\n");
         res = -EINVARG;
         goto out;
     }
@@ -193,7 +196,7 @@ int fopen(const char *path, const char *mode)
     res = file_new_descriptor(&desc);
     if (ISERR(res))
     {
-        print_line("Failed to create file descriptor");
+        warningf("Failed to create file descriptor\n");
         goto out;
     }
 
@@ -209,5 +212,101 @@ out:
     {
         res = 0;
     }
+    return res;
+}
+
+int fstat(int fd, struct file_stat *stat)
+{
+    int res = 0;
+
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        warningf("Invalid file descriptor\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->fs->stat(desc->disk, desc->fs_data, stat);
+out:
+    return res;
+}
+
+int fseek(int fd, int offset, FILE_SEEK_MODE whence)
+{
+    int res = 0;
+
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        warningf("Invalid file descriptor\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->fs->seek(desc->fs_data, offset, whence);
+
+out:
+    return res;
+}
+
+int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
+{
+    int res = 0;
+    if (size == 0 || nmemb == 0 || fd < 1)
+    {
+        warningf("Invalid arguments\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        warningf("Invalid file descriptor\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    if (desc->fs == 0 || desc->fs->read == 0)
+    {
+        warningf("File system does not support read\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->fs->read(desc->disk, desc->fs_data, size, nmemb, (char *)ptr);
+
+out:
+    return res;
+}
+
+int fclose(int fd)
+{
+    int res = 0;
+
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        warningf("Invalid file descriptor\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    if (desc->fs == 0 || desc->fs->close == 0)
+    {
+        warningf("File system does not support close\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->fs->close(desc->fs_data);
+
+    if (res == ALL_OK)
+    {
+        file_free_descriptor(desc);
+    }
+
+out:
     return res;
 }

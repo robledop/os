@@ -1,9 +1,10 @@
 #include "kheap.h"
 #include "heap.h"
 #include "config.h"
-#include "terminal/terminal.h"
-#include "memory/memory.h"
-#include "string/string.h"
+#include "memory.h"
+#include "kernel.h"
+#include "string.h"
+#include "serial.h"
 
 struct heap kernel_heap;
 struct heap_table kernel_heap_table;
@@ -12,27 +13,20 @@ struct heap_table kernel_heap_table;
 
 void kheap_init()
 {
-    // print("Initializing kernel heap\n");
+    dbgprintf("Initializing kernel heap\n");
     int total_table_entries = HEAP_SIZE_BYTES / HEAP_BLOCK_SIZE;
     kernel_heap_table.entries = (HEAP_BLOCK_TABLE_ENTRY *)HEAP_TABLE_ADDRESS;
     kernel_heap_table.total = total_table_entries;
 
-    // print("Total table entries: ");
-    // print(int_to_string(total_table_entries));
-    // print("\n");
-    // print("Heap table address: ");
-    // print(hex_to_string((uint32_t)kernel_heap_table.entries));
-    // print("\n");
-    // print("Heap table total entries: ");
-    // print(int_to_string(kernel_heap_table.total));
-    // print("\n");
+    dbgprintf("Total table entries: %d\n", total_table_entries);
+    dbgprintf("Heap table address: %x\n", kernel_heap_table.entries);
+    dbgprintf("Heap table total entries: %d\n", kernel_heap_table.total);
 
     void *end = (void *)(HEAP_ADDRESS + HEAP_SIZE_BYTES);
     int res = heap_create(&kernel_heap, (void *)HEAP_ADDRESS, end, &kernel_heap_table);
     if (res < 0)
     {
-        // TODO: panic
-        print("Failed to create heap\n");
+        panic("Failed to create heap\n");
     }
 }
 

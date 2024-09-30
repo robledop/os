@@ -1,5 +1,5 @@
 #include "string.h"
-#include "memory/heap/kheap.h"
+#include "kheap.h"
 
 // Gets the length of a string
 size_t strlen(const char *s)
@@ -131,62 +131,6 @@ char *safestrcpy(char *s, const char *t, int n)
     return os;
 }
 
-char *hex_to_string(uint32_t num)
-{
-    static char str[11];
-    int i = 0;
-    str[i++] = '0';
-    str[i++] = 'x';
-    int j = 268435456;
-    while (j)
-    {
-        int digit = num / j;
-        if (digit > 9)
-        {
-            str[i++] = digit - 10 + 'A';
-        }
-        else
-        {
-            str[i++] = digit + '0';
-        }
-        num %= j;
-        j /= 16;
-    }
-    str[i] = '\0';
-    return str;
-}
-
-char *int_to_string(int num)
-{
-    static char str[11];
-    int i = 0;
-    if (num == 0)
-    {
-        str[i++] = '0';
-    }
-    else
-    {
-        if (num < 0)
-        {
-            str[i++] = '-';
-            num = -num;
-        }
-        int j = 1000000000;
-        while (j > num)
-        {
-            j /= 10;
-        }
-        while (j)
-        {
-            str[i++] = num / j + '0';
-            num %= j;
-            j /= 10;
-        }
-    }
-    str[i] = '\0';
-    return str;
-}
-
 bool isdigit(char c)
 {
     return c >= '0' && c <= '9';
@@ -232,4 +176,58 @@ char *substring(char *str, int start, int end)
     }
     substr[end - start + 1] = '\0';
     return substr;
+}
+
+inline int itoa(int n, char s[])
+{
+	int i, sign;
+
+	if ((sign = n) < 0)
+		n = -n;
+	i = 0;
+	do {
+		s[i++] = n % 10 + '0';
+	} while ((n /= 10) > 0);
+
+	if(sign < 0)
+		s[i++] = '-';
+	
+	s[i] = '\0';
+	reverse(s);
+
+    return i;
+}
+
+inline int itohex(uint32_t n, char s[])
+{
+  uint32_t i, d;
+
+  i = 0;
+  do {
+    d = n % 16;
+    if (d < 10)
+      s[i++] = d + '0';
+    else
+      s[i++] = d - 10 + 'a';
+  } while ((n /= 16) > 0);
+  s[i] = 0;
+  reverse(s);
+
+  return i;
+}
+
+/*
+ * Functions from Kerninghan/Ritchie - The C Programming Language
+ */
+
+inline void reverse(char s[])
+{
+	int c, i, j;
+
+	for (i = 0, j = strlen(s)-1; i < j; i++, j--)
+	{
+		c = s[i];
+		s[i] = s[j];
+		s[j] = c;
+	}
 }
