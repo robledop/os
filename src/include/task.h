@@ -23,6 +23,7 @@ struct registers
 };
 
 struct process;
+struct interrupt_frame;
 
 struct task
 {
@@ -33,9 +34,17 @@ struct task
     struct task *prev;
 };
 
+void task_run_first_ever_task();
+
 struct task *task_create(struct process *process);
 int task_free(struct task *task);
 struct task *task_current();
 struct task *task_get_next();
+void restore_general_purpose_registers(struct registers *registers);
+void task_return(struct registers *registers);
+void user_registers();
+int task_switch(struct task *task);
+int task_page();
+void task_current_save_state(struct interrupt_frame *interrupt_frame);
 
 #endif

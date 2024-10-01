@@ -3,6 +3,8 @@
 
   global _start
   global cause_problem
+  global kernel_registers
+
   extern kernel_main
   CODE_SEG equ 0x08
   DATA_SEG equ 0x10
@@ -39,6 +41,14 @@ _start:
  null_loop:
     hlt
     jmp null_loop
+
+kernel_registers:
+    mov ax, 10
+    mov ds, ax
+    mov es, ax
+    mov gs, ax
+    mov fs, ax
+    ret
 
   ; divide by zero
 cause_problem:

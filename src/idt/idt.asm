@@ -3,13 +3,14 @@ section .asm
 extern int21h_handler
 extern no_interrupt_handler
 extern print_line
+extern isr80h_handler
 
 global int21h
 global idt_load
 global no_interrupt
 global enable_interrupts
 global disable_interrupts
-
+global isr80h_wrapper
 
 enable_interrupts:
     sti
@@ -36,22 +37,44 @@ idt_load:
     ret
 
 int21h:
-    cli
     pushad
     call int21h_handler
 
     popad
-    sti
 
     iret
 
 no_interrupt:
-    cli
     pushad
     call no_interrupt_handler
     popad
-    sti
     iret
+
+isr80h_wrapper:
+    ; interrupt frame start
+    ; already pushed by the processor:
+    ; uint32_t ip, cs, flags, sp, ss;
+
+    ; pushes the general purpose registers to the stack
+    pushad
+
+    ; push the stack pointer
+    push esp
+
+    ; eax will contain the command
+    push eax
+    call isr80h_handler
+    mov dword[tmp_response], eax
+    add esp, 8
+
+    ; pops the general purpose registers from the stack
+    popad
+    mov eax, [tmp_response]
+    iretd
+
+section .data
+; stores the response of the system call
+tmp_response: dd 0
 
 ; section .data
 ; message1 db "Interrupts enabled", 0

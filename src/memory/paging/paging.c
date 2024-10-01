@@ -11,7 +11,7 @@ void paging_load_directory(uint32_t *directory);
 
 struct page_directory *paging_create_directory(uint8_t flags)
 {
-    dbgprintf("Allocating kernel memory chunk\n");
+    dbgprintf("Allocating page directory. Flags %x\n", flags);
     uint32_t *directory = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
     uint32_t offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++)
@@ -27,13 +27,14 @@ struct page_directory *paging_create_directory(uint8_t flags)
 
     struct page_directory *chunk = kzalloc(sizeof(struct page_directory));
     chunk->directory_entry = directory;
+    dbgprintf("Page directory allocated at %x\n", chunk->directory_entry);
     return chunk;
 }
 
 // Switch page directory
 void paging_switch_directory(struct page_directory *chunk)
 {
-    dbgprintf("Switching to kernel page directory\n");
+    dbgprintf("Switching to page directory %x\n", chunk->directory_entry);
 
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
@@ -90,7 +91,7 @@ void *paging_align_address(void *address)
     return (void *)((uint32_t)address + PAGING_PAGE_SIZE - ((uint32_t)address % PAGING_PAGE_SIZE));
 }
 
-int paging_map(uint32_t *directory, void *virtual_address, void *physical_address, int flags)
+int paging_map(struct page_directory *directory, void *virtual_address, void *physical_address, int flags)
 {
     dbgprintf("Mapping virtual address %x to physical address %x\n", virtual_address, physical_address);
 
@@ -109,7 +110,7 @@ int paging_map(uint32_t *directory, void *virtual_address, void *physical_addres
     return paging_set(directory, virtual_address, (uint32_t)physical_address | flags);
 }
 
-int paging_map_range(uint32_t *directory, void *virtual_address, void *physical_start_address, int total_pages, int flags)
+int paging_map_range(struct page_directory *directory, void *virtual_address, void *physical_start_address, int total_pages, int flags)
 {
     int res = 0;
 
@@ -128,7 +129,7 @@ int paging_map_range(uint32_t *directory, void *virtual_address, void *physical_
     return res;
 }
 
-int paging_map_to(uint32_t *directory, void *virtual_address, void *physical_start_address, void *physical_end_address, int flags)
+int paging_map_to(struct page_directory *directory, void *virtual_address, void *physical_start_address, void *physical_end_address, int flags)
 {
     int res = 0;
 
@@ -164,7 +165,7 @@ out:
     return res;
 }
 
-int paging_set(uint32_t *directory, void *virtual_address, uint32_t value)
+int paging_set(struct page_directory *directory, void *virtual_address, uint32_t value)
 {
     dbgprintf("Setting page at virtual address %x to value %x\n", virtual_address, value);
 
@@ -181,7 +182,7 @@ int paging_set(uint32_t *directory, void *virtual_address, uint32_t value)
         return res;
     }
 
-    uint32_t entry = directory[directory_index];
+    uint32_t entry = directory->directory_entry[directory_index];
     uint32_t *table = (uint32_t *)(entry & 0xFFFFF000);
     table[table_index] = value;
 

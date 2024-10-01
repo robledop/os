@@ -16,6 +16,7 @@ struct process
     uint32_t size;
 };
 
+int process_load(const char *file_name, struct process **process);
 int process_load_for_slot(const char *file_name, struct process **process, uint16_t slot);
 
 #endif

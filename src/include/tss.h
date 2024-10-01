@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+// https://wiki.osdev.org/Task_State_Segment
 struct tss
 {
     uint32_t link;

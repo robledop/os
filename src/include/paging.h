@@ -51,11 +51,11 @@ void paging_switch_directory(struct page_directory *chunk);
 void enable_paging();
 uint32_t *paging_get_directory(struct page_directory *chunk);
 
-int paging_set(uint32_t *directory, void *virtual_address, uint32_t value);
+int paging_set(struct page_directory *directory, void *virtual_address, uint32_t value);
 bool paging_is_aligned(void *address);
-int paging_map_to(uint32_t *directory, void *virtual_address, void *physical_start_address, void *physical_end_address, int flags);
-int paging_map_range(uint32_t *directory, void *virtual_address, void *physical_start_address, int total_pages, int flags);
-int paging_map(uint32_t *directory, void *virtual_address, void *physical_address, int flags);
+int paging_map_to(struct page_directory *directory, void *virtual_address, void *physical_start_address, void *physical_end_address, int flags);
+int paging_map_range(struct page_directory *directory, void *virtual_address, void *physical_start_address, int total_pages, int flags);
+int paging_map(struct page_directory *directory, void *virtual_address, void *physical_address, int flags);
 void *paging_align_address(void *address);
 
 #endif

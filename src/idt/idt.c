@@ -5,20 +5,24 @@
 #include "io.h"
 #include "terminal.h"
 #include "serial.h"
+#include "task.h"
+#include "status.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
+static ISR80H_COMMAND isr80h_commands[MAX_ISR80H_COMMANDS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void int21h();
 extern void no_interrupt();
+extern void isr80h_wrapper();
 
 void int21h_handler()
 {
     kprint("Keyboard pressed!\n");
-    dbgprintf("Keyboard pressed!\n");   
+    dbgprintf("Keyboard pressed!\n");
 
     outb(0x20, 0x20);
 }
@@ -69,7 +73,58 @@ void idt_init()
 
     idt_set(0, idt_zero);
     idt_set(0x21, int21h);
+    idt_set(0x80, isr80h_wrapper);
 
     idt_load(&idtr_descriptor);
     dbgprintf("Interrupt descriptor table initialized\n");
+}
+
+void isr80h_register_command(int command, ISR80H_COMMAND handler)
+{
+    if (command <= 0 || command >= MAX_ISR80H_COMMANDS)
+    {
+        dbgprintf("Command out of bounds: %d\n", command);
+        panic("The command is out of bounds");
+    }
+
+    if (isr80h_commands[command])
+    {
+        dbgprintf("Command already registered: %d\n", command);
+        panic("The command is already registered");
+    }
+
+    isr80h_commands[command] = handler;
+}
+
+void *isr80h_handle_command(int command, struct interrupt_frame *frame)
+{
+    void *result = 0;
+
+    if (command <= 0 || command >= MAX_ISR80H_COMMANDS)
+    {
+        dbgprintf("Invalid command: %d\n", command);
+        return NULL;
+    }
+
+    ISR80H_COMMAND handler = isr80h_commands[command];
+    if (!handler)
+    {
+        dbgprintf("No handler for command: %d\n", command);
+        return NULL;
+    }
+
+    result = handler(frame);
+
+    return result;
+}
+
+void *isr80h_handler(int command, struct interrupt_frame *frame)
+{
+    void *res = 0;
+    kernel_page();
+    task_current_save_state(frame);
+    res = isr80h_handle_command(command, frame);
+    task_page();
+
+    return res;
 }

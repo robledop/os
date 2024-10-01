@@ -30,7 +30,7 @@ FLAGS = -g \
 	-Iinc \
 	-Wall
 
-all: ./bin/boot.bin ./bin/kernel.bin
+all: ./bin/boot.bin ./bin/kernel.bin apps
 	rm -rf ./bin/os.bin
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
@@ -42,6 +42,7 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	sudo cp ./file2.txt /mnt/d
 	sudo mkdir /mnt/d/test
 	sudo cp ./hello.txt /mnt/d/test
+	sudo cp ./user/blank/blank.bin /mnt/d
 	sudo umount /mnt/d
 	rm -rf ./hello.txt ./file2.txt
 
@@ -69,5 +70,11 @@ grub: ./bin/kernel.bin
 	sudo cp ./bin/kernel.bin /mnt/d/boot/myos.kernel
 	sudo umount -q /mnt/d
 
-clean:
+apps:
+	cd ./user/blank && $(MAKE) all
+
+apps_clean:
+	cd ./user/blank && $(MAKE) clean
+
+clean: apps_clean
 	rm -rf ./bin ./build ./mnt

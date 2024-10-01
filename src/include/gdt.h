@@ -2,6 +2,8 @@
 #define GDT_H
 #include <stdint.h>
 
+// https://wiki.osdev.org/Global_Descriptor_Table
+
 struct gdt
 {
     uint16_t segment;
@@ -10,7 +12,7 @@ struct gdt
     uint8_t access;
     uint8_t high_flags;
     uint8_t base_24_31_bits;
-};
+} __attribute__((packed));
 
 struct gdt_structured
 {

@@ -101,7 +101,7 @@ int istrncmp(const char *s1, const char *s2, int n)
 }
 
 // Copy string t to s
-void strncpy(char *dest, const char *src, int n)
+char* strncpy(char *dest, const char *src, int n)
 {
     int i = 0;
     for (i = 0; i < n - 1; i++)
@@ -114,6 +114,8 @@ void strncpy(char *dest, const char *src, int n)
     }
 
     dest[i] = '\0';
+
+    return dest;
 }
 
 // Like strncpy but guaranteed to NUL-terminate.

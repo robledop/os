@@ -14,6 +14,9 @@
 #include "config.h"
 #include "memory.h"
 #include "tss.h"
+#include "task.h"
+#include "process.h"
+#include "status.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -31,6 +34,13 @@ void panic(const char *msg)
     {
         asm volatile("hlt");
     }
+}
+
+void kernel_page()
+{
+    dbgprintf("Switching to kernel page\n");
+    kernel_registers();
+    paging_switch_directory(kernel_page_directory);
 }
 
 struct tss tss;
@@ -75,10 +85,19 @@ void kernel_main()
         PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     paging_switch_directory(kernel_page_directory);
     enable_paging();
-    enable_interrupts();
+    // enable_interrupts();
 
     kprint(KCYN "Kernel is running\n");
-    dbgprintf("Kernel is running");
+    dbgprintf("Kernel is running\n");
+
+    struct process *process = 0;
+    int res = process_load("0:/blank.bin", &process);
+    if (res != ALL_OK)
+    {
+        panic("Failed to load process");
+    }
+
+    task_run_first_ever_task();
 
     while (1)
     {
@@ -119,7 +138,7 @@ void paging_demo()
     ptr1[0] = 'C';
     ptr1[1] = 'D';
     paging_set(
-        paging_get_directory(kernel_page_directory),
+        kernel_page_directory,
         (void *)0x1000,
         (uint32_t)ptr1 |
             PAGING_DIRECTORY_ENTRY_IS_PRESENT |
