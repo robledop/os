@@ -40,10 +40,10 @@ start:
 
 step2:
   mov ax, 0x00
-  mov ds, ax ; set data segment
-  mov es, ax ; set extra segment
-  mov ss, ax ; set stack segment
-  mov sp, 0x7c00 ; set stack pointer
+  mov ds, ax        ; set data segment
+  mov es, ax        ; set extra segment
+  mov ss, ax        ; set stack segment
+  mov sp, 0x7c00    ; set stack pointer
 
   sti ; Enables interrupts
 
@@ -70,22 +70,22 @@ gdt_null:
   dd 0x0
 
   ; offset 0x8
-gdt_code:   ; CS should point to this
-  dw 0xFFFF ; Segment limit first 0-15 bits
-  dw 0      ; Base first 0-15 bits
-  db 0      ; Base 16-23 bits
-  db 0x9a   ; Access byte
-  db 11001111b ; High 4 bit flags and the low 4 bit flags
-  db 0      ; Base 24-31 bits
+gdt_code:       ; CS must point to this
+  dw 0xFFFF     ; Segment limit first 0-15 bits
+  dw 0          ; Base first 0-15 bits
+  db 0          ; Base 16-23 bits
+  db 0x9a       ; Access byte
+  db 11001111b  ; High 4 bit flags and the low 4 bit flags
+  db 0          ; Base 24-31 bits
 
   ; offset 0x10
-gdt_data:   ; DS, SS, ES, FS, GS
-  dw 0xFFFF ; Segment limit first 0-15 bits
-  dw 0      ; Base first 0-15 bits
-  db 0      ; Base 16-23 bits
-  db 0x92   ; Access byte
-  db 11001111b ; High 4 bit flags and the low 4 bit flags
-  db 0      ; Base 24-31 bits
+gdt_data:       ; DS, SS, ES, FS, GS
+  dw 0xFFFF     ; Segment limit first 0-15 bits
+  dw 0          ; Base first 0-15 bits
+  db 0          ; Base 16-23 bits
+  db 0x92       ; Access byte
+  db 11001111b  ; High 4 bit flags and the low 4 bit flags
+  db 0          ; Base 24-31 bits
 
 gdt_end:
 

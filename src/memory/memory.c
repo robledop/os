@@ -1,4 +1,6 @@
 #include "memory.h"
+#include "serial.h"
+#include "terminal.h"
 
 void *memset(void *ptr, int value, size_t size)
 {

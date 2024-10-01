@@ -5,7 +5,7 @@
 #include "kheap.h"
 #include "paging.h"
 #include "string.h"
-#include "disk.h"
+#include "ata.h"
 #include "pparser.h"
 #include "stream.h"
 #include "file.h"
@@ -33,6 +33,7 @@ void kernel_main()
 {
     init_serial();
     terminal_clear();
+    kprint(KCYN "Kernel is starting\n");
     kheap_init();
     fs_init();
     disk_search_and_init();
@@ -45,7 +46,7 @@ void kernel_main()
     enable_paging();
     enable_interrupts();
 
-    kprint(KCYN"Kernel is running\n");
+    kprint(KCYN "Kernel is running\n");
     dbgprintf("Kernel is running");
 
     while (1)
@@ -71,7 +72,7 @@ void fs_demo()
 
         dbgprintf("File size: %d bytes\n", stat.size);
 
-        dbgprintf("File flags: %s\n", hex_to_string(stat.flags));
+        dbgprintf("File flags: %x\n", stat.flags);
 
         if (fclose(fd) == 0)
         {

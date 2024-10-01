@@ -1,7 +1,7 @@
 #ifndef STREAMER_H
 #define STREAMER_H
 
-#include "disk.h"
+#include "ata.h"
 
 struct disk_stream
 {

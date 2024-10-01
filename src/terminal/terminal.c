@@ -31,7 +31,6 @@ void write_character(unsigned char c, unsigned char forecolour, unsigned char ba
     volatile uint16_t *where;
     where = (volatile uint16_t *)0xB8000 + (y * 80 + x);
     *where = c | (attrib << 8);
-    update_cursor(x, y);
 }
 
 void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor)
@@ -53,6 +52,8 @@ void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor)
             y++;
         }
     }
+
+    update_cursor(x, y);
 }
 
 void print(const char *str)

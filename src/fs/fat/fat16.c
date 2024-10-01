@@ -3,7 +3,7 @@
 #include "string.h"
 #include "memory.h"
 #include <stdint.h>
-#include "disk.h"
+#include "ata.h"
 #include "stream.h"
 #include "kheap.h"
 #include "kernel.h"
@@ -213,6 +213,8 @@ out:
 
 int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private, struct fat_directory *directory)
 {
+    dbgprintf("Getting root directory\n");
+
     int res = 0;
     struct fat_header *primary_header = &fat_private->header.primary_header;
     int root_dir_sector_pos = (primary_header->fat_copies * primary_header->sectors_per_fat) + primary_header->reserved_sectors;
@@ -254,6 +256,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     directory->ending_sector_position = root_dir_sector_pos + (root_dir_size / disk->sector_size);
 
 out:
+    dbgprintf("Root directory entries: %d\n", directory->entry_count);
     return res;
 }
 
@@ -261,7 +264,7 @@ int fat16_resolve(struct disk *disk)
 {
     dbgprintf("Disk type: %d\n", disk->type);
     dbgprintf("Disk sector size: %d\n", disk->sector_size);
-    dbgprintf("Disk fs name: %s\n", disk->fs->name);
+    // dbgprintf("Disk fs name: %s\n", disk->fs->name);
 
     int res = 0;
 
@@ -288,8 +291,8 @@ int fat16_resolve(struct disk *disk)
 
     if (fat_private->header.shared.extended_header.signature != 0x29)
     {
-        warningf("Invalid FAT16 signature: %x\n", fat_private->header.shared.extended_header.signature);
-        warningf("File system not supported\n");
+        dbgprintf("Invalid FAT16 signature: %x\n", fat_private->header.shared.extended_header.signature);
+        dbgprintf("File system not supported\n");
 
         res = -EFSNOTUS;
         goto out;
@@ -327,6 +330,8 @@ out:
         kfree(fat_private);
         disk->fs_private = NULL;
     }
+
+    dbgprintf("FAT16 resolve result: %d\n", res);
 
     return res;
 }

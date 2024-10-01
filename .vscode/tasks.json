@@ -4,9 +4,7 @@
         {
             "label": "Launch QEMU",
             "type": "shell",
-            "command": "~/source/os/build.sh && qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -m 32m"
+            "command": "~/source/os/build.sh && qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on"
         }
     ]
 }
-
-// QEMU_OPS = -display sdl -device e1000,netdev=net0 -serial stdio -netdev user,id=net0,hostfwd=tcp::8080-:8080 -object filter-dump,id=net0,netdev=net0,file=dump.dat -m 32m

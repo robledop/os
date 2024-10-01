@@ -1,9 +1,11 @@
 #include "stream.h"
 #include "config.h"
 #include "kheap.h"
+#include "serial.h"
 
 struct disk_stream *disk_stream_create(int disk_index)
 {
+    dbgprintf("Creating disk stream for disk %d\n", disk_index);
     struct disk *disk = disk_get(disk_index);
     if (!disk)
     {
@@ -24,6 +26,7 @@ int disk_stream_seek(struct disk_stream *stream, int position)
 
 int disk_stream_read(struct disk_stream *stream, void *out, int size)
 {
+    dbgprintf("Reading %d bytes from disk stream\n", size);
     int sector = stream->position / SECTOR_SIZE;
     int offset = stream->position % SECTOR_SIZE;
     char buffer[SECTOR_SIZE];

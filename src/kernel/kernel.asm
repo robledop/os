@@ -1,4 +1,5 @@
-  [BITS] 32
+; NOT USED BY GRUB
+[BITS] 32
 
   global _start
   global cause_problem

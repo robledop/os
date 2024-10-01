@@ -13,7 +13,7 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 {
     dbgprintf("Allocating kernel memory chunk\n");
     uint32_t *directory = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
-    int offset = 0;
+    uint32_t offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++)
     {
         uint32_t *entry = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_TABLE);
@@ -21,7 +21,7 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
         {
             entry[j] = (offset + (j * PAGING_PAGE_SIZE)) | flags;
         }
-        offset += PAGING_ENTRIES_PER_TABLE * PAGING_PAGE_SIZE;
+        offset = offset + (PAGING_ENTRIES_PER_TABLE * PAGING_PAGE_SIZE);
         directory[i] = (uint32_t)entry | flags | PAGING_DIRECTORY_ENTRY_IS_WRITABLE;
     }
 

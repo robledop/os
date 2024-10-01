@@ -1,5 +1,5 @@
 $(shell mkdir -p ./bin)
-SRC_DIRS := $(shell find ./src -type d ! -path './src/boot' ! -path './src/include')
+SRC_DIRS := $(shell find ./src -type d ! -path './src/include' ! -path './src/grub' ! -path './src/boot')
 BUILD_DIRS := $(patsubst ./src/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))
 ASM_FILES := $(wildcard $(addsuffix /*.asm, $(SRC_DIRS)))
@@ -50,6 +50,7 @@ all: ./bin/boot.bin ./bin/kernel.bin
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
 
 ./bin/boot.bin: ./src/boot/boot.asm
+	# nasm -felf32 ./src/boot/boot.asm -o ./bin/boot.bin
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
 
 # Pattern rules for .asm and .c files
@@ -59,5 +60,14 @@ all: ./bin/boot.bin ./bin/kernel.bin
 ./build/%.o: ./src/%.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
+# NOT FUNCTIONAL YET
+grub: ./bin/kernel.bin
+	i686-elf-ld -g -relocatable $(FILES) -o ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/myos.bin ./build/kernelfull.o
+	grub-file --is-x86-multiboot ./bin/kernel.bin
+	sudo mount -t vfat ./disk.img /mnt/d
+	sudo cp ./bin/kernel.bin /mnt/d/boot/myos.kernel
+	sudo umount -q /mnt/d
+
 clean:
-	rm -rf ./bin/boot.bin ./bin/kernel.bin ./bin/os.bin $(FILES) ./build/kernelfull.o
+	rm -rf ./bin ./build ./mnt

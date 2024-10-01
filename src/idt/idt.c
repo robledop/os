@@ -58,6 +58,7 @@ void idt_init()
 {
     dbgprintf("Initializing interrupt descriptor table\n");
     memset(idt_descriptors, 0, sizeof(idt_descriptors));
+
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
     idtr_descriptor.base = (uintptr_t)idt_descriptors;
 
@@ -70,4 +71,5 @@ void idt_init()
     idt_set(0x21, int21h);
 
     idt_load(&idtr_descriptor);
+    dbgprintf("Interrupt descriptor table initialized\n");
 }

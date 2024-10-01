@@ -14,16 +14,12 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d /home/robledo/source/os/src -d /home/robledo/source/os/src/kernel -d /home/robledo/source/os/src/memory/paging -d ~/source/os/src/disk -d ~/source/os/src/fs/fat",
+            "miDebuggerArgs": "-d /home/robledo/source/os/src -d /home/robledo/source/os/src/kernel -d /home/robledo/source/os/src/memory/paging -d ~/source/os/src/disk -d ~/source/os/src/fs/fat -d ~/source/os/src/idt -d ~/source/os/src/include",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",
                     "description": "Connect to QEMU remote debugger"
                 }
-                // {
-                //     "text": "target remote | qemu-system-x86_64 -hda boot.bin -S -gdb stdio",
-                //     "description": "Connect to QEMU remote debugger"
-                // }
             ],
             "setupCommands": [
                 {

@@ -5,7 +5,7 @@
 #include "status.h"
 #include "fat16.h"
 #include "string.h"
-#include "disk.h"
+#include "ata.h"
 #include "kernel.h"
 #include "serial.h"
 
@@ -217,96 +217,73 @@ out:
 
 int fstat(int fd, struct file_stat *stat)
 {
-    int res = 0;
-
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
         warningf("Invalid file descriptor\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
-    res = desc->fs->stat(desc->disk, desc->fs_data, stat);
-out:
-    return res;
+    return desc->fs->stat(desc->disk, desc->fs_data, stat);
 }
 
 int fseek(int fd, int offset, FILE_SEEK_MODE whence)
 {
-    int res = 0;
-
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
         warningf("Invalid file descriptor\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
-    res = desc->fs->seek(desc->fs_data, offset, whence);
-
-out:
-    return res;
+    return desc->fs->seek(desc->fs_data, offset, whence);
 }
 
 int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
 {
-    int res = 0;
     if (size == 0 || nmemb == 0 || fd < 1)
     {
         warningf("Invalid arguments\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
         warningf("Invalid file descriptor\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
     if (desc->fs == 0 || desc->fs->read == 0)
     {
         warningf("File system does not support read\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
-    res = desc->fs->read(desc->disk, desc->fs_data, size, nmemb, (char *)ptr);
-
-out:
-    return res;
+    return desc->fs->read(desc->disk, desc->fs_data, size, nmemb, (char *)ptr);
 }
 
 int fclose(int fd)
 {
-    int res = 0;
-
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
         warningf("Invalid file descriptor\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
     if (desc->fs == 0 || desc->fs->close == 0)
     {
         warningf("File system does not support close\n");
-        res = -EINVARG;
-        goto out;
+        return -EINVARG;
     }
 
-    res = desc->fs->close(desc->fs_data);
+    int res = desc->fs->close(desc->fs_data);
 
     if (res == ALL_OK)
     {
         file_free_descriptor(desc);
     }
 
-out:
     return res;
 }
