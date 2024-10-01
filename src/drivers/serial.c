@@ -76,6 +76,7 @@ int32_t serial_printf(char *fmt, ...)
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);
+                serial_write("0x");
                 serial_write(str);
                 break;
             case 's':;

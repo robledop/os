@@ -102,6 +102,7 @@ void kprint(char *fmt, ...)
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);
+                print("0x");    
                 print(str);
                 x_offset += strlen(str);
                 break;

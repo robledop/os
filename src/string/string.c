@@ -101,18 +101,19 @@ int istrncmp(const char *s1, const char *s2, int n)
 }
 
 // Copy string t to s
-char *strncpy(char *s, const char *t, int n)
+void strncpy(char *dest, const char *src, int n)
 {
-    char *os;
-
-    os = s;
-    while (n-- > 0 && (*s++ = *t++) != 0)
-        ;
-    while (n-- > 0)
+    int i = 0;
+    for (i = 0; i < n - 1; i++)
     {
-        *s++ = 0;
+        if (src[i] == '\0')
+        {
+            break;
+        }
+        dest[i] = src[i];
     }
-    return os;
+
+    dest[i] = '\0';
 }
 
 // Like strncpy but guaranteed to NUL-terminate.
@@ -180,40 +181,42 @@ char *substring(char *str, int start, int end)
 
 inline int itoa(int n, char s[])
 {
-	int i, sign;
+    int i, sign;
 
-	if ((sign = n) < 0)
-		n = -n;
-	i = 0;
-	do {
-		s[i++] = n % 10 + '0';
-	} while ((n /= 10) > 0);
+    if ((sign = n) < 0)
+        n = -n;
+    i = 0;
+    do
+    {
+        s[i++] = n % 10 + '0';
+    } while ((n /= 10) > 0);
 
-	if(sign < 0)
-		s[i++] = '-';
-	
-	s[i] = '\0';
-	reverse(s);
+    if (sign < 0)
+        s[i++] = '-';
+
+    s[i] = '\0';
+    reverse(s);
 
     return i;
 }
 
 inline int itohex(uint32_t n, char s[])
 {
-  uint32_t i, d;
+    uint32_t i, d;
 
-  i = 0;
-  do {
-    d = n % 16;
-    if (d < 10)
-      s[i++] = d + '0';
-    else
-      s[i++] = d - 10 + 'a';
-  } while ((n /= 16) > 0);
-  s[i] = 0;
-  reverse(s);
+    i = 0;
+    do
+    {
+        d = n % 16;
+        if (d < 10)
+            s[i++] = d + '0';
+        else
+            s[i++] = d - 10 + 'a';
+    } while ((n /= 16) > 0);
+    s[i] = 0;
+    reverse(s);
 
-  return i;
+    return i;
 }
 
 /*
@@ -222,12 +225,12 @@ inline int itohex(uint32_t n, char s[])
 
 inline void reverse(char s[])
 {
-	int c, i, j;
+    int c, i, j;
 
-	for (i = 0, j = strlen(s)-1; i < j; i++, j--)
-	{
-		c = s[i];
-		s[i] = s[j];
-		s[j] = c;
-	}
+    for (i = 0, j = strlen(s) - 1; i < j; i++, j--)
+    {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
 }

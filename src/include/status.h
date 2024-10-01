@@ -16,5 +16,7 @@
 #define ERDONLY 6
 // Operation not implemented
 #define EUNIMP 7
+// Instance already taken
+#define EINSTKN 8
 
 #endif
