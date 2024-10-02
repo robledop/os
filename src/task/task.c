@@ -5,6 +5,7 @@
 #include "kheap.h"
 #include "memory.h"
 #include "idt.h"
+#include "string.h"
 
 struct task *current_task = 0;
 struct task *task_tail = 0;
@@ -129,6 +130,48 @@ void task_save_state(struct task *task, struct interrupt_frame *frame)
     task->registers.ss = frame->ss;
 }
 
+int copy_string_from_task(struct task *task, void *virtual, void *physical, int max)
+{
+    if (max >= PAGING_PAGE_SIZE)
+    {
+        dbgprintf("String too long\n");
+        return -EINVARG;
+    }
+
+    int res = 0;
+    char *tmp = kzalloc(max);
+    if (!tmp)
+    {
+        dbgprintf("Failed to allocate memory for string\n");
+        res = -ENOMEM;
+        goto out;
+    }
+
+    uint32_t old_entry = paging_get(task->page_directory, tmp);
+    paging_map(
+        task->page_directory,
+        tmp,
+        tmp,
+        PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    paging_switch_directory(task->page_directory);
+    strncpy(tmp, virtual, max);
+    kernel_page();
+    res = paging_set(task->page_directory, tmp, old_entry);
+    if (res < 0)
+    {
+        dbgprintf("Failed to set page\n");
+        res = -EIO;
+        goto out_free;
+    }
+
+    strncpy(physical, tmp, max);
+
+out_free:
+    kfree(tmp);
+out:
+    return res;
+}
+
 void task_current_save_state(struct interrupt_frame *frame)
 {
     struct task *task = task_current();
@@ -144,6 +187,14 @@ int task_page()
 {
     user_registers();
     task_switch(current_task);
+
+    return ALL_OK;
+}
+
+int task_page_task(struct task *task)
+{
+    user_registers();
+    paging_switch_directory(task->page_directory);
 
     return ALL_OK;
 }
@@ -185,4 +236,17 @@ int task_init(struct task *task, struct process *process)
     dbgprintf("Task %x registers ip %x\n", task, task->registers.ip);
 
     return ALL_OK;
+}
+
+void *task_get_stack_item(struct task *task, int index)
+{
+    void *result = 0;
+    uint32_t *stack_pointer = (uint32_t *)task->registers.esp;
+    task_page_task(task);
+
+    result = (void *)stack_pointer[index];
+
+    kernel_page();
+
+    return result;
 }

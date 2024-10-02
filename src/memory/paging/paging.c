@@ -117,8 +117,9 @@ int paging_map_range(struct page_directory *directory, void *virtual_address, vo
     for (int i = 0; i < total_pages; i++)
     {
         res = paging_map(directory, virtual_address, physical_start_address, flags);
-        if (res == 0)
+        if (res < 0)
         {
+            dbgprintf("Failed to map page %d\n", i);
             break;
         }
 
@@ -165,6 +166,23 @@ out:
     return res;
 }
 
+// Get the physical address of a page
+uint32_t paging_get(struct page_directory *directory, void *virtual_address)
+{
+    uint32_t directory_index = 0;
+    uint32_t table_index = 0;
+    int res = paging_get_indexes(virtual_address, &directory_index, &table_index);
+    if (res < 0)
+    {
+        dbgprintf("Failed to get indexes for virtual address %x\n", virtual_address);
+        return 0;
+    }
+
+    uint32_t entry = directory->directory_entry[directory_index];
+    uint32_t *table = (uint32_t *)(entry & 0xFFFFF000); // get the address without the flags
+    return table[table_index];
+}
+
 int paging_set(struct page_directory *directory, void *virtual_address, uint32_t value)
 {
     dbgprintf("Setting page at virtual address %x to value %x\n", virtual_address, value);
@@ -183,7 +201,7 @@ int paging_set(struct page_directory *directory, void *virtual_address, uint32_t
     }
 
     uint32_t entry = directory->directory_entry[directory_index];
-    uint32_t *table = (uint32_t *)(entry & 0xFFFFF000);
+    uint32_t *table = (uint32_t *)(entry & 0xFFFFF000); // The address without the flags
     table[table_index] = value;
 
     return 0;

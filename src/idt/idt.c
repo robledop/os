@@ -81,7 +81,7 @@ void idt_init()
 
 void isr80h_register_command(int command, ISR80H_COMMAND handler)
 {
-    if (command <= 0 || command >= MAX_ISR80H_COMMANDS)
+    if (command < 0 || command >= MAX_ISR80H_COMMANDS)
     {
         dbgprintf("Command out of bounds: %d\n", command);
         panic("The command is out of bounds");
@@ -93,6 +93,8 @@ void isr80h_register_command(int command, ISR80H_COMMAND handler)
         panic("The command is already registered");
     }
 
+    dbgprintf("Registering command: %d\n", command);
+
     isr80h_commands[command] = handler;
 }
 
@@ -100,7 +102,7 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 {
     void *result = 0;
 
-    if (command <= 0 || command >= MAX_ISR80H_COMMANDS)
+    if (command < 0 || command >= MAX_ISR80H_COMMANDS)
     {
         dbgprintf("Invalid command: %d\n", command);
         return NULL;

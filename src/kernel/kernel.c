@@ -17,6 +17,7 @@
 #include "task.h"
 #include "process.h"
 #include "status.h"
+#include "isr80h.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -28,7 +29,7 @@ static struct page_directory *kernel_page_directory = 0;
 void panic(const char *msg)
 {
     warningf("KERNEL PANIC: %s\n", msg);
-    kprint(KRED "KERNEL PANIC:" KWHT);
+    kprint(KRED "KERNEL PANIC: " KWHT);
     kprint("%s\n", msg);
     while (1)
     {
@@ -85,7 +86,6 @@ void kernel_main()
         PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     paging_switch_directory(kernel_page_directory);
     enable_paging();
-    // enable_interrupts();
 
     kprint(KCYN "Kernel is running\n");
     dbgprintf("Kernel is running\n");
@@ -96,6 +96,9 @@ void kernel_main()
     {
         panic("Failed to load process");
     }
+
+    isr80h_register_commands();
+    enable_interrupts();
 
     task_run_first_ever_task();
 

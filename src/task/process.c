@@ -108,7 +108,20 @@ int process_map_memory(struct process *process)
 {
     int res = 0;
     res = process_map_binary(process);
+    if (res < 0)
+    {
+        dbgprintf("Failed to map binary for process %s\n", process->file_name);
+        goto out;
+    }
 
+    paging_map_to(
+        process->task->page_directory,
+        (void *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
+        process->stack,
+        paging_align_address(process->stack + USER_PROGRAM_STACK_SIZE),
+        PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+
+out:
     return res;
 }
 
@@ -141,7 +154,7 @@ int process_load(const char *file_name, struct process **process)
 
     res = process_load_for_slot(file_name, process, process_slot);
 
-    kprint(KMAG"Process %s (pid: %d) is now running\n", (*process)->file_name, (*process)->pid);
+    kprint(KMAG "Process %s (pid: %d) is now running\n", (*process)->file_name, (*process)->pid);
 
 out:
     return res;
