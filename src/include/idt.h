@@ -9,7 +9,7 @@ struct idt_desc
 {
     uint16_t offset_1; // offset bits 0..15
     uint16_t selector; // a code segment selector in GDT or LDT
-    uint8_t zero;      // unused, set to 0
+    uint8_t zero; // unused, set to 0
     uint8_t type_attr; // type and attributes, see below
     uint16_t offset_2; // offset bits 16..31
 } __attribute__((packed));
@@ -17,7 +17,7 @@ struct idt_desc
 struct idtr_desc
 {
     uint16_t limit; // size of idt
-    uint32_t base;  // base address of idt
+    uint32_t base; // base address of idt
 } __attribute__((packed));
 
 struct interrupt_frame
@@ -42,7 +42,9 @@ void enable_interrupts();
 void disable_interrupts();
 
 typedef void *(*ISR80H_COMMAND)(struct interrupt_frame *frame);
+typedef void (*INTERRUPT_CALLBACK_FUNCTION)();
 
 void isr80h_register_command(int command, ISR80H_COMMAND handler);
+int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION callback);
 
 #endif

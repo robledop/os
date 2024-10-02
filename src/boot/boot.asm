@@ -23,7 +23,7 @@ SectorsPerFAT    dw 0x100        ; 256 sectors per FAT
 SectorsPerTrack  dw 0x20         ; 32 sectors per track
 NumberOfHeads    dw 0x40         ; 64 heads
 HiddenSectors    dd 0x00         ; 0 hidden sectors
-SectorsBig       dd 0x773594      
+SectorsBig       dd 0x773594
 
   ; Extended BPB (DOS 4.0)
 DriveNumber      db 0x80         ; Drive number
@@ -130,7 +130,7 @@ ata_lba_read:
   mov eax, ebx ; Restore the backup LBA
   shr eax, 16
   out dx, al
-  
+
   mov dx, 0x1F7
   mov al, 0x20
   out dx, al
@@ -153,7 +153,7 @@ ata_lba_read:
   pop ecx
   loop .next_sector
 
-  ret ; ata_lba_read 
+  ret ; ata_lba_read
 
   ; pad the end with 510 bytes
   times 510-($ - $$) db 0

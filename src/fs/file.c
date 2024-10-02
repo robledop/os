@@ -217,6 +217,7 @@ out:
 
 int fstat(int fd, struct file_stat *stat)
 {
+    dbgprintf("fstat: %d\n", fd);
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {

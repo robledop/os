@@ -38,6 +38,7 @@ void paging_switch_directory(struct page_directory *chunk)
 
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
+    dbgprintf("Switched to page directory %x\n", chunk->directory_entry);
 }
 
 void paging_free_directory(struct page_directory *page_directory)

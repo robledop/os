@@ -1,6 +1,6 @@
-/build/
-/bin/
-/mnt/
+build/
+bin/
+mnt/
 *.bin
 *.o
 *.log

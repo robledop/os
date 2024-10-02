@@ -28,6 +28,11 @@ SECTIONS
 		*(.text)
 	}
 
+    .asm : ALIGN(4K)
+    {
+        *(.asm)
+    }
+
 	/* Read-only data. */
 	.rodata BLOCK(4K) : ALIGN(4K)
 	{
@@ -47,10 +52,6 @@ SECTIONS
 		*(.bss)
 	}
 
-    .asm : ALIGN(4K)
-    {
-        *(.asm)
-    }
 
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */

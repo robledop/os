@@ -1,5 +1,5 @@
 $(shell mkdir -p ./bin)
-SRC_DIRS := $(shell find ./src -type d ! -path './src/include' ! -path './src/grub' ! -path './src/boot')
+SRC_DIRS := $(shell find ./src -type d ! -path './src/include' ! -path './src/boot')
 BUILD_DIRS := $(patsubst ./src/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))
 ASM_FILES := $(wildcard $(addsuffix /*.asm, $(SRC_DIRS)))
@@ -46,29 +46,35 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	sudo umount /mnt/d
 	rm -rf ./hello.txt ./file2.txt
 
-./bin/kernel.bin: $(FILES)
-	i686-elf-ld -g -relocatable $(FILES) -o ./build/kernelfull.o
+./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
+	i686-elf-ld -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
 
 ./bin/boot.bin: ./src/boot/boot.asm
-	# nasm -felf32 ./src/boot/boot.asm -o ./bin/boot.bin
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
 
-# Pattern rules for .asm and .c files
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
 
 ./build/%.o: ./src/%.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
-# NOT FUNCTIONAL YET
-grub: ./bin/kernel.bin
-	i686-elf-ld -g -relocatable $(FILES) -o ./build/kernelfull.o
-	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/myos.bin ./build/kernelfull.o
-	grub-file --is-x86-multiboot ./bin/kernel.bin
+grub: ./bin/kernel-grub.bin
+	grub-file --is-x86-multiboot ./bin/kernel-grub.bin
 	sudo mount -t vfat ./disk.img /mnt/d
-	sudo cp ./bin/kernel.bin /mnt/d/boot/myos.kernel
+	sudo cp ./bin/kernel-grub.bin /mnt/d/boot/myos.kernel
+	sudo cp ./user/blank/blank.bin /mnt/d
 	sudo umount -q /mnt/d
+
+./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
+	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./bin/kernel-grub.bin ./build/kernelfull.o
+
+qemu: all
+	qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on
+
+qemu_grub: grub clean
+	qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 apps:
 	cd ./user/blank && $(MAKE) all

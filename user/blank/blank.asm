@@ -19,7 +19,21 @@ _start:
     int 0x80
     add esp, 4
 
-    jmp $
+_getkey_loop:
+    call getkey
+    push eax
+    mov eax, 3 ; putchar command
+    int 0x80
+    add esp, 4
+
+    jmp _getkey_loop
+
+getkey:
+    mov eax, 2 ; getkey command
+    int 0x80
+    cmp eax, 0x00
+    je getkey
+    ret
 
 section .data
-message db "Hello, World!", 0
+message db "This is from blank.bin", 0

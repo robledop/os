@@ -262,11 +262,11 @@ out:
 
 int fat16_resolve(struct disk *disk)
 {
+    int res = 0;
     dbgprintf("Disk type: %d\n", disk->type);
     dbgprintf("Disk sector size: %d\n", disk->sector_size);
     // dbgprintf("Disk fs name: %s\n", disk->fs->name);
 
-    int res = 0;
 
     struct fat_private *fat_private = kzalloc(sizeof(struct fat_private));
     fat16_init_private(disk, fat_private);

@@ -1,23 +1,24 @@
 #include "kernel.h"
+#include "ata.h"
+#include "config.h"
+#include "file.h"
+#include "gdt.h"
 #include "idt.h"
 #include "io.h"
-#include "terminal.h"
-#include "kheap.h"
-#include "paging.h"
-#include "string.h"
-#include "ata.h"
-#include "pparser.h"
-#include "stream.h"
-#include "file.h"
-#include "serial.h"
-#include "gdt.h"
-#include "config.h"
-#include "memory.h"
-#include "tss.h"
-#include "task.h"
-#include "process.h"
-#include "status.h"
 #include "isr80h.h"
+#include "keyboard.h"
+#include "kheap.h"
+#include "memory.h"
+#include "paging.h"
+#include "pparser.h"
+#include "process.h"
+#include "serial.h"
+#include "status.h"
+#include "stream.h"
+#include "string.h"
+#include "task.h"
+#include "terminal.h"
+#include "tss.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -81,26 +82,28 @@ void kernel_main()
     tss_load(0x28);
 
     kernel_page_directory = paging_create_directory(
-        PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-        PAGING_DIRECTORY_ENTRY_IS_PRESENT |
-        PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+        PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     paging_switch_directory(kernel_page_directory);
     enable_paging();
 
     kprint(KCYN "Kernel is running\n");
     dbgprintf("Kernel is running\n");
+    isr80h_register_commands();
+    keyboard_init();
+
+    // idt_register_interrupt_callback(0x20, pic_timer_callback);
 
     struct process *process = 0;
-    int res = process_load("0:/blank.bin", &process);
+    int             res     = process_load_switch("0:/blank.bin", &process);
     if (res != ALL_OK)
     {
         panic("Failed to load process");
     }
 
-    isr80h_register_commands();
+    task_run_first_ever_task();
+
     enable_interrupts();
 
-    task_run_first_ever_task();
 
     while (1)
     {
@@ -140,13 +143,9 @@ void paging_demo()
 
     ptr1[0] = 'C';
     ptr1[1] = 'D';
-    paging_set(
-        kernel_page_directory,
-        (void *)0x1000,
-        (uint32_t)ptr1 |
-            PAGING_DIRECTORY_ENTRY_IS_PRESENT |
-            PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-            PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    paging_set(kernel_page_directory, (void *)0x1000,
+               (uint32_t)ptr1 | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
+                   PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
     char *ptr2 = (char *)0x1000;
 

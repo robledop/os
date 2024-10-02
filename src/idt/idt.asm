@@ -2,10 +2,11 @@ section .asm
 
 extern int21h_handler
 extern no_interrupt_handler
-extern print_line
+extern print
 extern isr80h_handler
+extern interrupt_handler
+extern interrupt_pointer_table
 
-global int21h
 global idt_load
 global no_interrupt
 global enable_interrupts
@@ -14,16 +15,10 @@ global isr80h_wrapper
 
 enable_interrupts:
     sti
-    ; push message1
-    ; call print_line
-    ; add esp, 4
     ret
 
 disable_interrupts:
     cli
-    ; push message2
-    ; call print_line
-    ; add esp, 4
     ret
 
 idt_load:
@@ -36,19 +31,29 @@ idt_load:
     pop ebp
     ret
 
-int21h:
-    pushad
-    call int21h_handler
-
-    popad
-
-    iret
-
 no_interrupt:
     pushad
     call no_interrupt_handler
     popad
     iret
+
+%macro interrupt 1
+    global int%1
+    int%1:
+        pushad
+        push esp
+        push dword %1
+        call interrupt_handler
+        add esp, 8
+        popad
+        iret
+%endmacro
+
+%assign i 0
+%rep 512
+    interrupt i
+%assign i i+1
+%endrep
 
 isr80h_wrapper:
     ; interrupt frame start
@@ -76,6 +81,13 @@ section .data
 ; stores the response of the system call
 tmp_response: dd 0
 
-; section .data
-; message1 db "Interrupts enabled", 0
-; message2 db "Interrupts disabled", 0
+%macro interrupt_array_entry 1
+    dd int%1
+%endmacro
+
+interrupt_pointer_table:
+%assign i 0
+%rep 512
+    interrupt_array_entry i
+%assign i i+1
+%endrep

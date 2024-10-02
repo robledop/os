@@ -2,11 +2,12 @@
 #include "io.h"
 #include "string.h"
 #include "memory.h"
+#include "kernel.h"
+#include "task.h"
 
-#define KDEBUG_SERIAL
 
 #define PORT 0x3f8 // COM1
-#define MAX_FMT_STR 50
+#define MAX_FMT_STR_SERIAL 50
 static int serial_init_done = 0;
 
 // extern int __cli_cnt;
@@ -53,19 +54,19 @@ int32_t serial_printf(char *fmt, ...)
 {
     int written = 0;
 #ifdef KDEBUG_SERIAL
-
     va_list args;
 
-    char str[MAX_FMT_STR];
+    char str[MAX_FMT_STR_SERIAL];
     int num = 0;
 
     va_start(args, fmt);
-    while (*fmt != '\0')
+    int i = 0;
+    while (*fmt != '\0' && i++ < sizeof(str))
     {
         switch (*fmt)
         {
         case '%':
-            memset(str, 0, MAX_FMT_STR);
+            memset(str, 0, sizeof(str));
             switch (*(fmt + 1))
             {
             case 'd':
@@ -98,6 +99,7 @@ int32_t serial_printf(char *fmt, ...)
         }
         fmt++;
     }
+
 #endif
     return written;
 }
