@@ -7,6 +7,7 @@
 #include "idt.h"
 #include "string.h"
 #include "elfloader.h"
+#include "terminal.h"
 
 struct task *current_task = 0;
 struct task *task_tail = 0;
@@ -20,8 +21,14 @@ struct task *task_current()
 
 struct task *task_get_next()
 {
+    if (!current_task && !task_head)
+    {
+        panic("No current task");
+    }
+
     if (!current_task->next)
     {
+        // kprintf(KWHT "Wrapping around to the first task\n");
         return task_head;
     }
 
@@ -107,7 +114,8 @@ out:
 
 int task_switch(struct task *task)
 {
-    dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
+    // kprintf("Switching to task %d from process %d\n", current_task->process->pid, task->process->pid);
+    // dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
 
     current_task = task;
     paging_switch_directory(task->page_directory);
@@ -200,7 +208,7 @@ int task_page_task(struct task *task)
     return ALL_OK;
 }
 
-void task_run_first_ever_task()
+void task_run_first_task()
 {
     if (!current_task)
     {
@@ -267,4 +275,16 @@ void *task_get_stack_item(struct task *task, int index)
 void *task_virtual_to_physical_address(struct task *task, void *virtual_address)
 {
     return paging_get_physical_address(task->page_directory, virtual_address);
+}
+
+void task_next()
+{
+    struct task *next = task_get_next();
+    if (!next)
+    {
+        panic("No next task");
+    }
+
+    task_switch(next);
+    task_return(&next->registers);
 }

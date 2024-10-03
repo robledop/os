@@ -216,6 +216,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     dbgprintf("Getting root directory\n");
 
     int res = 0;
+    struct fat_directory_entry *dir = NULL;
     struct fat_header *primary_header = &fat_private->header.primary_header;
     int root_dir_sector_pos = (primary_header->fat_copies * primary_header->sectors_per_fat) + primary_header->reserved_sectors;
     int root_dir_entries = fat_private->header.primary_header.root_entries;
@@ -227,12 +228,12 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     }
 
     int total_items = fat16_get_total_items_for_directory(disk, root_dir_sector_pos);
-    struct fat_directory_entry *dir = kzalloc(total_items * sizeof(struct fat_directory_entry));
+    dir = kzalloc(total_items * sizeof(struct fat_directory_entry));
     if (!dir)
     {
         warningf("Failed to allocate memory for root directory\n");
         res = -ENOMEM;
-        goto out;
+        goto error_out;
     }
 
     struct disk_stream *stream = fat_private->directory_stream;
@@ -240,14 +241,14 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     {
         warningf("Failed to seek to root directory\n");
         res = -EIO;
-        goto out;
+        goto error_out;
     }
 
     if (disk_stream_read(stream, dir, root_dir_size) != ALL_OK)
     {
         warningf("Failed to read root directory\n");
         res = -EIO;
-        goto out;
+        goto error_out;
     }
 
     directory->entries = dir;
@@ -255,8 +256,15 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     directory->sector_position = root_dir_sector_pos;
     directory->ending_sector_position = root_dir_sector_pos + (root_dir_size / disk->sector_size);
 
-out:
     dbgprintf("Root directory entries: %d\n", directory->entry_count);
+
+    return res;
+
+error_out:
+    if (dir)
+    {
+        kfree(dir);
+    }
     return res;
 }
 
@@ -266,7 +274,6 @@ int fat16_resolve(struct disk *disk)
     dbgprintf("Disk type: %d\n", disk->type);
     dbgprintf("Disk sector size: %d\n", disk->sector_size);
     // dbgprintf("Disk fs name: %s\n", disk->fs->name);
-
 
     struct fat_private *fat_private = kzalloc(sizeof(struct fat_private));
     fat16_init_private(disk, fat_private);
@@ -348,7 +355,7 @@ void fat16_to_proper_string(char **out, const char *in, size_t size)
         if (i >= size - 1)
         {
             dbgprintf("Exceeded the input buffer size. i: %d, size: %d\n", i, size);
-            break;
+            break;;
         }
         i++;
     }
@@ -695,30 +702,42 @@ out:
 
 void *fat16_open(struct disk *disk, struct path_part *path, FILE_MODE mode)
 {
+    struct fat_file_descriptor *descriptor = NULL;
+    int error_code = 0;
     if (mode != FILE_MODE_READ)
     {
         warningf("Only read mode is supported for FAT16\n");
-        return ERROR(-ERDONLY);
+        error_code = -ERDONLY;
+        goto error_out;
     }
 
-    struct fat_file_descriptor *descriptor = kzalloc(sizeof(struct fat_file_descriptor));
+    descriptor = kzalloc(sizeof(struct fat_file_descriptor));
     if (!descriptor)
     {
         warningf("Failed to allocate memory for file descriptor\n");
-        return ERROR(-ENOMEM);
+        error_code = -ENOMEM;
+        goto error_out;
     }
 
     descriptor->item = fat16_get_directory_entry(disk, path);
     if (!descriptor->item)
     {
         warningf("Failed to get directory entry\n");
-        kfree(descriptor);
-        return ERROR(-EIO);
+        error_code = -EIO;
+        goto error_out;
     }
 
     descriptor->position = 0;
 
     return descriptor;
+
+error_out:
+    if (descriptor)
+    {
+        kfree(descriptor);
+    }
+
+    return ERROR(error_code);
 }
 
 // typedef int (*FS_READ_FUNCTION)(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out);

@@ -2,11 +2,17 @@
 #define KEYBOARD_H
 #include "process.h"
 
+#define KEYBOARD_CAPSLOCK_ON 0x01
+#define KEYBOARD_CAPSLOCK_OFF 0x00
+
+typedef int KEYBOARD_CAPSLOCK_STATE;
+
 typedef int (*KEYBOARD_INIT_FUNCTION)();
 struct keyboard
 {
     KEYBOARD_INIT_FUNCTION init;
     char name[20];
+    KEYBOARD_CAPSLOCK_STATE capslock_state;
     struct keyboard *next;
 };
 

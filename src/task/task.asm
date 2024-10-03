@@ -62,7 +62,7 @@ restore_general_purpose_registers:
     mov eax, [ebx + 24]
     mov ebx, [ebx + 12]
 
-    pop ebp
+    add esp, 4
     ret
 
 

@@ -11,8 +11,13 @@ int main(int argc, char **argv)
         printf("> ");
         char buffer[1024];
         os_terminal_readline(buffer, sizeof(buffer), true);
-        os_system_run(buffer);
+        int res = os_system_run(buffer);
+        if (res < 0)
+        {
+            printf("\nError: %d", res);
+        }
         putchar('\n');
     }
+
     return 0;
 }

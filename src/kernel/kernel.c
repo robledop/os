@@ -24,6 +24,7 @@
 extern void cause_problem();
 void paging_demo();
 void fs_demo();
+void multitasking_demo();
 
 static struct page_directory *kernel_page_directory = 0;
 
@@ -58,6 +59,7 @@ struct gdt_structured gdt_structured[TOTAL_GDT_SEGMENTS] = {
 
 void kernel_main()
 {
+    idt_init();
     init_serial();
     terminal_clear();
     kprintf(KCYN "Kernel is starting\n");
@@ -70,7 +72,6 @@ void kernel_main()
     kheap_init();
     fs_init();
     disk_search_and_init();
-    idt_init();
 
     dbgprintf("Initializing the TSS \n");
     memset(&tss, 0, sizeof(tss));
@@ -91,28 +92,37 @@ void kernel_main()
     isr80h_register_commands();
     keyboard_init();
 
-    struct process *process = 0;
+    struct process *process = NULL;
     int res = process_load_switch("0:/shell.elf", &process);
-    if (res != ALL_OK)
+    if (res < 0)
     {
-        panic("Failed to load process");
+        panic("Failed to load shell");
     }
 
-    // struct command_argument argument;
-    // argument.next = NULL;
-    // strncpy(argument.argument, "testing", sizeof(argument.argument));
-    // argument.next = NULL;
 
-    // process_inject_arguments(process, &argument);
+    task_run_first_task();
 
-    task_run_first_ever_task();
-
-    enable_interrupts();
+    // enable_interrupts();
 
     while (1)
     {
         asm volatile("hlt");
     }
+}
+
+void multitasking_demo()
+{
+    struct process *process = NULL;
+    process_load_switch("0:/cblank.elf", &process);
+    struct command_argument argument;
+    strncpy(argument.argument, "Program 0", sizeof(argument.argument));
+    argument.next = NULL;
+    process_inject_arguments(process, &argument);
+
+    process_load_switch("0:/cblank.elf", &process);
+    strncpy(argument.argument, "Program 1", sizeof(argument.argument));
+    argument.next = NULL;
+    process_inject_arguments(process, &argument);
 }
 
 void fs_demo()

@@ -34,7 +34,7 @@ struct task
     struct task *prev;
 };
 
-void task_run_first_ever_task();
+void task_run_first_task();
 
 struct task *task_create(struct process *process);
 int task_free(struct task *task);
@@ -51,5 +51,6 @@ int copy_string_from_task(struct task *taks, void *virtual, void *physical, int 
 void *task_get_stack_item(struct task *task, int index);
 int task_page_task(struct task *task);
 void *task_virtual_to_physical_address(struct task *task, void *virtual_address);
+void task_next();
 
 #endif

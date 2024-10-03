@@ -3,6 +3,16 @@
 ; TODO: Is section .asm really needed?
 section .asm
 
+; void os_exit();
+global os_exit:function
+os_exit:
+    push ebp
+    mov ebp, esp
+    mov eax, 0           ; exit command
+    int 0x80
+    pop ebp
+    ret
+
 ; void print(const char* str)
 global os_print:function
 os_print:
@@ -96,3 +106,4 @@ os_process_get_arguments:
     add esp, 4
     pop ebp
     ret
+

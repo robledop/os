@@ -10,11 +10,13 @@
 #include "string.h"
 #include "status.h"
 
-void *isr80h_command0_sum(struct interrupt_frame *frame)
+void *isr80h_command0_exit(struct interrupt_frame *frame)
 {
-    int value2 = (int)task_get_stack_item(task_current(), 1);
-    int value1 = (int)task_get_stack_item(task_current(), 0);
-    return (void *)(value1 + value2);
+    struct process *process = task_current()->process;
+    process_terminate(process);
+    task_next();
+
+    return NULL;
 }
 
 void *isr80h_command1_print(struct interrupt_frame *frame)

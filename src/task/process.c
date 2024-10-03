@@ -81,6 +81,88 @@ static struct process_allocation *process_get_allocation_by_address(struct proce
     return NULL;
 }
 
+int process_terminate_allocations(struct process *process)
+{
+    for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        // kfree(process->allocations[i].ptr);
+        process_free(process, process->allocations[i].ptr);
+    }
+
+    return 0;
+}
+
+int process_free_program_data(struct process *process)
+{
+    int res = 0;
+    switch (process->file_type)
+    {
+    case PROCESS_FILE_TYPE_BINARY:
+        kfree(process->pointer);
+        break;
+
+    case PROCESS_FILE_TYPE_ELF:
+        elf_close(process->elf_file);
+        break;
+
+    default:
+        dbgprintf("Unknown process file type\n");
+        res = -EINVARG;
+    }
+    return res;
+}
+
+void process_switch_to_any()
+{
+    for (int i = 0; i < MAX_PROCESSES; i++)
+    {
+        if (processes[i])
+        {
+            process_switch(processes[i]);
+            return;
+        }
+    }
+
+    // TODO: Restart a shell process
+
+    panic("No processes to switch to.\n");
+}
+
+static void process_unlink(struct process *process)
+{
+    processes[process->pid] = 0x00;
+
+    if (current_process == process)
+    {
+        process_switch_to_any();
+    }
+}
+
+int process_terminate(struct process *process)
+{
+    int res = 0;
+
+    res = process_terminate_allocations(process);
+    if (res < 0)
+    {
+        dbgprintf("Failed to terminate allocations for process %d\n", process->pid);
+        return res;
+    }
+
+    res = process_free_program_data(process);
+    if (res < 0)
+    {
+        dbgprintf("Failed to free program data for process %d\n", process->pid);
+        return res;
+    }
+
+    kfree(process->stack);
+    task_free(process->task);
+    process_unlink(process);
+
+    return res;
+}
+
 void process_get_arguments(struct process *process, int *argc, char ***argv)
 {
     *argc = process->arguments.argc;
@@ -228,6 +310,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     dbgprintf("Loading binary %s\n", file_name);
 
     int res = 0;
+    void *program = NULL;
     int fd = fopen(file_name, "r");
     if (!fd)
     {
@@ -245,7 +328,7 @@ static int process_load_binary(const char *file_name, struct process *process)
         goto out;
     }
 
-    void *program = kzalloc(stat.size);
+    program = kzalloc(stat.size);
     if (!program)
     {
         dbgprintf("Failed to allocate memory for program %s\n", file_name);
@@ -268,6 +351,13 @@ static int process_load_binary(const char *file_name, struct process *process)
     dbgprintf("Program size: %d\n", stat.size);
 
 out:
+    if (res < 0)
+    {
+        if (program)
+        {
+            kfree(program);
+        }
+    }
     fclose(fd);
     return res;
 }

@@ -28,5 +28,6 @@ void os_putchar(char c);
 void os_process_get_arguments(struct process_arguments *args);
 int os_system(struct command_argument* args);
 int os_system_run(const char *command);
+void os_exit();
 
 #endif
