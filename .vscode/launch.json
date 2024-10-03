@@ -36,6 +36,10 @@
                     "description": "Add cblank.elf symbols"
                 },
                 {
+                    "text": "add-symbol-file /home/robledo/source/os/user/shell/shell.elf 0x400000",
+                    "description": "Add shell.elf symbols"
+                },
+                {
                     "text": "break isr_handler",
                     "description": "Break on exception handler."
                 }

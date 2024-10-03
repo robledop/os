@@ -69,7 +69,7 @@ void idt_exception_handler()
 void idt_clock()
 {
     outb(0x20, 0x20);
-    task_next();
+    // task_next();
 }
 
 void idt_debug_exception()

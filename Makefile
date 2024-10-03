@@ -42,7 +42,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	sudo cp ./file2.txt /mnt/d
 	sudo mkdir /mnt/d/test
 	sudo cp ./hello.txt /mnt/d/test
-	sudo cp ./user/blank.bin/blank.bin /mnt/d
+	sudo cp ./user/blank/blank.bin /mnt/d
 	sudo cp ./user/blank.elf/blank.elf /mnt/d
 	sudo cp ./user/cblank.elf/cblank.elf /mnt/d
 	sudo cp ./user/shell/shell.elf /mnt/d
@@ -66,7 +66,7 @@ grub: ./bin/kernel-grub.bin
 	grub-file --is-x86-multiboot ./bin/kernel-grub.bin
 	sudo mount -t vfat ./disk.img /mnt/d
 	sudo cp ./bin/kernel-grub.bin /mnt/d/boot/myos.kernel
-	sudo cp ./user/blank.bin/blank.bin /mnt/d
+	sudo cp ./user/blank/blank.bin /mnt/d
 	sudo cp ./user/blank.elf/blank.elf /mnt/d
 	sudo cp ./user/cblank.elf/cblank.elf /mnt/d
 	sudo cp ./user/shell/shell.elf /mnt/d
@@ -79,19 +79,19 @@ grub: ./bin/kernel-grub.bin
 qemu: all
 	qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
-qemu_grub: grub clean
+qemu_grub: grub 
 	qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 apps:
 	cd ./user/stdlib && $(MAKE) all
-	cd ./user/blank.bin && $(MAKE) all
+	cd ./user/blank && $(MAKE) all
 	cd ./user/blank.elf && $(MAKE) all
 	cd ./user/cblank.elf && $(MAKE) all
 	cd ./user/shell && $(MAKE) all
 
 apps_clean:
 	cd ./user/stdlib && $(MAKE) clean
-	cd ./user/blank.bin && $(MAKE) clean
+	cd ./user/blank && $(MAKE) clean
 	cd ./user/blank.elf && $(MAKE) clean
 	cd ./user/cblank.elf && $(MAKE) clean
 	cd ./user/shell && $(MAKE) clean
