@@ -9,12 +9,31 @@
 #define PROCESS_FILE_TYPE_ELF 0
 #define PROCESS_FILE_TYPE_BINARY 1
 typedef unsigned char PROCESS_FILE_TYPE;
+
+struct command_argument
+{
+    char argument[512];
+    struct command_argument *next;
+};
+
+struct process_allocation
+{
+    void *ptr;
+    size_t size;
+};
+
+struct process_arguments
+{
+    int argc;
+    char **argv;
+};
+
 struct process
 {
     uint16_t pid;
     char file_name[MAX_PATH_LENGTH];
     struct task *task;
-    void *allocations[MAX_PROGRAM_ALLOCATIONS];
+    struct process_allocation allocations[MAX_PROGRAM_ALLOCATIONS];
     PROCESS_FILE_TYPE file_type;
     union
     {
@@ -32,6 +51,8 @@ struct process
         int head;
 
     } keyboard;
+
+    struct process_arguments arguments;
 };
 
 int process_load_switch(const char *file_name, struct process **process);
@@ -42,5 +63,7 @@ struct process *process_current();
 struct process *process_get(int pid);
 void *process_malloc(struct process *process, size_t size);
 void process_free(struct process *process, void *ptr);
+void process_get_arguments(struct process *process, int* argc, char ***argv);
+int process_inject_arguments(struct process *process, struct command_argument *root_argument);
 
 #endif

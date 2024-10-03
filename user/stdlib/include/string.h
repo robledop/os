@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-size_t strlen(const char *s);
+int strlen(const char *s);
 size_t strnlen(const char *s, size_t maxlen);
 int strnlen_terminator(const char *s, size_t maxlen, char terminator);
 int strncmp(const char *p, const char *q, unsigned int n);

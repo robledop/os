@@ -41,6 +41,7 @@ int task_free(struct task *task);
 struct task *task_current();
 struct task *task_get_next();
 void restore_general_purpose_registers(struct registers *registers);
+// Enter user mode
 void task_return(struct registers *registers);
 void user_registers();
 int task_switch(struct task *task);
@@ -49,5 +50,6 @@ void task_current_save_state(struct interrupt_frame *interrupt_frame);
 int copy_string_from_task(struct task *taks, void *virtual, void *physical, int max);
 void *task_get_stack_item(struct task *task, int index);
 int task_page_task(struct task *task);
+void *task_virtual_to_physical_address(struct task *task, void *virtual_address);
 
 #endif

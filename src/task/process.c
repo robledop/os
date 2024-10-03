@@ -45,7 +45,7 @@ static int process_find_free_allocation_slot(struct process *process)
 {
     for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
     {
-        if (process->allocations[i] == NULL)
+        if (process->allocations[i].ptr == NULL)
         {
             return i;
         }
@@ -55,32 +55,125 @@ static int process_find_free_allocation_slot(struct process *process)
     return -ENOMEM;
 }
 
-static bool process_is_process_pointer(struct process *process, void *ptr)
+// static bool process_is_process_pointer(struct process *process, void *ptr)
+// {
+//     for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
+//     {
+//         if (process->allocations[i].ptr == ptr)
+//         {
+//             return true;
+//         }
+//     }
+
+//     return false;
+// }
+
+static struct process_allocation *process_get_allocation_by_address(struct process *process, void *address)
 {
-    for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
+    for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
     {
-        if (process->allocations[i] == ptr)
+        if (process->allocations[i].ptr == address)
         {
-            return true;
+            return &process->allocations[i];
         }
     }
 
-    return false;
+    return NULL;
+}
+
+void process_get_arguments(struct process *process, int *argc, char ***argv)
+{
+    *argc = process->arguments.argc;
+    *argv = process->arguments.argv;
+}
+
+int process_count_command_arguments(struct command_argument *root_argument)
+{
+    int i = 0;
+    struct command_argument *current = root_argument;
+    while (current)
+    {
+        i++;
+        current = current->next;
+    }
+
+    return i;
+}
+
+int process_inject_arguments(struct process *process, struct command_argument *root_argument)
+{
+    int res = 0;
+
+    struct command_argument *current = root_argument;
+    int i = 0;
+
+    int argc = process_count_command_arguments(root_argument);
+
+    if (argc == 0)
+    {
+        dbgprintf("No arguments to inject\n");
+        res = -EINVARG;
+        goto out;
+    }
+
+    char **argv = process_malloc(process, sizeof(const char *) * argc);
+    if (!argv)
+    {
+        dbgprintf("Failed to allocate memory for arguments\n");
+        res = -ENOMEM;
+        goto out;
+    }
+
+    while (current)
+    {
+        char *argument_str = process_malloc(process, sizeof(current->argument));
+        if (!argument_str)
+        {
+            dbgprintf("Failed to allocate memory for argument\n");
+            res = -ENOMEM;
+            goto out;
+        }
+
+        strncpy(argument_str, current->argument, sizeof(current->argument));
+        argv[i] = argument_str;
+        current = current->next;
+        i++;
+    }
+
+    process->arguments.argc = argc;
+    process->arguments.argv = argv;
+
+out:
+    return res;
 }
 
 void process_free(struct process *process, void *ptr)
 {
-    if (!process_is_process_pointer(process, ptr))
+    struct process_allocation *allocation = process_get_allocation_by_address(process, ptr);
+    if (!allocation)
     {
-        dbgprintf("Invalid pointer to free for process %d\n", process->pid);
+        dbgprintf("Failed to find allocation for address %x\n", ptr);
+        return;
+    }
+
+    int res = paging_map_to(process->task->page_directory,
+                            allocation->ptr,
+                            allocation->ptr,
+                            paging_align_address(allocation->ptr + allocation->size),
+                            0x00);
+    if (res < 0)
+    {
+        dbgprintf("Failed to unmap memory for process %d\n", process->pid);
         return;
     }
 
     for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
     {
-        if (process->allocations[i] == ptr)
+        if (process->allocations[i].ptr == ptr)
         {
-            process->allocations[i] = NULL;
+            process->allocations[i].ptr = NULL;
+            process->allocations[i].size = 0;
+
             break;
         }
     }
@@ -94,19 +187,40 @@ void *process_malloc(struct process *process, size_t size)
     if (!ptr)
     {
         dbgprintf("Failed to allocate memory for process %d\n", process->pid);
-        return NULL;
+        goto out_error;
     }
 
     int index = process_find_free_allocation_slot(process);
     if (index < 0)
     {
-        kfree(ptr);
-        return NULL;
+        dbgprintf("Failed to find free allocation slot for process %d\n", process->pid);
+        goto out_error;
     }
 
-    process->allocations[index] = ptr;
+    int res = paging_map_to(process->task->page_directory,
+                            ptr,
+                            ptr,
+                            paging_align_address(ptr + size),
+                            PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+                                PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
+                                PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    if (res < 0)
+    {
+        dbgprintf("Failed to map memory for process %d\n", process->pid);
+        goto out_error;
+    }
+
+    process->allocations[index].ptr = ptr;
+    process->allocations[index].size = size;
 
     return ptr;
+
+out_error:
+    if (ptr)
+    {
+        kfree(ptr);
+    }
+    return NULL;
 }
 
 static int process_load_binary(const char *file_name, struct process *process)

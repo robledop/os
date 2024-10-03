@@ -1,4 +1,4 @@
-#include "misc.h"
+#include "command.h"
 #include "idt.h"
 #include "keyboard.h"
 #include "task.h"
@@ -8,6 +8,7 @@
 #include "kernel.h"
 #include "serial.h"
 #include "string.h"
+#include "status.h"
 
 void *isr80h_command0_sum(struct interrupt_frame *frame)
 {
@@ -84,4 +85,55 @@ void *isr80h_command6_process_start(struct interrupt_frame *frame)
 
 out:
     return (void *)res;
+}
+
+void *isr80h_command7_invoke_system(struct interrupt_frame *frame)
+{
+    struct command_argument *arguments = task_virtual_to_physical_address(
+        task_current(),
+        task_get_stack_item(task_current(), 0));
+    if (!arguments || strlen(arguments->argument) == 0)
+    {
+        dbgprintf("Invalid arguments\n");
+        return ERROR(-EINVARG);
+    }
+
+    struct command_argument *root_command_argument = &arguments[0];
+    const char *program_name = root_command_argument->argument;
+
+    char path[MAX_PATH_LENGTH];
+    strncpy(path, "0:/", sizeof(path));
+    strncpy(path + 3, program_name, sizeof(path) - 3);
+
+    struct process *process = NULL;
+    int res = process_load_switch(path, &process);
+    if (res < 0)
+    {
+        dbgprintf("Failed to load process %s\n", program_name);
+        return ERROR(res);
+    }
+
+    res = process_inject_arguments(process, root_command_argument);
+    if (res < 0)
+    {
+        dbgprintf("Failed to inject arguments\n");
+        return ERROR(res);
+    }
+
+    task_switch(process->task);
+    task_return(&process->task->registers);
+
+    return NULL;
+}
+
+void *isr80h_command8_get_program_arguments(struct interrupt_frame *frame)
+{
+    struct process *process = task_current()->process;
+    struct process_arguments *arguments = task_virtual_to_physical_address(
+        task_current(),
+        task_get_stack_item(task_current(), 0));
+
+    process_get_arguments(process, &arguments->argc, &arguments->argv);
+
+    return NULL;
 }

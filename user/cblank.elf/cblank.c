@@ -1,21 +1,30 @@
 #include "os.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "string.h"
+
+void crash_demo();
 
 int main(int argc, char **argv)
 {
-    printf("This is from cblank.elf\n");
-    printf("Test: %i %s %d\n", 1234, "Hello", 5678);
+    for(int i = 0; i < argc; i++)
+    {
+        printf("%s ", argv[i]);
+    }
 
-    void *ptr = malloc(512);
-
-    free(ptr);
-
-    char buffer[512];
-    os_terminal_readline(buffer, sizeof(buffer), true);
-    printf("\nYou typed: %s\n", buffer);
-
-    printf("Hello, World!\n");
+    while (1)
+    {
+    }
 
     return 0;
+}
+
+void crash_demo()
+{
+    char *ptr = malloc(20);
+    strncpy(ptr, "Hello, World!", 20);
+    printf(ptr);
+    free(ptr);
+
+    ptr[0] = 'A'; // CRASH!
 }

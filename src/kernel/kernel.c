@@ -98,6 +98,13 @@ void kernel_main()
         panic("Failed to load process");
     }
 
+    // struct command_argument argument;
+    // argument.next = NULL;
+    // strncpy(argument.argument, "testing", sizeof(argument.argument));
+    // argument.next = NULL;
+
+    // process_inject_arguments(process, &argument);
+
     task_run_first_ever_task();
 
     enable_interrupts();

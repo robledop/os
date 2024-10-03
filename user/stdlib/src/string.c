@@ -17,13 +17,16 @@ inline void reverse(char s[])
 }
 
 // Gets the length of a string
-size_t strlen(const char *s)
+int strlen(const char *ptr)
 {
-    int n;
+    int i = 0;
+    while (*ptr != 0)
+    {
+        i++;
+        ptr += 1;
+    }
 
-    for (n = 0; s[n]; n++)
-        ;
-    return n;
+    return i;
 }
 
 // Gets the length of a string
@@ -54,7 +57,6 @@ int strnlen_terminator(const char *s, size_t maxlen, char terminator)
     }
     return n;
 }
-
 
 // Compare two strings
 int strncmp(const char *p, const char *q, unsigned int n)
@@ -243,18 +245,17 @@ inline int itohex(unsigned int n, char s[])
     return i;
 }
 
-char *sp = NULL;
 char *strtok(char *str, const char *delimiters)
 {
+    static char *sp = NULL;
     int i = 0;
     int len = strlen(delimiters);
-
-    if (!str || !sp)
+    if (!str && !sp)
     {
-        return NULL;
+        return 0;
     }
 
-    if (str && !sp)
+    if (str != NULL && sp == NULL)
     {
         sp = str;
     }
@@ -270,6 +271,7 @@ char *strtok(char *str, const char *delimiters)
                 break;
             }
         }
+
         if (i == len)
         {
             sp = p_start;
@@ -279,7 +281,7 @@ char *strtok(char *str, const char *delimiters)
 
     if (*sp == '\0')
     {
-        sp = NULL;
+        sp = 0;
         return sp;
     }
 
@@ -295,7 +297,6 @@ char *strtok(char *str, const char *delimiters)
         }
 
         sp++;
-
         if (i < len)
         {
             break;

@@ -1,6 +1,6 @@
 #include "isr80h.h"
 #include "idt.h"
-#include "misc.h"
+#include "command.h"
 
 void isr80h_register_commands()
 {
@@ -11,4 +11,6 @@ void isr80h_register_commands()
     isr80h_register_command(SYSTEM_COMMAND4_MALLOC, isr80h_command4_malloc);
     isr80h_register_command(SYSTEM_COMMAND5_FREE, isr80h_command5_free);
     isr80h_register_command(SYSTEM_COMMAND6_PROCESS_START, isr80h_command6_process_start);
+    isr80h_register_command(SYSTEM_COMMAND7_INVOKE_SYSTEM, isr80h_command7_invoke_system);
+    isr80h_register_command(SYSTEM_COMMAND8_GET_PROGRAM_ARGUMENTS, isr80h_command8_get_program_arguments);
 }

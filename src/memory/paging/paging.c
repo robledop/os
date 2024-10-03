@@ -174,6 +174,14 @@ out:
     return res;
 }
 
+void* paging_get_physical_address(struct page_directory *directory, void *virtual_address)
+{
+    void* virt_address_new = (void*)paging_align_to_lower_page(virtual_address);
+    void* difference = (void*)((uint32_t)virtual_address - (uint32_t)virt_address_new);
+
+    return (void*)((paging_get(directory, virt_address_new) & 0xFFFFF000) + (uint32_t)difference);
+}
+
 // Get the physical address of a page
 uint32_t paging_get(struct page_directory *directory, void *virtual_address)
 {

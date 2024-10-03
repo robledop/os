@@ -11,7 +11,7 @@ int main(int argc, char **argv)
         printf("> ");
         char buffer[1024];
         os_terminal_readline(buffer, sizeof(buffer), true);
-        os_process_start(buffer);
+        os_system_run(buffer);
         putchar('\n');
     }
     return 0;

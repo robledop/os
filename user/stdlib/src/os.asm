@@ -72,4 +72,27 @@ os_process_start:
     add esp, 4
     pop ebp
     ret
+
+; int os_system(struct command_argument* args);
+global os_system:function
+os_system:
+    push ebp
+    mov ebp, esp
+    push dword [ebp + 8] ; args
+    mov eax, 7           ; system command
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret
     
+; void os_process_get_arguments(struct process_arguments* args);
+global os_process_get_arguments:function
+os_process_get_arguments:
+    push ebp
+    mov ebp, esp
+    push dword [ebp + 8] ; args
+    mov eax, 8           ; process_get_arguments command
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret
