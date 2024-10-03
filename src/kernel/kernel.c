@@ -1,24 +1,24 @@
-#include "kernel.h"
-#include "ata.h"
-#include "config.h"
-#include "file.h"
-#include "gdt.h"
-#include "idt.h"
-#include "io.h"
-#include "isr80h.h"
-#include "keyboard.h"
-#include "kheap.h"
-#include "memory.h"
-#include "paging.h"
-#include "pparser.h"
-#include "process.h"
-#include "serial.h"
-#include "status.h"
-#include "stream.h"
-#include "string.h"
-#include "task.h"
-#include "terminal.h"
-#include "tss.h"
+#include <kernel.h>
+#include <ata.h>
+#include <config.h>
+#include <file.h>
+#include <gdt.h>
+#include <idt.h>
+#include <io.h>
+#include <isr80h.h>
+#include <keyboard.h>
+#include <kheap.h>
+#include <memory.h>
+#include <paging.h>
+#include <pparser.h>
+#include <process.h>
+#include <serial.h>
+#include <status.h>
+#include <stream.h>
+#include <string.h>
+#include <task.h>
+#include <terminal.h>
+#include <tss.h>
 
 // Divide by zero error
 extern void cause_problem();
@@ -30,8 +30,8 @@ static struct page_directory *kernel_page_directory = 0;
 void panic(const char *msg)
 {
     warningf("KERNEL PANIC: %s\n", msg);
-    kprint(KRED "KERNEL PANIC: " KWHT);
-    kprint("%s\n", msg);
+    kprintf(KRED "KERNEL PANIC: " KWHT);
+    kprintf("%s\n", msg);
     while (1)
     {
         asm volatile("hlt");
@@ -60,7 +60,7 @@ void kernel_main()
 {
     init_serial();
     terminal_clear();
-    kprint(KCYN "Kernel is starting\n");
+    kprintf(KCYN "Kernel is starting\n");
     memset(gdt_real, 0, sizeof(gdt_real));
     gdt_structured_to_gdt(gdt_real, gdt_structured, TOTAL_GDT_SEGMENTS);
     dbgprintf("Loading GDT\n");
@@ -86,15 +86,13 @@ void kernel_main()
     paging_switch_directory(kernel_page_directory);
     enable_paging();
 
-    kprint(KCYN "Kernel is running\n");
+    kprintf(KCYN "Kernel is running\n");
     dbgprintf("Kernel is running\n");
     isr80h_register_commands();
     keyboard_init();
 
-    // idt_register_interrupt_callback(0x20, pic_timer_callback);
-
     struct process *process = 0;
-    int             res     = process_load_switch("0:/blank.bin", &process);
+    int res = process_load_switch("0:/blank.elf", &process);
     if (res != ALL_OK)
     {
         panic("Failed to load process");
@@ -103,7 +101,6 @@ void kernel_main()
     task_run_first_ever_task();
 
     enable_interrupts();
-
 
     while (1)
     {

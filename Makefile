@@ -42,7 +42,8 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	sudo cp ./file2.txt /mnt/d
 	sudo mkdir /mnt/d/test
 	sudo cp ./hello.txt /mnt/d/test
-	sudo cp ./user/blank/blank.bin /mnt/d
+	sudo cp ./user/blank.bin/blank.bin /mnt/d
+	sudo cp ./user/blank.elf/blank.elf /mnt/d
 	sudo umount /mnt/d
 	rm -rf ./hello.txt ./file2.txt
 
@@ -63,7 +64,8 @@ grub: ./bin/kernel-grub.bin
 	grub-file --is-x86-multiboot ./bin/kernel-grub.bin
 	sudo mount -t vfat ./disk.img /mnt/d
 	sudo cp ./bin/kernel-grub.bin /mnt/d/boot/myos.kernel
-	sudo cp ./user/blank/blank.bin /mnt/d
+	sudo cp ./user/blank.bin/blank.bin /mnt/d
+	sudo cp ./user/blank.elf/blank.elf /mnt/d
 	sudo umount -q /mnt/d
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
@@ -77,10 +79,12 @@ qemu_grub: grub clean
 	qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 apps:
-	cd ./user/blank && $(MAKE) all
+	cd ./user/blank.bin && $(MAKE) all
+	cd ./user/blank.elf && $(MAKE) all
 
 apps_clean:
-	cd ./user/blank && $(MAKE) clean
+	cd ./user/blank.bin && $(MAKE) clean
+	cd ./user/blank.elf && $(MAKE) clean
 
 clean: apps_clean
 	rm -rf ./bin ./build ./mnt

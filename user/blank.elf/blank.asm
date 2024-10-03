@@ -36,4 +36,4 @@ getkey:
     ret
 
 section .data
-message db "This is from blank.bin", 0
+message db "This is from blank.elf", 0

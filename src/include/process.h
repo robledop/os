@@ -5,13 +5,22 @@
 #include "config.h"
 #include "task.h"
 
+#define PROCESS_FILE_TYPE_ELF 0
+#define PROCESS_FILE_TYPE_BINARY 1
+typedef unsigned char PROCESS_FILE_TYPE;
 struct process
 {
     uint16_t pid;
     char file_name[MAX_PATH_LENGTH];
     struct task *task;
     void *allocations[MAX_PROGRAM_ALLOCATIONS];
-    void *pointer;
+    PROCESS_FILE_TYPE file_type;
+    union
+    {
+        void *pointer;
+        struct elf_file *elf_file;
+    };
+
     void *stack;
     uint32_t size;
 

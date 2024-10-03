@@ -18,5 +18,7 @@
 #define EUNIMP 7
 // Instance already taken
 #define EINSTKN 8
+// Invalid format
+#define EINFORMAT 9
 
 #endif

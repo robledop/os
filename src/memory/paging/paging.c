@@ -82,6 +82,7 @@ out:
     return res;
 }
 
+// Align the address to the next page
 void *paging_align_address(void *address)
 {
     if (paging_is_aligned(address))
@@ -90,6 +91,12 @@ void *paging_align_address(void *address)
     }
 
     return (void *)((uint32_t)address + PAGING_PAGE_SIZE - ((uint32_t)address % PAGING_PAGE_SIZE));
+}
+
+// Align the address to the lower page
+void *paging_align_to_lower_page(void *address)
+{
+    return (void *)((uint32_t)address - ((uint32_t)address % PAGING_PAGE_SIZE));
 }
 
 int paging_map(struct page_directory *directory, void *virtual_address, void *physical_address, int flags)

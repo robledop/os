@@ -3,10 +3,10 @@
 
 #include <stdint.h>
 
-#define KDEBUG_SERIAL
+// #define KDEBUG_SERIAL
 
 #ifdef KDEBUG_SERIAL
- #define dbgprintf(a, ...) serial_printf("%s(): " a, __func__, ##__VA_ARGS__)
+#define dbgprintf(a, ...) serial_printf("%s(): " a, __func__, ##__VA_ARGS__)
 #else
 #define dbgprintf(a, ...)
 #endif
@@ -18,6 +18,6 @@
 #endif
 
 void init_serial();
-int32_t serial_printf(char* fmt, ...);
+int32_t serial_printf(char *fmt, ...);
 void serial_put(char a);
 #endif

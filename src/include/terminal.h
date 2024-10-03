@@ -15,7 +15,7 @@
 
 void terminal_clear();
 void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor);
-void kprint(char *fmt, ...);
+void kprintf(char *fmt, ...);
 
 void ksprint(const char *str, int max);
 
