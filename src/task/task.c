@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "idt.h"
 #include "string.h"
+#include "elfloader.h"
 
 struct task *current_task = 0;
 struct task *task_tail = 0;
@@ -224,7 +225,19 @@ int task_init(struct task *task, struct process *process)
         return -ENOMEM;
     }
 
-    task->registers.ip = PROGRAM_VIRTUAL_ADDRESS;
+    switch (process->file_type)
+    {
+    case PROCESS_FILE_TYPE_BINARY:
+        task->registers.ip = PROGRAM_VIRTUAL_ADDRESS;
+        break;
+    case PROCESS_FILE_TYPE_ELF:
+        task->registers.ip = elf_header(process->elf_file)->e_entry;
+        break;
+    default:
+        panic("Unknown process file type");
+        break;
+    }
+
     task->registers.ss = USER_DATA_SEGMENT;
     task->registers.cs = USER_CODE_SEGMENT;
     task->registers.esp = PROGRAM_VIRTUAL_STACK_ADDRESS_START;
