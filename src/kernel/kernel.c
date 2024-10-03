@@ -92,7 +92,7 @@ void kernel_main()
     keyboard_init();
 
     struct process *process = 0;
-    int res = process_load_switch("0:/cblank.elf", &process);
+    int res = process_load_switch("0:/shell.elf", &process);
     if (res != ALL_OK)
     {
         panic("Failed to load process");

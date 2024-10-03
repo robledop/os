@@ -8,6 +8,7 @@
 #include "paging.h"
 #include "kernel.h"
 #include "config.h"
+#include "serial.h"
 
 const char elf_signature[] = {0x7f, 'E', 'L', 'F'};
 
@@ -146,6 +147,7 @@ int elf_process_pheaders(struct elf_file *elf_file)
         res = elf_process_pheader(elf_file, phdr);
         if (res < 0)
         {
+            dbgprintf("Failed to process program header %d\n", i);
             break;
         }
     }
@@ -159,12 +161,14 @@ int elf_process_loaded(struct elf_file *elf_file)
     res = elf_validate_loaded(header);
     if (res < 0)
     {
+        dbgprintf("Failed to validate loaded ELF file\n");
         goto out;
     }
 
     res = elf_process_pheaders(elf_file);
     if (res < 0)
     {
+        dbgprintf("Failed to process program headers for ELF file\n");
         goto out;
     }
 
@@ -179,6 +183,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     int res = fopen(filename, "r");
     if (res <= 0)
     {
+        dbgprintf("Failed to open file %s\n", filename);
         res = -EIO;
         goto out;
     }
@@ -188,6 +193,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     res = fstat(fd, &stat);
     if (res < 0)
     {
+        dbgprintf("Failed to get file stat for %s\n", filename);
         goto out;
     }
 
@@ -195,12 +201,14 @@ int elf_load(const char *filename, struct elf_file **file_out)
     res = fread(elf_file->elf_memory, stat.size, 1, fd);
     if (res < 0)
     {
+        dbgprintf("Failed to read file %s\n", filename);
         goto out;
     }
 
     res = elf_process_loaded(elf_file);
     if (res < 0)
     {
+        dbgprintf("Failed to process loaded ELF file %s\n", filename);
         goto out;
     }
 
@@ -213,7 +221,9 @@ out:
 void elf_close(struct elf_file *file)
 {
     if (!file)
+    {
         return;
+    }
 
     kfree(file->elf_memory);
     kfree(file);

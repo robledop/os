@@ -41,6 +41,74 @@ int process_switch(struct process *process)
     return ALL_OK;
 }
 
+static int process_find_free_allocation_slot(struct process *process)
+{
+    for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        if (process->allocations[i] == NULL)
+        {
+            return i;
+        }
+    }
+
+    dbgprintf("Failed to find free allocation slot for process %d\n", process->pid);
+    return -ENOMEM;
+}
+
+static bool process_is_process_pointer(struct process *process, void *ptr)
+{
+    for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        if (process->allocations[i] == ptr)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void process_free(struct process *process, void *ptr)
+{
+    if (!process_is_process_pointer(process, ptr))
+    {
+        dbgprintf("Invalid pointer to free for process %d\n", process->pid);
+        return;
+    }
+
+    for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        if (process->allocations[i] == ptr)
+        {
+            process->allocations[i] = NULL;
+            break;
+        }
+    }
+
+    kfree(ptr);
+}
+
+void *process_malloc(struct process *process, size_t size)
+{
+    void *ptr = kzalloc(size);
+    if (!ptr)
+    {
+        dbgprintf("Failed to allocate memory for process %d\n", process->pid);
+        return NULL;
+    }
+
+    int index = process_find_free_allocation_slot(process);
+    if (index < 0)
+    {
+        kfree(ptr);
+        return NULL;
+    }
+
+    process->allocations[index] = ptr;
+
+    return ptr;
+}
+
 static int process_load_binary(const char *file_name, struct process *process)
 {
     dbgprintf("Loading binary %s\n", file_name);
@@ -155,7 +223,7 @@ static int process_map_elf(struct process *process)
         res = paging_map_to(process->task->page_directory,
                             paging_align_to_lower_page((void *)phdr->p_vaddr),
                             paging_align_to_lower_page(phdr_phys_address),
-                            paging_align_address(phdr_phys_address + phdr->p_filesz),
+                            paging_align_address(phdr_phys_address + phdr->p_memsz),
                             flags);
         if (ISERR(res))
         {
@@ -239,7 +307,10 @@ int process_load(const char *file_name, struct process **process)
 
     res = process_load_for_slot(file_name, process, process_slot);
 
-    kprintf(KMAG "Process %s (pid: %d) is now running\n", (*process)->file_name, (*process)->pid);
+    if (res == ALL_OK)
+    {
+        kprintf(KMAG "\nProcess " KCYN "%s" KMAG " (pid: %d) is now running\n" KWHT, (*process)->file_name, (*process)->pid);
+    }
 
 out:
     return res;

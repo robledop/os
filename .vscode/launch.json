@@ -14,7 +14,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d /home/robledo/source/os/src -d /home/robledo/source/os/src/kernel -d /home/robledo/source/os/src/memory/paging -d ~/source/os/src/disk -d ~/source/os/src/fs/fat -d ~/source/os/src/idt -d ~/source/os/src/include",
+            "miDebuggerArgs": "-d /home/robledo/source/os/src -d /home/robledo/source/os/src/kernel -d /home/robledo/source/os/src/memory/paging -d ~/source/os/src/disk -d ~/source/os/src/fs/fat -d ~/source/os/src/idt -d ~/source/os/src/include -d ~/source/os/user/stdlib/src",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",
@@ -30,6 +30,10 @@
                 {
                     "text": "add-symbol-file /home/robledo/source/os/build/kernelfull.o 0x100000",
                     "description": "Add kernelfull.o symbols"
+                },
+                {
+                    "text": "add-symbol-file /home/robledo/source/os/user/cblank.elf/cblank.elf 0x400000",
+                    "description": "Add cblank.elf symbols"
                 },
                 {
                     "text": "break isr_handler",

@@ -45,6 +45,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	sudo cp ./user/blank.bin/blank.bin /mnt/d
 	sudo cp ./user/blank.elf/blank.elf /mnt/d
 	sudo cp ./user/cblank.elf/cblank.elf /mnt/d
+	sudo cp ./user/shell/shell.elf /mnt/d
 	sudo umount /mnt/d
 	rm -rf ./hello.txt ./file2.txt
 
@@ -68,6 +69,7 @@ grub: ./bin/kernel-grub.bin
 	sudo cp ./user/blank.bin/blank.bin /mnt/d
 	sudo cp ./user/blank.elf/blank.elf /mnt/d
 	sudo cp ./user/cblank.elf/cblank.elf /mnt/d
+	sudo cp ./user/shell/shell.elf /mnt/d
 	sudo umount -q /mnt/d
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
@@ -85,12 +87,14 @@ apps:
 	cd ./user/blank.bin && $(MAKE) all
 	cd ./user/blank.elf && $(MAKE) all
 	cd ./user/cblank.elf && $(MAKE) all
+	cd ./user/shell && $(MAKE) all
 
 apps_clean:
 	cd ./user/stdlib && $(MAKE) clean
 	cd ./user/blank.bin && $(MAKE) clean
 	cd ./user/blank.elf && $(MAKE) clean
 	cd ./user/cblank.elf && $(MAKE) clean
+	cd ./user/shell && $(MAKE) clean
 
 clean: apps_clean
 	rm -rf ./bin ./build ./mnt

@@ -2,6 +2,7 @@
 #define PROCESS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "config.h"
 #include "task.h"
 
@@ -39,5 +40,7 @@ int process_load(const char *file_name, struct process **process);
 int process_load_for_slot(const char *file_name, struct process **process, uint16_t slot);
 struct process *process_current();
 struct process *process_get(int pid);
+void *process_malloc(struct process *process, size_t size);
+void process_free(struct process *process, void *ptr);
 
 #endif
