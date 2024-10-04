@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "kernel.h"
 #include "task.h"
-
+#include <stdarg.h>
 
 #define PORT 0x3f8 // COM1
 #define MAX_FMT_STR_SERIAL 50
@@ -12,13 +12,6 @@ static int serial_init_done = 0;
 
 // extern int __cli_cnt;
 int __cli_cnt = 0;
-
-#define va_start(v, l) __builtin_va_start(v, l)
-#define va_arg(v, l) __builtin_va_arg(v, l)
-#define va_end(v) __builtin_va_end(v)
-#define va_copy(d, s) __builtin_va_copy(d, s)
-
-typedef __builtin_va_list va_list;
 
 #define ENTER_CRITICAL() \
     __cli_cnt++;         \
@@ -34,7 +27,9 @@ typedef __builtin_va_list va_list;
 void serial_put(char a)
 {
     if (!serial_init_done)
+    {
         return;
+    }
     while ((inb(PORT + 5) & 0x20) == 0)
     {
     };
@@ -45,9 +40,13 @@ void serial_put(char a)
 void serial_write(char *str)
 {
     if (!serial_init_done)
+    {
         return;
+    }
     for (int i = 0; i < strlen(str); i++)
+    {
         serial_put(str[i]);
+    }
 }
 
 int32_t serial_printf(char *fmt, ...)
@@ -99,6 +98,8 @@ int32_t serial_printf(char *fmt, ...)
         }
         fmt++;
     }
+
+    va_end(args);
 
 #endif
     return written;

@@ -36,7 +36,6 @@ void encode_gdt_entry(uint8_t *target, struct gdt_structured source)
 
 void gdt_structured_to_gdt(struct gdt *gdt, struct gdt_structured *gdt_structured, int size)
 {
-    dbgprintf("size=%d\n", size);
     for (int i = 0; i < size; i++)
     {
         encode_gdt_entry((uint8_t *)&gdt[i], gdt_structured[i]);

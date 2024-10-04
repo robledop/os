@@ -30,7 +30,6 @@ static struct page_directory *kernel_page_directory = 0;
 
 void panic(const char *msg)
 {
-    warningf("KERNEL PANIC: %s\n", msg);
     kprintf(KRED "KERNEL PANIC: " KWHT);
     kprintf("%s\n", msg);
     while (1)
@@ -41,7 +40,7 @@ void panic(const char *msg)
 
 void kernel_page()
 {
-    dbgprintf("Switching to kernel page\n");
+    // dbgprintf("Switching to kernel page\n");
     kernel_registers();
     paging_switch_directory(kernel_page_directory);
 }
@@ -65,7 +64,7 @@ void kernel_main()
     kprintf(KCYN "Kernel is starting\n");
     memset(gdt_real, 0, sizeof(gdt_real));
     gdt_structured_to_gdt(gdt_real, gdt_structured, TOTAL_GDT_SEGMENTS);
-    dbgprintf("Loading GDT\n");
+    // dbgprintf("Loading GDT\n");
 
     gdt_load(gdt_real, sizeof(gdt_real));
 
@@ -73,13 +72,13 @@ void kernel_main()
     fs_init();
     disk_search_and_init();
 
-    dbgprintf("Initializing the TSS \n");
+    // dbgprintf("Initializing the TSS \n");
     memset(&tss, 0, sizeof(tss));
     tss.esp0 = 0x60000; // Kernel stack
     tss.ss0 = DATA_SELECTOR;
-    dbgprintf("Kernel stack address: %x\n", tss.esp0);
+    // dbgprintf("Kernel stack address: %x\n", tss.esp0);
 
-    dbgprintf("Loading the TSS\n");
+    // dbgprintf("Loading the TSS\n");
     tss_load(0x28);
 
     kernel_page_directory = paging_create_directory(
@@ -88,7 +87,7 @@ void kernel_main()
     enable_paging();
 
     kprintf(KCYN "Kernel is running\n");
-    dbgprintf("Kernel is running\n");
+    // dbgprintf("Kernel is running\n");
     isr80h_register_commands();
     keyboard_init();
 
@@ -98,7 +97,6 @@ void kernel_main()
     {
         panic("Failed to load shell");
     }
-
 
     task_run_first_task();
 
@@ -142,7 +140,7 @@ void fs_demo()
 
         dbgprintf("File size: %d bytes\n", stat.size);
 
-        dbgprintf("File flags: %x\n", stat.flags);
+        // dbgprintf("File flags: %x\n", stat.flags);
 
         if (fclose(fd) == 0)
         {

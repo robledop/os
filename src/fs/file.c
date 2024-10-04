@@ -32,10 +32,7 @@ void fs_insert_file_system(struct file_system *filesystem)
     fs = fs_get_free_file_system();
     if (!fs)
     {
-        dbgprintf("Problem inserting filesystem");
-        while (1)
-        {
-        }
+        panic("Problem inserting filesystem");
     }
 
     *fs = filesystem;
@@ -54,7 +51,6 @@ void fs_load()
 
 void fs_init()
 {
-    dbgprintf("Initializing file system\n");
     memset(file_descriptors, 0, sizeof(file_descriptors));
     fs_load();
 }
@@ -143,8 +139,6 @@ FILE_MODE file_get_mode_from_string(const char *mode)
 //  - a: append
 int fopen(const char *path, const char *mode)
 {
-    dbgprintf("fopen: %s, mode: %s\n", path, mode);
-
     int res = 0;
 
     struct path_root *root_path = pathparser_parse(path, NULL);
@@ -217,7 +211,6 @@ out:
 
 int fstat(int fd, struct file_stat *stat)
 {
-    dbgprintf("fstat: %d\n", fd);
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {

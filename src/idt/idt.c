@@ -60,7 +60,6 @@ void idt_set(int interrupt, void *handler)
 
 void idt_exception_handler()
 {
-    dbgprintf("Exception occurred\n");
     process_terminate(task_current()->process);
     kprintf("The process with id %d has been terminated.\n", task_current()->process->pid);
     task_next();
@@ -218,7 +217,6 @@ void idt_init()
 
     idt_set(0x80, isr80h_wrapper);
 
-
     idt_register_interrupt_callback(0, idt_zero);
     idt_register_interrupt_callback(1, idt_debug_exception);
     idt_register_interrupt_callback(2, idt_nmi);
@@ -268,17 +266,13 @@ void isr80h_register_command(int command, ISR80H_COMMAND handler)
 {
     if (command < 0 || command >= MAX_ISR80H_COMMANDS)
     {
-        dbgprintf("Command out of bounds: %d\n", command);
         panic("The command is out of bounds");
     }
 
     if (isr80h_commands[command])
     {
-        dbgprintf("Command already registered: %d\n", command);
         panic("The command is already registered");
     }
-
-    dbgprintf("Registering command: %d\n", command);
 
     isr80h_commands[command] = handler;
 }

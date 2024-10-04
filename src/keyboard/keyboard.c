@@ -14,7 +14,7 @@ int keyboard_insert(struct keyboard *kbd)
 {
     if (kbd->init == NULL)
     {
-        dbgprintf("keyboard->init is NULL\n");
+        // dbgprintf("keyboard->init is NULL\n");
         return -EINVARG;
     }
 
@@ -51,23 +51,23 @@ void keyboard_push(char c)
     struct process *process = process_current();
     if (!process)
     {
-        dbgprintf("No current process\n");
+        // dbgprintf("No current process\n");
         return;
     }
 
     int real_index = keyboard_get_tail_index(process);
     process->keyboard.buffer[real_index] = c;
     // kprint("%c", c);
-    dbgprintf("Pushed '%c' to keyboard buffer of process %d\n", c, process->pid);
+    // dbgprintf("Pushed '%c' to keyboard buffer of process %d\n", c, process->pid);
     process->keyboard.tail = (process->keyboard.tail + 1) % KEYBOARD_BUFFER_SIZE;
-    dbgprintf("Tail is now %d\n", process->keyboard.tail);
+    // dbgprintf("Tail is now %d\n", process->keyboard.tail);
 }
 
 char keyboard_pop()
 {
     if (!task_current())
     {
-        dbgprintf("No current task\n");
+        // dbgprintf("No current task\n");
         return 0;
     }
 
@@ -78,7 +78,7 @@ char keyboard_pop()
 
     if (c == 0x00)
     {
-        dbgprintf("No character to pop\n");
+        // dbgprintf("No character to pop\n");
         return 0;
     }
 

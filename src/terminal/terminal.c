@@ -2,15 +2,8 @@
 #include "config.h"
 #include "io.h"
 #include "memory.h"
-#include "serial.h"
 #include "string.h"
-
-#define va_start(v, l) __builtin_va_start(v, l)
-#define va_arg(v, l) __builtin_va_arg(v, l)
-#define va_end(v) __builtin_va_end(v)
-#define va_copy(d, s) __builtin_va_copy(d, s)
-
-typedef __builtin_va_list va_list;
+#include <stdarg.h>
 
 static uint8_t forecolor = 0x0F; // Default white
 static uint8_t backcolor = 0x00; // Default black
@@ -271,12 +264,12 @@ void kprintf(char *fmt, ...)
         }
         fmt++;
     }
+
+    va_end(args);
 }
 
 void terminal_clear()
 {
-    dbgprintf("Clearing terminal\n");
-
     for (int y = 0; y < VGA_HEIGHT; y++)
     {
         for (int x = 0; x < VGA_WIDTH; x++)

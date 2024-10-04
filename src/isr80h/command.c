@@ -118,7 +118,6 @@ void *isr80h_command7_invoke_system(struct interrupt_frame *frame)
     res = process_inject_arguments(process, root_command_argument);
     if (res < 0)
     {
-        dbgprintf("Failed to inject arguments\n");
         return ERROR(res);
     }
 

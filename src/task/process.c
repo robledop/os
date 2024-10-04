@@ -23,7 +23,7 @@ struct process *process_get(int pid)
 {
     if (pid < 0 || pid >= MAX_PROCESSES)
     {
-        dbgprintf("Invalid process id: %d\n", pid);
+        // dbgprintf("Invalid process id: %d\n", pid);
         return NULL;
     }
 
@@ -51,7 +51,7 @@ static int process_find_free_allocation_slot(struct process *process)
         }
     }
 
-    dbgprintf("Failed to find free allocation slot for process %d\n", process->pid);
+    // dbgprintf("Failed to find free allocation slot for process %d\n", process->pid);
     return -ENOMEM;
 }
 
@@ -106,7 +106,7 @@ int process_free_program_data(struct process *process)
         break;
 
     default:
-        dbgprintf("Unknown process file type\n");
+        // dbgprintf("Unknown process file type\n");
         res = -EINVARG;
     }
     return res;
@@ -145,14 +145,14 @@ int process_terminate(struct process *process)
     res = process_terminate_allocations(process);
     if (res < 0)
     {
-        dbgprintf("Failed to terminate allocations for process %d\n", process->pid);
+        // dbgprintf("Failed to terminate allocations for process %d\n", process->pid);
         return res;
     }
 
     res = process_free_program_data(process);
     if (res < 0)
     {
-        dbgprintf("Failed to free program data for process %d\n", process->pid);
+        // dbgprintf("Failed to free program data for process %d\n", process->pid);
         return res;
     }
 
@@ -193,7 +193,7 @@ int process_inject_arguments(struct process *process, struct command_argument *r
 
     if (argc == 0)
     {
-        dbgprintf("No arguments to inject\n");
+        // dbgprintf("No arguments to inject\n");
         res = -EINVARG;
         goto out;
     }
@@ -201,7 +201,7 @@ int process_inject_arguments(struct process *process, struct command_argument *r
     char **argv = process_malloc(process, sizeof(const char *) * argc);
     if (!argv)
     {
-        dbgprintf("Failed to allocate memory for arguments\n");
+        // dbgprintf("Failed to allocate memory for arguments\n");
         res = -ENOMEM;
         goto out;
     }
@@ -211,7 +211,7 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         char *argument_str = process_malloc(process, sizeof(current->argument));
         if (!argument_str)
         {
-            dbgprintf("Failed to allocate memory for argument\n");
+            // dbgprintf("Failed to allocate memory for argument\n");
             res = -ENOMEM;
             goto out;
         }
@@ -234,7 +234,7 @@ void process_free(struct process *process, void *ptr)
     struct process_allocation *allocation = process_get_allocation_by_address(process, ptr);
     if (!allocation)
     {
-        dbgprintf("Failed to find allocation for address %x\n", ptr);
+        // dbgprintf("Failed to find allocation for address %x\n", ptr);
         return;
     }
 
@@ -245,7 +245,7 @@ void process_free(struct process *process, void *ptr)
                             0x00);
     if (res < 0)
     {
-        dbgprintf("Failed to unmap memory for process %d\n", process->pid);
+        // dbgprintf("Failed to unmap memory for process %d\n", process->pid);
         return;
     }
 
@@ -268,14 +268,14 @@ void *process_malloc(struct process *process, size_t size)
     void *ptr = kzalloc(size);
     if (!ptr)
     {
-        dbgprintf("Failed to allocate memory for process %d\n", process->pid);
+        // dbgprintf("Failed to allocate memory for process %d\n", process->pid);
         goto out_error;
     }
 
     int index = process_find_free_allocation_slot(process);
     if (index < 0)
     {
-        dbgprintf("Failed to find free allocation slot for process %d\n", process->pid);
+        // dbgprintf("Failed to find free allocation slot for process %d\n", process->pid);
         goto out_error;
     }
 
@@ -288,7 +288,7 @@ void *process_malloc(struct process *process, size_t size)
                                 PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     if (res < 0)
     {
-        dbgprintf("Failed to map memory for process %d\n", process->pid);
+        // dbgprintf("Failed to map memory for process %d\n", process->pid);
         goto out_error;
     }
 
@@ -307,14 +307,14 @@ out_error:
 
 static int process_load_binary(const char *file_name, struct process *process)
 {
-    dbgprintf("Loading binary %s\n", file_name);
+    // dbgprintf("Loading binary %s\n", file_name);
 
     int res = 0;
     void *program = NULL;
     int fd = fopen(file_name, "r");
     if (!fd)
     {
-        dbgprintf("Failed to open file %s\n", file_name);
+        // dbgprintf("Failed to open file %s\n", file_name);
         res = -EIO;
         goto out;
     }
@@ -323,7 +323,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     res = fstat(fd, &stat);
     if (res != ALL_OK)
     {
-        dbgprintf("Failed to get file stat for %s\n", file_name);
+        // dbgprintf("Failed to get file stat for %s\n", file_name);
         res = -EIO;
         goto out;
     }
@@ -331,14 +331,14 @@ static int process_load_binary(const char *file_name, struct process *process)
     program = kzalloc(stat.size);
     if (!program)
     {
-        dbgprintf("Failed to allocate memory for program %s\n", file_name);
+        // dbgprintf("Failed to allocate memory for program %s\n", file_name);
         res = -ENOMEM;
         goto out;
     }
 
     if (fread(program, stat.size, 1, fd) != 1)
     {
-        dbgprintf("Failed to read program %s\n", file_name);
+        // dbgprintf("Failed to read program %s\n", file_name);
         res = -EIO;
         goto out;
     }
@@ -347,8 +347,8 @@ static int process_load_binary(const char *file_name, struct process *process)
     process->pointer = program;
     process->size = stat.size;
 
-    dbgprintf("Loaded binary %s to %x\n", file_name, program);
-    dbgprintf("Program size: %d\n", stat.size);
+    // dbgprintf("Loaded binary %s to %x\n", file_name, program);
+    // dbgprintf("Program size: %d\n", stat.size);
 
 out:
     if (res < 0)
@@ -370,7 +370,7 @@ static int process_load_elf(const char *file_name, struct process *process)
     res = elf_load(file_name, &elf_file);
     if (ISERR(res))
     {
-        dbgprintf("Failed to load ELF file %s\n", file_name);
+        // dbgprintf("Failed to load ELF file %s\n", file_name);
         goto out;
     }
 
@@ -388,7 +388,7 @@ static int process_load_data(const char *file_name, struct process *process)
     res = process_load_elf(file_name, process);
     if (res == -EINFORMAT)
     {
-        dbgprintf("Failed to load ELF file %s\n", file_name);
+        // dbgprintf("Failed to load ELF file %s\n", file_name);
         res = process_load_binary(file_name, process);
     }
 
@@ -431,7 +431,7 @@ static int process_map_elf(struct process *process)
                             flags);
         if (ISERR(res))
         {
-            dbgprintf("Failed to map elf file %s\n", process->file_name);
+            // dbgprintf("Failed to map elf file %s\n", process->file_name);
             break;
         }
     }
@@ -457,7 +457,7 @@ int process_map_memory(struct process *process)
 
     if (res < 0)
     {
-        dbgprintf("Failed to map binary for process %s\n", process->file_name);
+        // dbgprintf("Failed to map binary for process %s\n", process->file_name);
         goto out;
     }
 
@@ -497,17 +497,17 @@ int process_load_switch(const char *file_name, struct process **process)
 
 int process_load(const char *file_name, struct process **process)
 {
-    dbgprintf("Loading process %s\n", file_name);
+    // dbgprintf("Loading process %s\n", file_name);
     int res = 0;
     int process_slot = process_get_free_slot();
     if (process_slot < 0)
     {
-        dbgprintf("Failed to get free slot for process %s\n", file_name);
+        // dbgprintf("Failed to get free slot for process %s\n", file_name);
         res = -EINSTKN;
         goto out;
     }
 
-    dbgprintf("Process %s will be loaded to slot %d\n", file_name, process_slot);
+    // dbgprintf("Process %s will be loaded to slot %d\n", file_name, process_slot);
 
     res = process_load_for_slot(file_name, process, process_slot);
 
@@ -527,18 +527,18 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     struct process *proc;
     void *program_stack_pointer = 0;
 
-    dbgprintf("Loading process %s to slot %d\n", file_name, slot);
+    // dbgprintf("Loading process %s to slot %d\n", file_name, slot);
 
     if (process_get(slot) != 0)
     {
-        dbgprintf("Slot %d is already taken\n", slot);
+        // dbgprintf("Slot %d is already taken\n", slot);
         res = -EINSTKN;
         goto out;
     }
     proc = kzalloc(sizeof(struct process));
     if (!proc)
     {
-        dbgprintf("Failed to allocate memory for process %d\n", slot);
+        // dbgprintf("Failed to allocate memory for process %d\n", slot);
         res = -ENOMEM;
         goto out;
     }
@@ -547,14 +547,14 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     res = process_load_data(file_name, proc);
     if (res < 0)
     {
-        dbgprintf("Failed to load process %s\n", file_name);
+        // dbgprintf("Failed to load process %s\n", file_name);
         goto out;
     }
 
     program_stack_pointer = kzalloc(USER_PROGRAM_STACK_SIZE);
     if (!program_stack_pointer)
     {
-        dbgprintf("Failed to allocate memory for program stack %s\n", file_name);
+        // dbgprintf("Failed to allocate memory for program stack %s\n", file_name);
         res = -ENOMEM;
         goto out;
     }
@@ -563,12 +563,12 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     proc->stack = program_stack_pointer;
     proc->pid = slot;
 
-    dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, slot);
+    // dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, slot);
 
     task = task_create(proc);
     if (ERROR_I(task) == 0)
     {
-        dbgprintf("Failed to create task for process %s\n", file_name);
+        // dbgprintf("Failed to create task for process %s\n", file_name);
         res = -ENOMEM;
         goto out;
     }
@@ -578,7 +578,7 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     res = process_map_memory(proc);
     if (res < 0)
     {
-        dbgprintf("Failed to map memory for process %s\n", file_name);
+        // dbgprintf("Failed to map memory for process %s\n", file_name);
         goto out;
     }
 

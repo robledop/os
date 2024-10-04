@@ -273,7 +273,6 @@ int fat16_resolve(struct disk *disk)
     int res = 0;
     dbgprintf("Disk type: %d\n", disk->type);
     dbgprintf("Disk sector size: %d\n", disk->sector_size);
-    // dbgprintf("Disk fs name: %s\n", disk->fs->name);
 
     struct fat_private *fat_private = kzalloc(sizeof(struct fat_private));
     fat16_init_private(disk, fat_private);
@@ -354,8 +353,7 @@ void fat16_to_proper_string(char **out, const char *in, size_t size)
 
         if (i >= size - 1)
         {
-            dbgprintf("Exceeded the input buffer size. i: %d, size: %d\n", i, size);
-            break;;
+            break;
         }
         i++;
     }
@@ -466,7 +464,6 @@ static int fat16_get_cluster_for_offset(struct disk *disk, int start_cluster, in
         if (entry == 0xFF8 || entry == 0xFFF)
         {
             // end of file
-            dbgprintf("End of file\n");
             res = -EIO;
             goto out;
         }
