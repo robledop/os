@@ -30,11 +30,13 @@ void register_syscalls()
 void *sys_read(struct interrupt_frame *frame)
 {
     void *ptr = task_get_stack_item(task_current(), 3);
+    char str[MAX_PATH_LENGTH];
+    copy_string_from_task(task_current(), ptr, str, sizeof(str));
     unsigned int size = (unsigned int)task_get_stack_item(task_current(), 2);
     unsigned int nmemb = (unsigned int)task_get_stack_item(task_current(), 1);
     int fd = (int)task_get_stack_item(task_current(), 0);
 
-    int res = fread(ptr, size, nmemb, fd);
+    int res = fread((void*)str, size, nmemb, fd);
     return (void *)res;
 }
 
