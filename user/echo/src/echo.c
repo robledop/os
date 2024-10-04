@@ -3,19 +3,20 @@
 #include "stdio.h"
 #include "string.h"
 
-void crash_demo();
+void page_fault_demo();
 
 int main(int argc, char **argv)
 {
-    for (int i = 0; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
         printf("%s ", argv[i]);
     }
 
+
     return 0;
 }
 
-void crash_demo()
+void page_fault_demo()
 {
     char *ptr = malloc(20);
     free(ptr);

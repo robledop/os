@@ -10,12 +10,46 @@
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 
+char *exception_messages[] = {
+    "Division By Zero",
+    "Debug",
+    "Non Maskable Interrupt",
+    "Breakpoint",
+    "Into Detected Overflow",
+    "Out of Bounds",
+    "Invalid Opcode",
+    "No Coprocessor",
+    "Double Fault",
+    "Coprocessor Segment Overrun",
+    "Bad TSS",
+    "Segment Not Present",
+    "Stack Fault",
+    "General Protection Fault",
+    "Page Fault",
+    "Unknown Interrupt",
+    "x87 FPU Floating-Point Error",
+    "Alignment Check",
+    "Machine Check",
+    "SIMD Floating-Point Exception",
+    "Virtualization Exception",
+    "Control Protection Exception",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Reserved",
+    "Security Exception",
+    "Reserved"};
+
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
 extern void *interrupt_pointer_table[TOTAL_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[TOTAL_INTERRUPTS];
-static ISR80H_COMMAND isr80h_commands[MAX_ISR80H_COMMANDS];
+static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void no_interrupt();
 extern void isr80h_wrapper();
@@ -28,17 +62,12 @@ void interrupt_handler(int interrupt, struct interrupt_frame *frame)
     if (interrupt_callbacks[interrupt] != 0)
     {
         task_current_save_state(frame);
-        interrupt_callbacks[interrupt]();
+        interrupt_callbacks[interrupt](interrupt);
     }
 
     task_page();
     outb(0x20, 0x20);
 }
-
-// Interrupt 0
-// This function is called when a division by zero occurs.
-// We simply print an error message and halt the CPU.
-void idt_zero() { panic("Division by zero error"); }
 
 void idt_set(int interrupt, void *handler)
 {
@@ -58,149 +87,18 @@ void idt_set(int interrupt, void *handler)
     desc->offset_2 = (uint32_t)handler >> 16;
 }
 
-void idt_exception_handler()
+void idt_exception_handler(int interrupt)
 {
+    kprintf("%s\n", exception_messages[interrupt]);
     process_terminate(task_current()->process);
     kprintf("The process with id %d has been terminated.\n", task_current()->process->pid);
     task_next();
 }
 
-void idt_clock()
+void idt_clock(int interrupt)
 {
     outb(0x20, 0x20);
     // task_next();
-}
-
-void idt_debug_exception()
-{
-    kprintf(KRED "Debug exception\n");
-    idt_exception_handler();
-}
-
-void idt_nmi()
-{
-    kprintf(KRED "NMI\n");
-    idt_exception_handler();
-}
-
-void idt_breakpoint()
-{
-    kprintf(KRED "Breakpoint\n");
-    idt_exception_handler();
-}
-
-void idt_overflow()
-{
-    kprintf(KRED "Overflow\n");
-    idt_exception_handler();
-}
-
-void idt_bound_range_exceeded()
-{
-    kprintf(KRED "Bound range exceeded\n");
-    idt_exception_handler();
-}
-
-void idt_invalid_opcode()
-{
-    kprintf(KRED "Invalid opcode\n");
-    idt_exception_handler();
-}
-
-void idt_device_not_available()
-{
-    kprintf(KRED "Device not available\n");
-    idt_exception_handler();
-}
-
-void idt_double_fault()
-{
-    kprintf(KRED "Double fault\n");
-    idt_exception_handler();
-}
-
-void idt_coprocessor_segment_overrun()
-{
-    kprintf(KRED "Coprocessor segment overrun\n");
-    idt_exception_handler();
-}
-
-void idt_invalid_tss()
-{
-    kprintf(KRED "Invalid TSS\n");
-    idt_exception_handler();
-}
-
-void idt_segment_not_present()
-{
-    kprintf(KRED "Segment not present\n");
-    idt_exception_handler();
-}
-
-void idt_stack_segment_fault()
-{
-    kprintf(KRED "Stack segment fault\n");
-    idt_exception_handler();
-}
-
-void idt_general_protection()
-{
-    kprintf(KRED "General protection\n");
-    idt_exception_handler();
-}
-
-void idt_page_fault()
-{
-    kprintf(KRED "Page fault\n");
-    idt_exception_handler();
-}
-
-void idt_x87_fpu_error()
-{
-    kprintf(KRED "x87 FPU error\n");
-    idt_exception_handler();
-}
-
-void idt_alignment_check()
-{
-    kprintf(KRED "Alignment check\n");
-    idt_exception_handler();
-}
-
-void idt_machine_check()
-{
-    kprintf(KRED "Machine check\n");
-    idt_exception_handler();
-}
-
-void idt_simd_fpu_exception()
-{
-    kprintf(KRED "SIMD FPU exception\n");
-    idt_exception_handler();
-}
-
-void idt_virtualization_exception()
-{
-    kprintf(KRED "Virtualization exception\n");
-    idt_exception_handler();
-}
-
-void idt_security_exception()
-{
-    kprintf(KRED "Security exception\n");
-    idt_exception_handler();
-}
-
-void idt_interrupt_request()
-{
-    kprintf(KRED "Interrupt request\n");
-    idt_exception_handler();
-}
-
-void idt_fpu_error()
-{
-    kprintf(KRED "FPU error\n");
-    idt_exception_handler();
 }
 
 void idt_init()
@@ -217,32 +115,10 @@ void idt_init()
 
     idt_set(0x80, isr80h_wrapper);
 
-    idt_register_interrupt_callback(0, idt_zero);
-    idt_register_interrupt_callback(1, idt_debug_exception);
-    idt_register_interrupt_callback(2, idt_nmi);
-    idt_register_interrupt_callback(3, idt_breakpoint);
-    idt_register_interrupt_callback(4, idt_overflow);
-    idt_register_interrupt_callback(5, idt_bound_range_exceeded);
-    idt_register_interrupt_callback(6, idt_invalid_opcode);
-    idt_register_interrupt_callback(7, idt_device_not_available);
-    idt_register_interrupt_callback(8, idt_double_fault);
-    idt_register_interrupt_callback(9, idt_coprocessor_segment_overrun);
-    idt_register_interrupt_callback(10, idt_invalid_tss);
-    idt_register_interrupt_callback(11, idt_segment_not_present);
-    idt_register_interrupt_callback(12, idt_stack_segment_fault);
-    idt_register_interrupt_callback(13, idt_general_protection);
-    idt_register_interrupt_callback(14, idt_page_fault);
-    idt_register_interrupt_callback(16, idt_x87_fpu_error);
-    idt_register_interrupt_callback(17, idt_alignment_check);
-    idt_register_interrupt_callback(18, idt_machine_check);
-    idt_register_interrupt_callback(19, idt_simd_fpu_exception);
-    idt_register_interrupt_callback(20, idt_virtualization_exception);
-    idt_register_interrupt_callback(30, idt_security_exception);
-
-    // for (int i = 0; i < 0x20; i++)
-    // {
-    //     idt_register_interrupt_callback(i, idt_exception_handler);
-    // }
+    for (int i = 0; i < 0x20; i++)
+    {
+        idt_register_interrupt_callback(i, idt_exception_handler);
+    }
 
     idt_register_interrupt_callback(0x20, idt_clock);
 
@@ -262,35 +138,35 @@ int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION i
     return ALL_OK;
 }
 
-void isr80h_register_command(int command, ISR80H_COMMAND handler)
+void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler)
 {
-    if (command < 0 || command >= MAX_ISR80H_COMMANDS)
+    if (command < 0 || command >= MAX_SYSCALLS)
     {
         panic("The command is out of bounds");
     }
 
-    if (isr80h_commands[command])
+    if (syscalls[command])
     {
         panic("The command is already registered");
     }
 
-    isr80h_commands[command] = handler;
+    syscalls[command] = handler;
 }
 
-void *isr80h_handle_command(int command, struct interrupt_frame *frame)
+void *handle_syscall(int syscall, struct interrupt_frame *frame)
 {
     void *result = 0;
 
-    if (command < 0 || command >= MAX_ISR80H_COMMANDS)
+    if (syscall < 0 || syscall >= MAX_SYSCALLS)
     {
-        dbgprintf("Invalid command: %d\n", command);
+        dbgprintf("Invalid command: %d\n", syscall);
         return NULL;
     }
 
-    ISR80H_COMMAND handler = isr80h_commands[command];
+    SYSCALL_HANDLER_FUNCTION handler = syscalls[syscall];
     if (!handler)
     {
-        dbgprintf("No handler for command: %d\n", command);
+        dbgprintf("No handler for command: %d\n", syscall);
         return NULL;
     }
 
@@ -299,12 +175,12 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
     return result;
 }
 
-void *isr80h_handler(int command, struct interrupt_frame *frame)
+void *syscall_handler(int syscalll, struct interrupt_frame *frame)
 {
     void *res = 0;
     kernel_page();
     task_current_save_state(frame);
-    res = isr80h_handle_command(command, frame);
+    res = handle_syscall(syscalll, frame);
     task_page();
 
     return res;

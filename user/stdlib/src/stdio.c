@@ -4,6 +4,21 @@
 #include <stdarg.h>
 #include "string.h"
 
+int fopen(const char *name, const char *mode)
+{
+    return os_open(name, mode);
+}
+
+int fclose(int fd)
+{
+    return os_close(fd);
+}
+
+int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd)
+{
+    return os_read(ptr, size, nmemb, fd);
+}
+
 int putchar(int c)
 {
     os_putchar((char)c);

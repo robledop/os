@@ -5,7 +5,6 @@
 #include <gdt.h>
 #include <idt.h>
 #include <io.h>
-#include <isr80h.h>
 #include <keyboard.h>
 #include <kheap.h>
 #include <memory.h>
@@ -19,6 +18,7 @@
 #include <task.h>
 #include <terminal.h>
 #include <tss.h>
+#include <syscall.h>
 
 // Divide by zero error
 extern void cause_problem();
@@ -87,12 +87,11 @@ void kernel_main()
     enable_paging();
 
     kprintf(KCYN "Kernel is running\n");
-    // dbgprintf("Kernel is running\n");
-    isr80h_register_commands();
+    register_syscalls();
     keyboard_init();
 
     struct process *process = NULL;
-    int res = process_load_switch("0:/shell.elf", &process);
+    int res = process_load_switch("0:/sh", &process);
     if (res < 0)
     {
         panic("Failed to load shell");

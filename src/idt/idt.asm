@@ -3,7 +3,7 @@ section .asm
 extern int21h_handler
 extern no_interrupt_handler
 extern print
-extern isr80h_handler
+extern syscall_handler
 extern interrupt_handler
 extern interrupt_pointer_table
 
@@ -66,9 +66,9 @@ isr80h_wrapper:
     ; push the stack pointer
     push esp
 
-    ; eax will contain the command
+    ; eax will contain the syscall
     push eax
-    call isr80h_handler
+    call syscall_handler
     mov dword[tmp_response], eax
     add esp, 8
 

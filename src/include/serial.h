@@ -3,16 +3,16 @@
 
 #include <stdint.h>
 
-#define KDEBUG_SERIAL
+#define DEBUG_SERIAL
 
-#ifdef KDEBUG_SERIAL
+#ifdef DEBUG_SERIAL
 // #define dbgprintf(a, ...) serial_printf("%s(): " a, __func__, ##__VA_ARGS__)
 #define dbgprintf(a, ...) serial_printf(a, ##__VA_ARGS__)
 #else
 #define dbgprintf(a, ...)
 #endif
 
-#ifdef KDEBUG_WARNINGS
+#ifdef DEBUG_WARNINGS
 // #define warningf(a, ...) serial_printf("WARNING: %s(): " a, __func__, ##__VA_ARGS__)
 #define warningf(a, ...) serial_printf("WARNING: " a, ##__VA_ARGS__)
 #else

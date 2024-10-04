@@ -15,13 +15,13 @@ struct command_argument *os_parse_command(const char *command, int max)
 
     if (token == NULL)
     {
-        goto out;
+        return head;
     }
 
     head = os_malloc(sizeof(struct command_argument));
     if (head == NULL)
     {
-        goto out;
+        return NULL;
     }
 
     strncpy(head->argument, token, sizeof(head->argument));
@@ -45,7 +45,6 @@ struct command_argument *os_parse_command(const char *command, int max)
         token = strtok(NULL, " ");
     }
 
-out:
     return head;
 }
 

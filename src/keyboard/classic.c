@@ -6,7 +6,7 @@
 #include "keyboard.h"
 
 int classic_keyboard_init();
-void classic_keyboard_interrupt_handler();
+void classic_keyboard_interrupt_handler(int interrupt);
 
 // https://wiki.osdev.org/PS/2_Keyboard#Scan_Code_Set_1
 static uint8_t keyboard_scan_code_set_one[] = {
@@ -50,7 +50,7 @@ uint8_t classic_keyboard_scan_code_to_ascii(uint8_t scan_code)
     return c;
 }
 
-void classic_keyboard_interrupt_handler()
+void classic_keyboard_interrupt_handler(int interrupt)
 {
     kernel_page();
 

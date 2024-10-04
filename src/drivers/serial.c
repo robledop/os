@@ -52,7 +52,7 @@ void serial_write(char *str)
 int32_t serial_printf(char *fmt, ...)
 {
     int written = 0;
-#ifdef KDEBUG_SERIAL
+#ifdef DEBUG_SERIAL
     va_list args;
 
     char str[MAX_FMT_STR_SERIAL];
@@ -107,7 +107,7 @@ int32_t serial_printf(char *fmt, ...)
 
 void init_serial()
 {
-#ifdef KDEBUG_SERIAL
+#ifdef DEBUG_SERIAL
 
     // https://stackoverflow.com/questions/69481715/initialize-serial-port-with-x86-assembly
     outb(PORT + 1, 0x00); // Disable all interrupts

@@ -32,12 +32,16 @@
                     "description": "Add kernelfull.o symbols"
                 },
                 {
-                    "text": "add-symbol-file /home/robledo/source/os/user/cblank.elf/cblank.elf 0x400000",
-                    "description": "Add cblank.elf symbols"
+                    "text": "add-symbol-file /home/robledo/source/os/user/echo/echo 0x400000",
+                    "description": "Add echo symbols"
                 },
                 {
-                    "text": "add-symbol-file /home/robledo/source/os/user/shell/shell.elf 0x400000",
-                    "description": "Add shell.elf symbols"
+                    "text": "add-symbol-file /home/robledo/source/os/user/sh/sh 0x400000",
+                    "description": "Add sh symbols"
+                },
+                {
+                    "text": "add-symbol-file /home/robledo/source/os/user/ls/ls 0x400000",
+                    "description": "Add ls symbols"
                 },
                 {
                     "text": "break isr_handler",
