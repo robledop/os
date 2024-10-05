@@ -104,6 +104,14 @@ int istrncmp(const char *s1, const char *s2, int n)
     return 0;
 }
 
+char *strcpy(char *dest, const char *src)
+{
+    char *d = dest;
+    while ((*d++ = *src++) != '\0')
+        ;
+    return dest;
+}
+
 // Copy string t to s
 char *strncpy(char *dest, const char *src, int n)
 {

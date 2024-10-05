@@ -19,7 +19,7 @@ void register_syscalls()
     register_syscall(SYSCALL_PUTCHAR, sys_putchar);
     register_syscall(SYSCALL_MALLOC, sys_malloc);
     register_syscall(SYSCALL_FREE, sys_free);
-    // register_syscall(SYSCALL_PROCESS_START, sys_process_start);
+    register_syscall(SYSCALL_PUTCHAR_COLOR, sys_putchar_color);
     register_syscall(SYSCALL_INVOKE_SYSTEM, sys_invoke_system);
     register_syscall(SYSCALL_GET_PROGRAM_ARGUMENTS, sys_get_program_arguments);
     register_syscall(SYSCALL_OPEN, sys_open);
@@ -117,6 +117,16 @@ void *sys_putchar(struct interrupt_frame *frame)
 {
     char c = (char)(int)task_get_stack_item(task_current(), 0);
     terminal_write_char(c, 0x0F, 0x00);
+    return NULL;
+}
+
+void *sys_putchar_color(struct interrupt_frame *frame)
+{
+    unsigned char backcolor = (unsigned char)(int)task_get_stack_item(task_current(), 0);
+    unsigned char forecolor = (unsigned char)(int)task_get_stack_item(task_current(), 1);
+    char c = (char)(int)task_get_stack_item(task_current(), 2);
+
+    terminal_write_char(c, forecolor, backcolor);
     return NULL;
 }
 

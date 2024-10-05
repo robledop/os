@@ -71,17 +71,22 @@ os_putchar:
     pop ebp
     ret
 
-; void os_process_start(const char* file_name)
-global os_process_start:function
-os_process_start:
+
+; void putchar_color(char c, uint8_t foreground, uint8_t background)
+global os_putchar_color:function
+os_putchar_color:
     push ebp
     mov ebp, esp
-    push dword [ebp + 8] ; file_name
-    mov eax, 6           ; sys_process_start command
+    push dword [ebp + 8] ; c
+    push dword [ebp + 12] ; foreground
+    push dword [ebp + 14] ; background
+    mov eax, 6           ; sys_putchar_color command
     int 0x80
-    add esp, 4
+    add esp, 10
+    mov esp, ebp
     pop ebp
     ret
+
 
 ; int os_system(struct command_argument* args);
 global os_system:function

@@ -39,14 +39,14 @@
                 //     "text": "add-symbol-file /home/robledo/source/os/rootfs/sh 0x400000",
                 //     "description": "Add sh symbols"
                 // },
-                // {
-                //     "text": "add-symbol-file /home/robledo/source/os/rootfs/ls 0x400000",
-                //     "description": "Add ls symbols"
-                // },
                 {
-                    "text": "add-symbol-file /home/robledo/source/os/rootfs/cat 0x400000",
-                    "description": "Add cat symbols"
+                    "text": "add-symbol-file /home/robledo/source/os/rootfs/ls 0x400000",
+                    "description": "Add ls symbols"
                 },
+                // {
+                //     "text": "add-symbol-file /home/robledo/source/os/rootfs/cat 0x400000",
+                //     "description": "Add cat symbols"
+                // },
                 {
                     "text": "break isr_handler",
                     "description": "Break on exception handler."

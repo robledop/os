@@ -4,10 +4,18 @@
 #include <stdarg.h>
 #include "string.h"
 #include "string.h"
+#include "memory.h"
+
+#define MAX_FMT_STR 1024
 
 void clear_screen()
 {
     os_clear_screen();
+}
+
+void putchar_color(char c, unsigned char forecolor, unsigned char backcolor)
+{
+    os_putchar_color(c, forecolor, backcolor);
 }
 
 // WARNING: The return value must be freed by the caller
@@ -72,37 +80,186 @@ int putchar(int c)
     return 0;
 }
 
-int printf(const char *format, ...)
+int printf(const char *fmt, ...)
 {
+    static unsigned char forecolor = 0x0F; // Default white
+    static unsigned char backcolor = 0x00; // Default black
+
     va_list args;
-    const char *p;
-    char *sval;
-    int ival;
 
-    va_start(args, format);
-    for (p = format; *p; p++)
+    int x_offset = 0;
+    char str[MAX_FMT_STR];
+    int num = 0;
+
+    va_start(args, fmt);
+
+    while (*fmt != '\0')
     {
-        if (*p != '%')
+        switch (*fmt)
         {
-            putchar(*p);
-            continue;
-        }
+        case '%':
+            memset(str, 0, MAX_FMT_STR);
+            switch (*(fmt + 1))
+            {
+            case 'i':
+            case 'd':
+                num = va_arg(args, int);
+                strncpy(str, itoa(num), MAX_FMT_STR);
+                // str = itoa(num);
+                os_print(str);
+                x_offset += strlen(str);
+                break;
 
-        switch (*++p)
-        {
-        case 'i':
-        case 'd':
-            ival = va_arg(args, int);
-            os_print(itoa(ival));
+            case 'x':
+                num = va_arg(args, int);
+                itohex(num, str);
+                os_print("0x");
+                os_print(str);
+                x_offset += strlen(str);
+                break;
+
+            case 's':
+                char *str_arg = va_arg(args, char *);
+                os_print(str_arg);
+                x_offset += strlen(str_arg);
+                break;
+
+            case 'c':
+                char char_arg = (char)va_arg(args, int);
+                putchar_color(char_arg, forecolor, backcolor);
+                x_offset++;
+                break;
+
+            default:
+                break;
+            }
+            fmt++;
             break;
-        case 's':
-            sval = va_arg(args, char *);
-            os_print(sval);
+        case '\033':
+            // Handle ANSI escape sequences
+            fmt++;
+            if (*fmt != '[')
+            {
+                break;
+            }
+            fmt++;
+            int param1 = 0;
+            while (*fmt >= '0' && *fmt <= '9')
+            {
+                param1 = param1 * 10 + (*fmt - '0');
+                fmt++;
+            }
+            if (*fmt == ';')
+            {
+                fmt++;
+                int param2 = 0;
+                while (*fmt >= '0' && *fmt <= '9')
+                {
+                    param2 = param2 * 10 + (*fmt - '0');
+                    fmt++;
+                }
+                if (*fmt == 'm')
+                {
+                    switch (param1)
+                    {
+                    case 30:
+                        forecolor = 0x00;
+                        break; // Black
+                    case 31:
+                        forecolor = 0x04;
+                        break; // Red
+                    case 32:
+                        forecolor = 0x02;
+                        break; // Green
+                    case 33:
+                        forecolor = 0x0E;
+                        break; // Yellow
+                    case 34:
+                        forecolor = 0x01;
+                        break; // Blue
+                    case 35:
+                        forecolor = 0x05;
+                        break; // Magenta
+                    case 36:
+                        forecolor = 0x03;
+                        break; // Cyan
+                    case 37:
+                        forecolor = 0x0F;
+                        break; // White
+                    default:
+                        break;
+                    }
+                    switch (param2)
+                    {
+                    case 40:
+                        backcolor = 0x00;
+                        break; // Black
+                    case 41:
+                        backcolor = 0x04;
+                        break; // Red
+                    case 42:
+                        backcolor = 0x02;
+                        break; // Green
+                    case 43:
+                        backcolor = 0x0E;
+                        break; // Yellow
+                    case 44:
+                        backcolor = 0x01;
+                        break; // Blue
+                    case 45:
+                        backcolor = 0x05;
+                        break; // Magenta
+                    case 46:
+                        backcolor = 0x03;
+                        break; // Cyan
+                    case 47:
+                        backcolor = 0x0F;
+                        break; // White
+                    default:
+                        break;
+                    }
+                    // Apply the colors to the next characters
+                    putchar_color(' ', forecolor, backcolor);
+                }
+            }
+            else if (*fmt == 'm')
+            {
+                switch (param1)
+                {
+                case 30:
+                    forecolor = 0x00;
+                    break; // Black
+                case 31:
+                    forecolor = 0x04;
+                    break; // Red
+                case 32:
+                    forecolor = 0x02;
+                    break; // Green
+                case 33:
+                    forecolor = 0x0E;
+                    break; // Yellow
+                case 34:
+                    forecolor = 0x01;
+                    break; // Blue
+                case 35:
+                    forecolor = 0x05;
+                    break; // Magenta
+                case 36:
+                    forecolor = 0x03;
+                    break; // Cyan
+                case 37:
+                    forecolor = 0x0F;
+                    break; // White
+                default:
+                    break;
+                }
+            }
             break;
+
         default:
-            putchar(*p);
-            break;
+            putchar_color(*fmt, forecolor, backcolor);
         }
+        fmt++;
     }
 
     va_end(args);

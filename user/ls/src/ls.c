@@ -10,10 +10,16 @@ int main(int argc, char **argv)
         printf("%s ", argv[i]);
     }
 
-    int fd = fopen("0:/hello.txt", "r");
-    printf("File descriptor: %d\n", fd);
+    int fd = fopen("0:/test", "r");
+    printf("\nFile descriptor: %d\n", fd);
 
-    int res = fclose(fd);
+    struct file_stat stat;
+    int res = fstat(fd, &stat);
+
+    printf("File size: %d\n", stat.size);
+    printf("Flags: %d\n", stat.flags);
+
+    res = fclose(fd);
     printf("File closed: %d\n", res);
 
     return 0;

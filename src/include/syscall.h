@@ -9,7 +9,7 @@ enum SysCalls
     SYSCALL_PUTCHAR,
     SYSCALL_MALLOC,
     SYSCALL_FREE,
-    SYSCALL_PROCESS_START,
+    SYSCALL_PUTCHAR_COLOR,
     SYSCALL_INVOKE_SYSTEM,
     SYSCALL_GET_PROGRAM_ARGUMENTS,
     SYSCALL_OPEN,
@@ -28,7 +28,7 @@ void *sys_getkey(struct interrupt_frame *frame);
 void *sys_putchar(struct interrupt_frame *frame);
 void *sys_malloc(struct interrupt_frame *frame);
 void *sys_free(struct interrupt_frame *frame);
-// void *sys_process_start(struct interrupt_frame *frame);
+void *sys_putchar_color(struct interrupt_frame *frame);
 void *sys_invoke_system(struct interrupt_frame *frame);
 void *sys_get_program_arguments(struct interrupt_frame *frame);
 void *sys_open(struct interrupt_frame *frame);

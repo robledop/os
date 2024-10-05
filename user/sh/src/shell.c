@@ -6,10 +6,10 @@
 
 int main(int argc, char **argv)
 {
-    printf("Shell started\n");
+    printf(KWHT "Shell started\n");
     while (1)
     {
-        printf("> ");
+        printf(KGRN "> " KWHT);
         char buffer[1024];
         os_terminal_readline(buffer, sizeof(buffer), true);
 
