@@ -170,7 +170,6 @@ int paging_map_to(struct page_directory *directory, void *virtual_address, void 
     int total_pages = total_bytes / PAGING_PAGE_SIZE;
     res = paging_map_range(directory, virtual_address, physical_start_address, total_pages, flags);
 
-out:
     return res;
 }
 

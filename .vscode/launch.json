@@ -31,17 +31,21 @@
                     "text": "add-symbol-file /home/robledo/source/os/build/kernelfull.o 0x100000",
                     "description": "Add kernelfull.o symbols"
                 },
+                // {
+                //     "text": "add-symbol-file /home/robledo/source/os/rootfs/echo 0x400000",
+                //     "description": "Add echo symbols"
+                // },
+                // {
+                //     "text": "add-symbol-file /home/robledo/source/os/rootfs/sh 0x400000",
+                //     "description": "Add sh symbols"
+                // },
+                // {
+                //     "text": "add-symbol-file /home/robledo/source/os/rootfs/ls 0x400000",
+                //     "description": "Add ls symbols"
+                // },
                 {
-                    "text": "add-symbol-file /home/robledo/source/os/user/echo/echo 0x400000",
-                    "description": "Add echo symbols"
-                },
-                {
-                    "text": "add-symbol-file /home/robledo/source/os/user/sh/sh 0x400000",
-                    "description": "Add sh symbols"
-                },
-                {
-                    "text": "add-symbol-file /home/robledo/source/os/user/ls/ls 0x400000",
-                    "description": "Add ls symbols"
+                    "text": "add-symbol-file /home/robledo/source/os/rootfs/cat 0x400000",
+                    "description": "Add cat symbols"
                 },
                 {
                     "text": "break isr_handler",

@@ -24,19 +24,33 @@ void register_syscalls()
     register_syscall(SYSCALL_GET_PROGRAM_ARGUMENTS, sys_get_program_arguments);
     register_syscall(SYSCALL_OPEN, sys_open);
     register_syscall(SYSCALL_CLOSE, sys_close);
+    register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
+}
+
+void *sys_stat(struct interrupt_frame *frame)
+{
+    int fd = (int)task_get_stack_item(task_current(), 1);
+
+    struct file_stat *stat = task_virtual_to_physical_address(
+        task_current(),
+        task_get_stack_item(task_current(), 0));
+
+    return (void *)fstat(fd, stat);
 }
 
 void *sys_read(struct interrupt_frame *frame)
 {
-    void *ptr = task_get_stack_item(task_current(), 3);
-    char str[MAX_PATH_LENGTH];
-    copy_string_from_task(task_current(), ptr, str, sizeof(str));
+    void *task_file_contents = task_virtual_to_physical_address(
+        task_current(),
+        task_get_stack_item(task_current(), 3));
+
     unsigned int size = (unsigned int)task_get_stack_item(task_current(), 2);
     unsigned int nmemb = (unsigned int)task_get_stack_item(task_current(), 1);
     int fd = (int)task_get_stack_item(task_current(), 0);
 
-    int res = fread((void*)str, size, nmemb, fd);
+    int res = fread((void *)task_file_contents, size, nmemb, fd);
+
     return (void *)res;
 }
 
@@ -51,7 +65,7 @@ void *sys_close(struct interrupt_frame *frame)
 void *sys_open(struct interrupt_frame *frame)
 {
     void *file_name = task_get_stack_item(task_current(), 1);
-    char name[MAX_PATH_LENGTH];
+    char *name[MAX_PATH_LENGTH];
 
     copy_string_from_task(task_current(), file_name, name, sizeof(name));
 
@@ -60,7 +74,7 @@ void *sys_open(struct interrupt_frame *frame)
 
     copy_string_from_task(task_current(), mode, mode_str, sizeof(mode_str));
 
-    int fd = fopen(name, mode_str);
+    int fd = fopen((const char *)name, mode_str);
     return (void *)(int)fd;
 }
 

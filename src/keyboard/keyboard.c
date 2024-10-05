@@ -1,5 +1,5 @@
 #include "keyboard.h"
-#include "classic.h"
+#include "ps2_kbd.h"
 #include "serial.h"
 #include "status.h"
 #include "task.h"

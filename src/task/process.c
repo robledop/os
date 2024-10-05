@@ -511,10 +511,10 @@ int process_load(const char *file_name, struct process **process)
 
     res = process_load_for_slot(file_name, process, process_slot);
 
-    if (res == ALL_OK)
-    {
-        kprintf(KMAG "\nProcess " KCYN "%s" KMAG " (pid: %d) is now running\n" KWHT, (*process)->file_name, (*process)->pid);
-    }
+    // if (res == ALL_OK)
+    // {
+    //     kprintf(KMAG "\nProcess " KCYN "%s" KMAG " (pid: %d) is now running\n" KWHT, (*process)->file_name, (*process)->pid);
+    // }
 
 out:
     return res;

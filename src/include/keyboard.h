@@ -12,7 +12,6 @@ struct keyboard
 {
     KEYBOARD_INIT_FUNCTION init;
     char name[20];
-    KEYBOARD_CAPSLOCK_STATE capslock_state;
     struct keyboard *next;
 };
 

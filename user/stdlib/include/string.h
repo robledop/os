@@ -21,5 +21,6 @@ int itohex(unsigned int n, char s[]);
 void reverse(char s[]);
 char *itoa(int i);
 char *strtok(char *str, const char *delimiters);
+bool starts_with(const char *pre, const char *str);
 
 #endif

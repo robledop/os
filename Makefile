@@ -36,18 +36,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
-	echo "Hello, World!" > hello.txt
-	sudo cp ./hello.txt /mnt/d
-	echo "This is a test file." > file2.txt
-	sudo cp ./file2.txt /mnt/d
-	sudo mkdir /mnt/d/test
-	sudo cp ./hello.txt /mnt/d/test
-	sudo cp ./user/blank/blank.bin /mnt/d
-	sudo cp ./user/blank.elf/blank.elf /mnt/d
-	sudo cp ./user/echo/echo /mnt/d
-	sudo cp ./user/ls/ls /mnt/d
-	sudo cp ./user/sh/sh /mnt/d
-	sudo cp ./user/cat/cat /mnt/d
+	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount /mnt/d
 	rm -rf ./hello.txt ./file2.txt
 
@@ -68,12 +57,7 @@ grub: ./bin/kernel-grub.bin
 	grub-file --is-x86-multiboot ./bin/kernel-grub.bin
 	sudo mount -t vfat ./disk.img /mnt/d
 	sudo cp ./bin/kernel-grub.bin /mnt/d/boot/myos.kernel
-	sudo cp ./user/blank/blank.bin /mnt/d
-	sudo cp ./user/blank.elf/blank.elf /mnt/d
-	sudo cp ./user/echo/echo /mnt/d
-	sudo cp ./user/ls/ls /mnt/d
-	sudo cp ./user/sh/sh /mnt/d
-	sudo cp ./user/cat/cat /mnt/d
+	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount -q /mnt/d
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
@@ -87,22 +71,10 @@ qemu_grub: grub
 	qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 apps:
-	cd ./user/stdlib && $(MAKE) all
-	cd ./user/blank && $(MAKE) all
-	cd ./user/blank.elf && $(MAKE) all
-	cd ./user/echo && $(MAKE) all
-	cd ./user/sh && $(MAKE) all
-	cd ./user/ls && $(MAKE) all
-	cd ./user/cat && $(MAKE) all
+	cd ./user && $(MAKE) all
 
 apps_clean:
-	cd ./user/stdlib && $(MAKE) clean
-	cd ./user/blank && $(MAKE) clean
-	cd ./user/blank.elf && $(MAKE) clean
-	cd ./user/echo && $(MAKE) clean
-	cd ./user/sh && $(MAKE) clean
-	cd ./user/ls && $(MAKE) clean
-	cd ./user/cat && $(MAKE) clean
+	cd ./user && $(MAKE) clean
 
 clean: apps_clean
 	rm -rf ./bin ./build ./mnt

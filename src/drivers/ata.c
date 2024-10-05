@@ -47,69 +47,6 @@ int disk_read_sector(int lba, int total, void *buffer)
     return 0;
 }
 
-// int disk_read_sector(int lba, int total, void *buffer) {
-//     dbgprintf("Reading sector %d from ATAPI device\n", lba);
-
-//     // Send the IDENTIFY PACKET DEVICE command
-//     outb(0x1F6, 0xA0); // Select the drive
-//     outb(0x1F7, 0xA1); // Send IDENTIFY PACKET DEVICE command
-
-//     // Wait for the drive to be ready
-//     while ((inb(0x1F7) & 0x80) != 0);
-
-//     // Check if the drive is ATAPI
-//     unsigned char cl = inb(0x1F4);
-//     unsigned char ch = inb(0x1F5);
-//     if (cl == 0x14 && ch == 0xEB) {
-//         dbgprintf("ATAPI device found\n");
-//     } else {
-//         dbgprintf("No ATAPI device found\n");
-//         return -1;
-//     }
-
-//     // Select the drive
-//     outb(0x1F6, 0x00);
-
-//     // Send the packet command
-//     outb(0x1F1, 0x00);
-//     outb(0x1F2, 0x00);
-//     outb(0x1F3, 0x00);
-//     outb(0x1F4, 0x00);
-//     outb(0x1F5, 0x00);
-//     outb(0x1F7, 0xA0);
-
-//     // Wait for the drive to be ready
-//     while ((inb(0x1F7) & 0x80) != 0);
-
-//     // Prepare the packet command
-//     unsigned char packet[12] = {0xA8, 0, (lba >> 24) & 0xFF, (lba >> 16) & 0xFF, (lba >> 8) & 0xFF, lba & 0xFF, 0, 0, 0, 1, 0, 0};
-
-//     // Send the packet command
-//     for (int i = 0; i < 6; i++)
-//     {
-//         outw(0x1F0, ((unsigned short *)packet)[i]);
-//     }
-
-//     // Wait for the drive to be ready to send data
-//     while ((inb(0x1F7) & 0x08) == 0){
-//         dbgprintf("Waiting for drive to be ready\n");
-//     };
-
-//     unsigned short *ptr = (unsigned short *)buffer;
-//     for (int b = 0; b < total; b++)
-//     {
-//         // Read data
-//         for (int i = 0; i < 256; i++)
-//         {
-//             *ptr = inw(0x1F0);
-//             ptr++;
-//         }
-//     }
-
-//     dbgprintf("Read sector %d from ATAPI device\n", lba);
-//     return 0;
-// }
-
 void disk_search_and_init()
 {
     // print("Initializing disk\n");

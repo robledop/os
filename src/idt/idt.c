@@ -89,9 +89,9 @@ void idt_set(int interrupt, void *handler)
 
 void idt_exception_handler(int interrupt)
 {
-    kprintf("%s\n", exception_messages[interrupt]);
+    kprintf(KRED "\n%s" KWHT, exception_messages[interrupt]);
     process_terminate(task_current()->process);
-    kprintf("The process with id %d has been terminated.\n", task_current()->process->pid);
+    kprintf("\nThe process with id %d has been terminated.", task_current()->process->pid);
     task_next();
 }
 

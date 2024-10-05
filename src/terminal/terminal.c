@@ -4,70 +4,119 @@
 #include "memory.h"
 #include "string.h"
 #include <stdarg.h>
+#include <stdint.h>
+
+#define VIDEO_MEMORY 0xB8000
+#define BYTES_PER_CHAR 2
+#define SCREEN_SIZE (VGA_WIDTH * VGA_HEIGHT * BYTES_PER_CHAR)
+#define ROW_SIZE (VGA_WIDTH * BYTES_PER_CHAR)
+#define DEFAULT_ATTRIBUTE 0x07 // Light grey on black background
 
 static uint8_t forecolor = 0x0F; // Default white
 static uint8_t backcolor = 0x00; // Default black
 
-void update_cursor(int x, int y)
+static int cursor_y;
+static int cursor_x;
+
+void update_cursor(int row, int col)
 {
-    uint16_t pos = y * VGA_WIDTH + x;
+    unsigned short position = (row * VGA_WIDTH) + col;
 
     outb(0x3D4, 0x0F);
-    outb(0x3D5, (uint8_t)(pos & 0xFF));
+    outb(0x3D5, (unsigned char)(position & 0xFF));
     outb(0x3D4, 0x0E);
-    outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+    outb(0x3D5, (unsigned char)((position >> 8) & 0xFF));
 }
 
 void write_character(unsigned char c, unsigned char forecolour, unsigned char backcolour, int x, int y)
 {
-    uint16_t attrib = (backcolour << 4) | (forecolour & 0x0F);
-    volatile uint16_t *where;
-    where = (volatile uint16_t *)0xB8000 + (y * 80 + x);
+    unsigned short int attrib = (backcolour << 4) | (forecolour & 0x0F);
+    volatile unsigned short int *where;
+    where = (volatile unsigned short int *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
     *where = c | (attrib << 8);
+}
+
+uint16_t get_cursor_position(void)
+{
+    uint16_t pos = 0;
+    outb(0x3D4, 0x0F);
+    pos |= inb(0x3D5);
+    outb(0x3D4, 0x0E);
+    pos |= ((uint16_t)inb(0x3D5)) << 8;
+    return pos;
+}
+
+void scroll_screen()
+{
+    unsigned char *video_memory = (unsigned char *)VIDEO_MEMORY;
+
+    // Move all rows up by one
+    memmove(
+        video_memory,
+        video_memory + ROW_SIZE,
+        SCREEN_SIZE - ROW_SIZE);
+
+    // Clear the last line (fill with spaces and default attribute)
+    for (size_t i = SCREEN_SIZE - ROW_SIZE; i < SCREEN_SIZE; i += BYTES_PER_CHAR)
+    {
+        video_memory[i] = ' ';
+        video_memory[i + 1] = DEFAULT_ATTRIBUTE;
+    }
+
+    if (cursor_y > 0)
+    {
+        cursor_y--;
+    }
+    update_cursor(cursor_y, cursor_x);
 }
 
 void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor)
 {
-    static int x = 0;
-    static int y = 0;
     switch (c)
     {
     case 0x08: // Backspace
-        if (x > 0)
+        if (cursor_x > 0)
         {
-            x--;
-            write_character(' ', forecolor, backcolor, x, y);
-            if (x == 0 && y > 0)
+            cursor_x--;
+            write_character(' ', forecolor, backcolor, cursor_x, cursor_y);
+            if (cursor_x == 0 && cursor_y > 0)
             {
-                x = VGA_WIDTH - 1;
-                y--;
+                cursor_x = VGA_WIDTH - 1;
+                cursor_y--;
             }
         }
         break;
     case '\n': // Newline
     case '\r':
-        x = 0;
-        y++;
+        cursor_x = 0;
+        cursor_y++;
         break;
     case '\t': // Tab
-        x += 4;
-        if (x >= VGA_WIDTH)
+        cursor_x += 4;
+        if (cursor_x >= VGA_WIDTH)
         {
-            x = 0;
-            y++;
+            cursor_x = 0;
+            cursor_y++;
         }
         break;
     default:
-        write_character(c, forecolor, backcolor, x, y);
-        x++;
-        if (x >= VGA_WIDTH)
+        write_character(c, forecolor, backcolor, cursor_x, cursor_y);
+        cursor_x++;
+        if (cursor_x >= VGA_WIDTH)
         {
-            x = 0;
-            y++;
+            cursor_x = 0;
+            cursor_y++;
         }
     }
 
-    update_cursor(x, y);
+    // Scroll if needed
+    if (cursor_y >= VGA_HEIGHT)
+    {
+        scroll_screen();
+        cursor_y = VGA_HEIGHT - 1;
+    }
+
+    update_cursor(cursor_y, cursor_x);
 }
 
 void print(const char *str)
@@ -79,7 +128,7 @@ void print(const char *str)
     }
 }
 
-void ksprint(const char *str, int max)
+void ksprintf(const char *str, int max)
 {
     size_t len = strnlen(str, max);
     for (int i = 0; i < len; i++)
@@ -270,6 +319,8 @@ void kprintf(char *fmt, ...)
 
 void terminal_clear()
 {
+    cursor_x = 0;
+    cursor_y = 0;
     for (int y = 0; y < VGA_HEIGHT; y++)
     {
         for (int x = 0; x < VGA_WIDTH; x++)

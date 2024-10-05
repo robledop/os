@@ -144,7 +144,7 @@ os_stat:
     mov eax, 11          ; sys_stat command
     int 0x80
     add esp, 8
-    ; mov esp, ebp
+    mov esp, ebp
     pop ebp
     ret
 
@@ -153,11 +153,11 @@ global os_read:function
 os_read:
     push ebp
     mov ebp, esp
-    push dword [ebp + 8] ; ptr
+    push dword [ebp + 8]  ; ptr
     push dword [ebp + 12] ; size
     push dword [ebp + 16] ; nmemb
     push dword [ebp + 20] ; fd
-    mov eax, 12          ; sys_read command
+    mov eax, 12           ; sys_read command
     int 0x80
     add esp, 16
     mov esp, ebp

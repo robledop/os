@@ -72,6 +72,11 @@ int strncmp(const char *p, const char *q, unsigned int n)
     return (unsigned char)*p - (unsigned char)*q;
 }
 
+bool starts_with(const char *pre, const char *str)
+{
+    return strncmp(pre, str, strlen(pre)) == 0;
+}
+
 char tolower(char s1)
 {
     if (s1 >= 65 && s1 <= 90)

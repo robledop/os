@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 
 #ifdef DEBUG_SERIAL
 // #define dbgprintf(a, ...) serial_printf("%s(): " a, __func__, ##__VA_ARGS__)

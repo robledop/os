@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define MAX_PATH_LENGTH 1024
+
 struct command_argument
 {
     char argument[512];

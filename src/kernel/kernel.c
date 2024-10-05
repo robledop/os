@@ -86,6 +86,7 @@ void kernel_main()
     paging_switch_directory(kernel_page_directory);
     enable_paging();
 
+    terminal_clear();
     kprintf(KCYN "Kernel is running\n");
     register_syscalls();
     keyboard_init();
@@ -99,7 +100,7 @@ void kernel_main()
 
     task_run_first_task();
 
-    // enable_interrupts();
+    enable_interrupts();
 
     while (1)
     {
@@ -124,7 +125,7 @@ void multitasking_demo()
 
 void fs_demo()
 {
-    int fd = fopen("0:/test/hello.txt", "r");
+    int fd = fopen("0:/hello.txt", "r");
     if (fd)
     {
         dbgprintf("File opened\n");
@@ -143,7 +144,7 @@ void fs_demo()
 
         if (fclose(fd) == 0)
         {
-            dbgprintf("File closed");
+            dbgprintf("File closed\n");
         }
     }
 }
