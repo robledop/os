@@ -12,8 +12,8 @@
 #define ROW_SIZE (VGA_WIDTH * BYTES_PER_CHAR)
 #define DEFAULT_ATTRIBUTE 0x07 // Light grey on black background
 
-static uint8_t forecolor = 0x0F; // Default white
-static uint8_t backcolor = 0x00; // Default black
+uint8_t forecolor = 0x0F; // Default white
+uint8_t backcolor = 0x00; // Default cyan
 
 static int cursor_y;
 static int cursor_x;
@@ -70,8 +70,11 @@ void scroll_screen()
     update_cursor(cursor_y, cursor_x);
 }
 
-void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor)
+void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
 {
+    forecolor = fcolor;
+    backcolor = bcolor;
+
     switch (c)
     {
     case 0x08: // Backspace
@@ -133,7 +136,7 @@ void ksprintf(const char *str, int max)
     size_t len = strnlen(str, max);
     for (int i = 0; i < len; i++)
     {
-        terminal_write_char(str[i], 0x0F, 0x00);
+        terminal_write_char(str[i], forecolor, backcolor);
     }
 }
 

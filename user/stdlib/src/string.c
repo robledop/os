@@ -258,63 +258,69 @@ inline int itohex(unsigned int n, char s[])
     return i;
 }
 
-char *strtok(char *str, const char *delimiters)
+char *strtok(char *str, const char *delim)
 {
-    static char *sp = NULL;
-    int i = 0;
-    int len = strlen(delimiters);
-    if (!str && !sp)
-    {
-        return 0;
-    }
+    static char *static_str = NULL; // Stores the string between calls
+    int i = 0, j = 0;
+    char *token;
 
-    if (str != NULL && sp == NULL)
+    // If initial string is provided, reset static_str
+    if (str != NULL)
     {
-        sp = str;
+        static_str = str;
     }
-
-    char *p_start = sp;
-    while (1)
+    else
     {
-        for (i = 0; i < len; i++)
+        // If no more tokens, return NULL
+        if (static_str == NULL)
         {
-            if (*p_start == delimiters[i])
+            return NULL;
+        }
+    }
+
+    // Skip leading delimiters
+    while (static_str[i] != '\0')
+    {
+        for (j = 0; delim[j] != '\0'; j++)
+        {
+            if (static_str[i] == delim[j])
             {
-                p_start++;
                 break;
             }
         }
-
-        if (i == len)
+        if (delim[j] == '\0')
         {
-            sp = p_start;
             break;
         }
+        i++;
     }
 
-    if (*sp == '\0')
+    // If end of string is reached, return NULL
+    if (static_str[i] == '\0')
     {
-        sp = 0;
-        return sp;
+        static_str = NULL;
+        return NULL;
     }
 
-    while (*sp != '\0')
+    token = &static_str[i];
+
+    // Find the end of the token
+    while (static_str[i] != '\0')
     {
-        for (i = 0; i < len; i++)
+        for (j = 0; delim[j] != '\0'; j++)
         {
-            if (*sp == delimiters[i])
+            if (static_str[i] == delim[j])
             {
-                *sp = '\0';
-                break;
+                static_str[i] = '\0'; // Terminate token
+                i++;
+                static_str += i; // Update static_str for next call
+                return token;
             }
         }
-
-        sp++;
-        if (i < len)
-        {
-            break;
-        }
+        i++;
     }
 
-    return p_start;
+    // No more delimiters; return the last token
+    static_str = NULL;
+    return token;
 }

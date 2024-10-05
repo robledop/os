@@ -87,7 +87,7 @@ void kernel_main()
     enable_paging();
 
     terminal_clear();
-    kprintf(KCYN "Kernel is running\n");
+    kprintf("Kernel is running\n");
     register_syscalls();
     keyboard_init();
 

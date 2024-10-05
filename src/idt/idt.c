@@ -51,10 +51,8 @@ extern void *interrupt_pointer_table[TOTAL_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[TOTAL_INTERRUPTS];
 static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
-extern void no_interrupt();
 extern void isr80h_wrapper();
 
-void no_interrupt_handler() { outb(0x20, 0x20); }
 
 void interrupt_handler(int interrupt, struct interrupt_frame *frame)
 {

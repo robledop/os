@@ -11,16 +11,16 @@ int main(int argc, char **argv)
     }
 
     int fd = fopen("0:/test", "r");
-    printf("\nFile descriptor: %d\n", fd);
+    printf("\nFile descriptor: %d", fd);
 
     struct file_stat stat;
     int res = fstat(fd, &stat);
 
-    printf("File size: %d\n", stat.size);
-    printf("Flags: %d\n", stat.flags);
+    printf("\nFile size: %d", stat.size);
+    printf("\nFlags: %d", stat.flags);
 
     res = fclose(fd);
-    printf("File closed: %d\n", res);
+    printf("\nFile closed: %d", res);
 
     return 0;
 }

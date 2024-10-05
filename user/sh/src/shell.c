@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     printf(KWHT "Shell started\n");
     while (1)
     {
-        printf(KGRN "> " KWHT);
+        printf(KWCYN "> " KWHT);
         char buffer[1024];
         os_terminal_readline(buffer, sizeof(buffer), true);
 

@@ -98,7 +98,7 @@ void *sys_exit(struct interrupt_frame *frame)
 void *sys_print(struct interrupt_frame *frame)
 {
     void *message = task_get_stack_item(task_current(), 0);
-    char buffer[1024];
+    char buffer[2048];
 
     copy_string_from_task(task_current(), message, buffer, sizeof(buffer));
 

@@ -6,7 +6,7 @@
 #include "string.h"
 #include "memory.h"
 
-#define MAX_FMT_STR 1024
+#define MAX_FMT_STR 10240
 
 void clear_screen()
 {

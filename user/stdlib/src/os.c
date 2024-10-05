@@ -93,7 +93,7 @@ int os_system_run(const char *command)
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
     if (root_command_argument == NULL)
     {
-        return -1;
+       return -1;
     }
 
     return os_system(root_command_argument);

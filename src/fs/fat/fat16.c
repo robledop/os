@@ -752,7 +752,7 @@ int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmem
         if (ISERR(res))
         {
             warningf("Failed to read from file\n");
-            goto out;
+            return res;
         }
 
         out += size;
@@ -761,7 +761,6 @@ int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmem
 
     res = nmemb;
 
-out:
     return res;
 }
 

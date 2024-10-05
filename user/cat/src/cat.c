@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     }
     buffer[stat.size] = 0x00;
 
-    printf("\n%s", buffer);
+    printf(KWCYN "\n%s", buffer);
 
     fclose(fd);
 

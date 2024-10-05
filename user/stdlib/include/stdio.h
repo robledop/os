@@ -11,6 +11,10 @@
 #define KCYN "\x1B[36m"
 #define KWHT "\x1B[37m"
 
+// White foreground on cyan background
+#define KWCYN "\x1B[37;46m"
+
+
 typedef unsigned int FILE_SEEK_MODE;
 enum
 {
