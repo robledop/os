@@ -36,5 +36,6 @@ int fopen(const char *name, const char *mode);
 int fclose(int fd);
 int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 int fstat(int fd, struct file_stat *stat);
+void clear_screen();
 
 #endif

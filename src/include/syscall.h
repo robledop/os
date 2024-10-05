@@ -16,6 +16,7 @@ enum SysCalls
     SYSCALL_CLOSE,
     SYSCALL_STAT,
     SYSCALL_READ,
+    SYSCALL_CLEAR_SCREEN
 };
 
 void register_syscalls();
@@ -27,12 +28,13 @@ void *sys_getkey(struct interrupt_frame *frame);
 void *sys_putchar(struct interrupt_frame *frame);
 void *sys_malloc(struct interrupt_frame *frame);
 void *sys_free(struct interrupt_frame *frame);
-void *sys_process_start(struct interrupt_frame *frame);
+// void *sys_process_start(struct interrupt_frame *frame);
 void *sys_invoke_system(struct interrupt_frame *frame);
 void *sys_get_program_arguments(struct interrupt_frame *frame);
 void *sys_open(struct interrupt_frame *frame);
 void *sys_close(struct interrupt_frame *frame);
 void *sys_stat(struct interrupt_frame *frame);
 void *sys_read(struct interrupt_frame *frame);
+void *sys_clear_screen(struct interrupt_frame *frame);
 
 #endif

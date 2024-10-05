@@ -35,5 +35,6 @@ int os_open(const char* file_name, const char* mode);
 int os_close(int fd);
 int os_stat(int fd, struct file_stat *stat);
 int os_read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
+void os_clear_screen();
 
 #endif

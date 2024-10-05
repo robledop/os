@@ -5,6 +5,11 @@
 #include "string.h"
 #include "string.h"
 
+void clear_screen()
+{
+    os_clear_screen();
+}
+
 // WARNING: The return value must be freed by the caller
 char *normalize_path(const char *path)
 {

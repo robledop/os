@@ -164,3 +164,13 @@ os_read:
     pop ebp
     ret
 
+; void clear_screen();
+global os_clear_screen:function
+os_clear_screen:
+    push ebp
+    mov ebp, esp
+    mov eax, 13          ; sys_clear_screen command
+    int 0x80
+    pop ebp
+    ret
+

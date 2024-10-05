@@ -19,13 +19,21 @@ void register_syscalls()
     register_syscall(SYSCALL_PUTCHAR, sys_putchar);
     register_syscall(SYSCALL_MALLOC, sys_malloc);
     register_syscall(SYSCALL_FREE, sys_free);
-    register_syscall(SYSCALL_PROCESS_START, sys_process_start);
+    // register_syscall(SYSCALL_PROCESS_START, sys_process_start);
     register_syscall(SYSCALL_INVOKE_SYSTEM, sys_invoke_system);
     register_syscall(SYSCALL_GET_PROGRAM_ARGUMENTS, sys_get_program_arguments);
     register_syscall(SYSCALL_OPEN, sys_open);
     register_syscall(SYSCALL_CLOSE, sys_close);
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
+    register_syscall(SYSCALL_CLEAR_SCREEN, sys_clear_screen);
+}
+
+void *sys_clear_screen(struct interrupt_frame *frame)
+{
+    terminal_clear();
+
+    return NULL;
 }
 
 void *sys_stat(struct interrupt_frame *frame)
@@ -125,37 +133,37 @@ void *sys_free(struct interrupt_frame *frame)
     return NULL;
 }
 
-void *sys_process_start(struct interrupt_frame *frame)
-{
-    void *process_file = task_get_stack_item(task_current(), 0);
-    char *file_name[MAX_PATH_LENGTH];
-    int res = copy_string_from_task(task_current(), process_file, file_name, sizeof(file_name));
-    if (res < 0)
-    {
-        dbgprintf("Failed to copy string from task\n");
-        goto out;
-    }
+// void *sys_process_start(struct interrupt_frame *frame)
+// {
+//     void *process_file = task_get_stack_item(task_current(), 0);
+//     char *file_name[MAX_PATH_LENGTH];
+//     int res = copy_string_from_task(task_current(), process_file, file_name, sizeof(file_name));
+//     if (res < 0)
+//     {
+//         dbgprintf("Failed to copy string from task\n");
+//         goto out;
+//     }
 
-    // TODO: Handle paths properly
-    char path[MAX_PATH_LENGTH];
-    strncpy(path, "0:/", sizeof(path));
-    strncpy(path + 3, (const char *)file_name, sizeof(path) - 3);
+//     // TODO: Handle paths properly
+//     char path[MAX_PATH_LENGTH];
+//     strncpy(path, "0:/", sizeof(path));
+//     strncpy(path + 3, (const char *)file_name, sizeof(path) - 3);
 
-    struct process *process = NULL;
-    res = process_load_switch((const char *)path, &process);
-    if (res < 0)
-    {
-        dbgprintf("Failed to load process %s\n", file_name);
-        kprintf("\nFailed to load process %s\n", path);
-        goto out;
-    }
+//     struct process *process = NULL;
+//     res = process_load_switch((const char *)path, &process);
+//     if (res < 0)
+//     {
+//         dbgprintf("Failed to load process %s\n", file_name);
+//         kprintf("\nFailed to load process %s\n", path);
+//         goto out;
+//     }
 
-    task_switch(process->task);
-    task_return(&process->task->registers);
+//     task_switch(process->task);
+//     task_return(&process->task->registers);
 
-out:
-    return (void *)res;
-}
+// out:
+//     return (void *)res;
+// }
 
 void *sys_invoke_system(struct interrupt_frame *frame)
 {
