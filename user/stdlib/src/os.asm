@@ -77,13 +77,12 @@ global os_putchar_color:function
 os_putchar_color:
     push ebp
     mov ebp, esp
-    push dword [ebp + 8] ; c
+    push dword [ebp + 8]  ; c
     push dword [ebp + 12] ; foreground
-    push dword [ebp + 14] ; background
-    mov eax, 6           ; sys_putchar_color command
+    push dword [ebp + 16] ; background
+    mov eax, 6            ; sys_putchar_color command
     int 0x80
-    add esp, 10
-    mov esp, ebp
+    add esp, 12           ; clean up the stack
     pop ebp
     ret
 
@@ -122,7 +121,6 @@ os_open:
     mov eax, 9           ; sys_open command
     int 0x80
     add esp, 8
-    mov esp, ebp
     pop ebp
     ret
 
@@ -135,7 +133,6 @@ os_close:
     mov eax, 10          ; sys_close command
     int 0x80
     add esp, 4
-    ; mov esp, ebp
     pop ebp
     ret
 
@@ -149,7 +146,6 @@ os_stat:
     mov eax, 11          ; sys_stat command
     int 0x80
     add esp, 8
-    mov esp, ebp
     pop ebp
     ret
 
@@ -165,7 +161,6 @@ os_read:
     mov eax, 12           ; sys_read command
     int 0x80
     add esp, 16
-    mov esp, ebp
     pop ebp
     ret
 

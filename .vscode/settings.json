@@ -12,7 +12,8 @@
         "stdio.h": "c",
         "stddef.h": "c",
         "memory.h": "c",
-        "serial.h": "c"
+        "serial.h": "c",
+        "file.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

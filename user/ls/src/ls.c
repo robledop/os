@@ -10,7 +10,7 @@ int main(int argc, char **argv)
         printf("%s ", argv[i]);
     }
 
-    int fd = fopen("0:/test", "r");
+    int fd = fopen("0:/", "r");
     printf("\nFile descriptor: %d", fd);
 
     struct file_stat stat;

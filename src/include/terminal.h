@@ -13,6 +13,8 @@
 #define KCYN "\x1B[36m"
 #define KWHT "\x1B[37m"
 
+#define KWCYN "\x1B[37;46m"
+
 void terminal_clear();
 void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor);
 void kprintf(char *fmt, ...);

@@ -28,9 +28,9 @@ void update_cursor(int row, int col)
     outb(0x3D5, (unsigned char)((position >> 8) & 0xFF));
 }
 
-void write_character(unsigned char c, unsigned char forecolour, unsigned char backcolour, int x, int y)
+void write_character(unsigned char c, unsigned char fcolor, unsigned char bcolor, int x, int y)
 {
-    unsigned short int attrib = (backcolour << 4) | (forecolour & 0x0F);
+    unsigned short int attrib = (bcolor << 4) | (fcolor & 0x0F);
     volatile unsigned short int *where;
     where = (volatile unsigned short int *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
     *where = c | (attrib << 8);

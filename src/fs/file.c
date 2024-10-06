@@ -8,6 +8,44 @@
 #include "ata.h"
 #include "kernel.h"
 #include "serial.h"
+#include "terminal.h"
+#include "assert.h"
+
+typedef unsigned int FS_ITEM_TYPE;
+#define FS_ITEM_TYPE_DIRECTORY 0
+#define FS_ITEM_TYPE_FILE 1
+
+struct fat_private;
+
+// struct directory_entry
+// {
+//     uint8_t name[8];
+//     uint8_t ext[3];
+//     uint8_t attributes;
+//     uint8_t creation_time_tenths;
+//     uint16_t creation_time;
+//     uint16_t creation_date;
+//     uint16_t access_date;
+//     uint16_t modification_time;
+//     uint16_t modification_date;
+//     uint32_t size;
+// };
+
+// struct directory
+// {
+//     struct directory_entry *entries;
+//     int entry_count;
+// };
+
+struct fs_item
+{
+    union
+    {
+        struct fat_directory_entry *item;
+        struct fat_directory *directory;
+    };
+    FS_ITEM_TYPE type;
+};
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
@@ -101,11 +139,18 @@ struct file_system *fs_resolve(struct disk *disk)
 {
     for (int i = 0; i < MAX_FILE_SYSTEMS; i++)
     {
-        if (file_systems[i] != 0 && file_systems[i]->resolve(disk) == 0)
+        if (file_systems[i] != 0x0)
         {
-            return file_systems[i];
+            struct file_system *fs = file_systems[i];
+            kprintf("Resolving file system %s\n", fs->name);
+            if (fs->resolve(disk) == 0)
+            {
+                return fs;
+            }
         }
     }
+
+    panic("Failed to resolve file system");
 
     return 0;
 }
@@ -179,6 +224,9 @@ int fopen(const char *path, const char *mode)
         goto out;
     }
 
+    ASSERT(disk->fs->open != NULL);
+
+    // fat_file_descriptor is a private data structure for the FAT file system
     void *descriptor_private_data = disk->fs->open(disk, root_path->first, file_mode);
     if (ISERR(descriptor_private_data))
     {
@@ -280,4 +328,46 @@ int fclose(int fd)
     }
 
     return res;
+}
+
+// TODO: Make it actually open the specified directory instead of only the root directory
+struct file_directory fs_open_dir(const char *name)
+{
+    struct path_root *root_path = pathparser_parse(name, NULL);
+    if (!root_path)
+    {
+        warningf("Failed to parse path\n");
+        return (struct file_directory){0};
+    }
+
+    struct disk *disk = disk_get(root_path->drive_number);
+    if (!disk)
+    {
+        warningf("Failed to get disk\n");
+        return (struct file_directory){0};
+    }
+
+    if (disk->fs == NULL)
+    {
+        warningf("Disk has no file system\n");
+        return (struct file_directory){0};
+    }
+
+    if (root_path->first == NULL)
+    {
+        if (disk->fs->get_root_directory == NULL)
+        {
+            panic("File system does not support getting root directory");
+        }
+        return disk->fs->get_root_directory(disk);
+    }
+
+    if (disk->fs->get_subdirectory == NULL)
+    {
+        panic("File system does not support getting sub directory");
+    }
+
+    struct file_directory dir = disk->fs->get_subdirectory(disk, name);
+
+    return dir;
 }

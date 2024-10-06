@@ -196,3 +196,79 @@ inline int itohex(uint32_t n, char s[]) {
     return i;
 }
 
+
+char *strtok(char *str, const char *delim)
+{
+    static char *static_str = NULL; // Stores the string between calls
+    int i = 0, j = 0;
+    char *token;
+
+    // If initial string is provided, reset static_str
+    if (str != NULL)
+    {
+        static_str = str;
+    }
+    else
+    {
+        // If no more tokens, return NULL
+        if (static_str == NULL)
+        {
+            return NULL;
+        }
+    }
+
+    // Skip leading delimiters
+    while (static_str[i] != '\0')
+    {
+        for (j = 0; delim[j] != '\0'; j++)
+        {
+            if (static_str[i] == delim[j])
+            {
+                break;
+            }
+        }
+        if (delim[j] == '\0')
+        {
+            break;
+        }
+        i++;
+    }
+
+    // If end of string is reached, return NULL
+    if (static_str[i] == '\0')
+    {
+        static_str = NULL;
+        return NULL;
+    }
+
+    token = &static_str[i];
+
+    // Find the end of the token
+    while (static_str[i] != '\0')
+    {
+        for (j = 0; delim[j] != '\0'; j++)
+        {
+            if (static_str[i] == delim[j])
+            {
+                static_str[i] = '\0'; // Terminate token
+                i++;
+                static_str += i; // Update static_str for next call
+                return token;
+            }
+        }
+        i++;
+    }
+
+    // No more delimiters; return the last token
+    static_str = NULL;
+    return token;
+}
+
+
+char *strcpy(char *dest, const char *src)
+{
+    char *d = dest;
+    while ((*d++ = *src++) != '\0')
+        ;
+    return dest;
+}

@@ -26,6 +26,7 @@ idt_load:
     mov ebx, [ebp + 8] ; idt address
     lidt [ebx]
 
+    mov esp, ebp
     pop ebp
     ret
 

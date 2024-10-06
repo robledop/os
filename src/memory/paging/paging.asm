@@ -5,35 +5,40 @@ section .asm
 global paging_load_directory
 global enable_paging
 
-extern print
 
 paging_load_directory:
-    ; push message2
-    ; call print
-    ; add esp, 4
-
     push ebp
     mov ebp, esp
+
+    cli
     mov eax, [ebp + 8]
     mov cr3, eax
-    pop ebp   
 
-    ; push message1
-    ; call print
-    ; add esp, 4
+    ; sti                     ; Enable interrupts
+    mov esp, ebp
+    pop ebp   
 
     ret
 
+; enable_paging:
+;     push ebp
+;     mov ebp, esp
+;     mov eax, cr0
+;     or eax, 0x80000000
+;     mov cr0, eax
+
+;     mov esp, ebp
+;     pop ebp
+;     ret
+
 enable_paging:
-    push ebp
-    mov ebp, esp
+    cli                     ; Disable interrupts
     mov eax, cr0
-    or eax, 0x80000000
+    or eax, 0x80000000      ; Set PG bit to enable paging
     mov cr0, eax
-    pop ebp
-    ; push message2
-    ; call print
-    ; add esp, 4
+    mov eax, cr3            ; Reload CR3 to flush TLB
+    mov cr3, eax
+    ; sti                     ; Enable interrupts
     ret
 
  

@@ -3,6 +3,7 @@
 #include "status.h"
 #include "string.h"
 #include "serial.h"
+#include "assert.h"
 
 // https://wiki.osdev.org/Paging
 
@@ -11,12 +12,13 @@ void paging_load_directory(uint32_t *directory);
 
 struct page_directory *paging_create_directory(uint8_t flags)
 {
-    // dbgprintf("Allocating page directory. Flags %x\n", flags);
     uint32_t *directory = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
+    ASSERT(directory != NULL);
     uint32_t offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++)
     {
         uint32_t *entry = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_TABLE);
+        ASSERT(entry != NULL);
         for (size_t j = 0; j < PAGING_ENTRIES_PER_TABLE; j++)
         {
             entry[j] = (offset + (j * PAGING_PAGE_SIZE)) | flags;
@@ -27,18 +29,16 @@ struct page_directory *paging_create_directory(uint8_t flags)
 
     struct page_directory *chunk = kzalloc(sizeof(struct page_directory));
     chunk->directory_entry = directory;
-    // dbgprintf("Page directory allocated at %x\n", chunk->directory_entry);
     return chunk;
 }
 
 // Switch page directory
 void paging_switch_directory(struct page_directory *chunk)
 {
-    // dbgprintf("Switching to page directory %x\n", chunk->directory_entry);
+    ASSERT(chunk != NULL);
 
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
-    // dbgprintf("Switched to page directory %x\n", chunk->directory_entry);
 }
 
 void paging_free_directory(struct page_directory *page_directory)

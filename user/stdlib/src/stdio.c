@@ -82,8 +82,8 @@ int putchar(int c)
 
 int printf(const char *fmt, ...)
 {
-    static unsigned char forecolor = 0x0F; // Default white
-    static unsigned char backcolor = 0x00; // Default black
+    unsigned char forecolor = 0x0F; // Default white
+    unsigned char backcolor = 0x00; // Default black
 
     va_list args;
 

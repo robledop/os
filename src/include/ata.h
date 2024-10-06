@@ -2,6 +2,8 @@
 #define DISK_H
 #include "file.h"
 
+
+
 typedef unsigned int DISK_TYPE;
 
 #define DISK_TYPE_PHYSICAL 0
@@ -14,7 +16,7 @@ struct disk
 
     struct file_system *fs;
 
-    void* fs_private;
+    void *fs_private;
 };
 
 void disk_search_and_init();
