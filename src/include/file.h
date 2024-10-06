@@ -2,6 +2,7 @@
 #define FILE_H
 #include "pparser.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef unsigned int FILE_SEEK_MODE;
 enum
@@ -40,6 +41,43 @@ typedef int (*FS_CLOSE_FUNCTION)(void *private);
 typedef int (*FS_STAT_FUNCTION)(struct disk *disk, void *private, struct file_stat *stat);
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 
+/////////////////////////////
+
+typedef struct file_directory (*FS_GET_ROOT_DIRECTORY_FUNCTION)(struct disk *disk);
+typedef struct file_directory (*FS_GET_SUB_DIRECTORY_FUNCTION)(struct disk *disk, const char *path);
+typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
+
+struct directory_entry
+{
+    char *name;
+    char *ext;
+    uint8_t attributes;
+    uint8_t creation_time_tenths;
+    uint16_t creation_time;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t modification_time;
+    uint16_t modification_date;
+    uint32_t size;
+    bool is_directory;
+    bool is_read_only;
+    bool is_hidden;
+    bool is_system;
+    bool is_volume_label;
+    bool is_long_name;
+    bool is_archive;
+    bool is_device;
+};
+
+struct file_directory
+{
+    char *name;
+    int entry_count;
+    void *entries;
+    DIRECTORY_GET_ENTRY get_entry;
+};
+////////////////////////////
+
 struct file_system
 {
     // file_system should return zero from resolve if the disk is using its file system
@@ -49,6 +87,9 @@ struct file_system
     FS_SEEK_FUNCTION seek;
     FS_STAT_FUNCTION stat;
     FS_CLOSE_FUNCTION close;
+
+    FS_GET_ROOT_DIRECTORY_FUNCTION get_root_directory;
+    FS_GET_SUB_DIRECTORY_FUNCTION get_subdirectory;
 
     char name[20];
 };
@@ -70,5 +111,6 @@ int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
 void fs_insert_file_system(struct file_system *fs);
 struct file_system *fs_resolve(struct disk *disk);
+struct file_directory fs_open_dir(const char *name);
 
 #endif

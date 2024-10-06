@@ -53,6 +53,7 @@ int32_t serial_printf(char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL
+    ENTER_CRITICAL();
     va_list args;
 
     char str[MAX_FMT_STR_SERIAL];

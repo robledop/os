@@ -5,6 +5,8 @@
 #define CODE_SELECTOR 0x08
 #define DATA_SELECTOR 0x10
 
+#define KERNEL_STACK_ADDRESS 0x200000
+
 #define HEAP_SIZE_BYTES 104857600 // 100MB
 #define HEAP_BLOCK_SIZE 4096
 
@@ -22,7 +24,6 @@
 
 #define MAX_FMT_STR 10240
 
-#define TOTAL_GDT_SEGMENTS 6
 
 #define PROGRAM_VIRTUAL_ADDRESS 0x400000
 
@@ -40,5 +41,6 @@
 #define MAX_SYSCALLS 1024
 #define KEYBOARD_BUFFER_SIZE 1024
 
+#define __myos_libc 1
 
 #endif

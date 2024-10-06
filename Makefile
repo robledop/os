@@ -17,7 +17,7 @@ FLAGS = -g \
 	-falign-labels \
 	-falign-loops \
 	-fstrength-reduce \
-	-fomit-frame-pointer \
+	-fno-omit-frame-pointer \
 	-finline-functions \
 	-Wno-unused-function \
 	-fno-builtin \

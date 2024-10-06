@@ -8,6 +8,24 @@
 #include "ata.h"
 #include "kernel.h"
 #include "serial.h"
+#include "assert.h"
+#include "terminal.h"
+
+/////////////////////
+typedef unsigned int FS_ITEM_TYPE;
+#define FS_ITEM_TYPE_DIRECTORY 0
+#define FS_ITEM_TYPE_FILE 1
+
+struct fs_item
+{
+    union
+    {
+        struct fat_directory_entry *item;
+        struct fat_directory *directory;
+    };
+    FS_ITEM_TYPE type;
+};
+////////////////////
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
@@ -101,9 +119,13 @@ struct file_system *fs_resolve(struct disk *disk)
 {
     for (int i = 0; i < MAX_FILE_SYSTEMS; i++)
     {
-        if (file_systems[i] != 0 && file_systems[i]->resolve(disk) == 0)
+        if (file_systems[i] != 0)
         {
-            return file_systems[i];
+            ASSERT(file_systems[i]->resolve != 0, "File system does not have resolve function");
+            if(file_systems[i]->resolve(disk) == 0)
+            {
+                return file_systems[i];
+            }
         }
     }
 
@@ -280,4 +302,30 @@ int fclose(int fd)
     }
 
     return res;
+}
+
+struct file_directory fs_open_dir(const char *name)
+{
+    struct path_root *root_path = pathparser_parse(name, NULL);
+
+    ASSERT(root_path != 0, "Failed to parse path");
+
+    struct disk *disk = disk_get(root_path->drive_number);
+
+    ASSERT(disk != 0, "Failed to get disk");
+    ASSERT(disk->fs != 0, "Disk has no file system");
+
+    if (root_path->first == NULL)
+    {
+        ASSERT(disk->fs->get_root_directory != 0, "File system does not support getting root directory");
+        return disk->fs->get_root_directory(disk);
+    }
+
+    ASSERT(disk->fs->get_subdirectory != 0, "File system does not support getting sub directory");
+    ASSERT(name != NULL, "Name is null");
+    ASSERT(disk != NULL, "Disk is null");
+
+    struct file_directory dir = disk->fs->get_subdirectory(disk, name);
+
+    return dir;
 }

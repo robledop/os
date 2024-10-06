@@ -1,7 +1,5 @@
 section .asm
 
-extern int21h_handler
-extern print
 extern syscall_handler
 extern interrupt_handler
 extern interrupt_pointer_table

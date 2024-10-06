@@ -17,7 +17,9 @@ _start:
   mov fs, ax
   mov gs, ax
   mov ss, ax
-  mov ebp, 0x00200000
+  ; Remember that the stack grows downwards
+  mov ebp, 0x00200000 ; Set stack pointer
+;   mov ebp, 0x00EFFFFF ; Set stack pointer
   mov esp, ebp
 
   ; https://wiki.osdev.org/A20_Line

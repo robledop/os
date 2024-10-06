@@ -3,8 +3,11 @@
 #include "status.h"
 #include "string.h"
 #include "serial.h"
+#include "assert.h"
 
 // https://wiki.osdev.org/Paging
+
+struct page_directory *kernel_page_directory = 0;
 
 static uint32_t *current_directory = 0;
 void paging_load_directory(uint32_t *directory);
@@ -34,11 +37,9 @@ struct page_directory *paging_create_directory(uint8_t flags)
 // Switch page directory
 void paging_switch_directory(struct page_directory *chunk)
 {
-    // dbgprintf("Switching to page directory %x\n", chunk->directory_entry);
-
+    ASSERT(chunk->directory_entry != 0, "Page directory is null");
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
-    // dbgprintf("Switched to page directory %x\n", chunk->directory_entry);
 }
 
 void paging_free_directory(struct page_directory *page_directory)
@@ -176,9 +177,9 @@ int paging_map_to(struct page_directory *directory, void *virtual_address, void 
 void *paging_get_physical_address(struct page_directory *directory, void *virtual_address)
 {
     void *virt_address_new = (void *)paging_align_to_lower_page(virtual_address);
-    void *difference = (void *)((uint32_t)virtual_address - (uint32_t)virt_address_new);
+    void *offset = (void *)((uint32_t)virtual_address - (uint32_t)virt_address_new);
 
-    return (void *)((paging_get(directory, virt_address_new) & 0xFFFFF000) + (uint32_t)difference);
+    return (void *)((paging_get(directory, virt_address_new) & 0xFFFFF000) + (uint32_t)offset);
 }
 
 // Get the physical address of a page
@@ -220,4 +221,19 @@ int paging_set(struct page_directory *directory, void *virtual_address, uint32_t
     table[table_index] = value;
 
     return 0;
+}
+
+void paging_init()
+{
+    // struct page_directory *directory = paging_create_directory(
+    //     PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+    //     PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
+    //     PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    // paging_switch_directory(directory);
+    // enable_paging();
+
+    kernel_page_directory = paging_create_directory(
+        PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    paging_switch_directory(kernel_page_directory);
+    enable_paging();
 }

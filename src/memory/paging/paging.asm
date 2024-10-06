@@ -8,20 +8,11 @@ global enable_paging
 extern print
 
 paging_load_directory:
-    ; push message2
-    ; call print
-    ; add esp, 4
-
     push ebp
     mov ebp, esp
-    mov eax, [ebp + 8]
-    mov cr3, eax
-    pop ebp   
-
-    ; push message1
-    ; call print
-    ; add esp, 4
-
+    mov eax, [ebp+8]  ; Get the address of the page directory from the stack
+    mov cr3, eax      ; Load the page directory address into CR3
+    pop ebp
     ret
 
 enable_paging:
@@ -31,9 +22,7 @@ enable_paging:
     or eax, 0x80000000
     mov cr0, eax
     pop ebp
-    ; push message2
-    ; call print
-    ; add esp, 4
+    
     ret
 
  

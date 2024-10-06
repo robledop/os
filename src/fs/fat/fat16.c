@@ -9,6 +9,7 @@
 #include "kernel.h"
 #include "config.h"
 #include "serial.h"
+#include "assert.h"
 
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 2
@@ -29,6 +30,7 @@ typedef unsigned int FAT_ITEM_TYPE;
 #define FAT_FILE_ARCHIVE 0x20
 #define FAT_FILE_DEVICE 0x40
 #define FAT_FILE_RESERVED 0x80
+#define FAT_FILE_LONG_NAME 0x0F
 
 struct fat_header_extended
 {
@@ -124,20 +126,39 @@ int fat16_read(struct disk *disk, void *private_data, uint32_t size, uint32_t nm
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE whence);
 int fat16_stat(struct disk *disk, void *private, struct file_stat *stat);
 int fat16_close(void *private);
+struct file_directory get_fs_root_directory(struct disk *disk);
+struct file_directory get_subdirectory(struct disk *disk, const char *path);
 
-struct file_system fat16_fs = {
-    .resolve = fat16_resolve,
-    .open = fat16_open,
-    .read = fat16_read,
-    .seek = fat16_seek,
-    .stat = fat16_stat,
-    .close = fat16_close};
+struct file_system *fat16_fs;
+//     .resolve = fat16_resolve,
+//     .open = fat16_open,
+//     .read = fat16_read,
+//     .seek = fat16_seek,
+//     .stat = fat16_stat,
+//     .close = fat16_close,
+
+//     .get_root_directory = get_fs_root_directory,
+//     .get_subdirectory = get_subdirectory,
+// };
 
 struct file_system *fat16_init()
 {
-    strncpy(fat16_fs.name, "FAT16", 20);
-    dbgprintf("File system name %s\n", fat16_fs.name);
-    return &fat16_fs;
+    fat16_fs = kzalloc(sizeof(struct file_system));
+    fat16_fs->resolve = fat16_resolve;
+    fat16_fs->open = fat16_open;
+    fat16_fs->read = fat16_read,
+    fat16_fs->seek = fat16_seek,
+    fat16_fs->stat = fat16_stat,
+    fat16_fs->close = fat16_close,
+
+    fat16_fs->get_root_directory = get_fs_root_directory,
+    fat16_fs->get_subdirectory = get_subdirectory,
+
+    strncpy(fat16_fs->name, "FAT16", 20);
+    dbgprintf("File system name %s\n", fat16_fs->name);
+    ASSERT(fat16_fs->open != 0, "Open function is null");
+    ASSERT(fat16_fs->resolve != 0, "Resolve function is null");
+    return fat16_fs;
 }
 
 static void fat16_init_private(struct disk *disk, struct fat_private *fat_private)
@@ -278,7 +299,7 @@ int fat16_resolve(struct disk *disk)
     fat16_init_private(disk, fat_private);
 
     disk->fs_private = fat_private;
-    disk->fs = &fat16_fs;
+    disk->fs = fat16_fs;
 
     struct disk_stream *stream = disk_stream_create(disk->id);
     if (!stream)
@@ -658,9 +679,11 @@ struct fat_item *fat16_find_item_in_directory(struct disk *disk, struct fat_dire
         fat16_get_full_relative_filename(&directory->entries[i], tmp_filename, sizeof(tmp_filename));
         if (istrncmp(tmp_filename, name, sizeof(tmp_filename)) == 0)
         {
-            f_item = fat16_new_fat_item_for_directory_entry(disk, &directory->entries[i]);
+            return fat16_new_fat_item_for_directory_entry(disk, &directory->entries[i]);
         }
     }
+
+    ASSERT(istrncmp(name, "0:/test", 7) != 0, "Test directory not found");
 
     return f_item;
 }
@@ -847,3 +870,104 @@ int fat16_close(void *private)
     fat16_free_file_descriptor((struct fat_file_descriptor *)private);
     return ALL_OK;
 }
+
+////////////////////
+struct directory_entry get_directory_entry(void *fat_directory_entries, int index)
+{
+    // struct fat_directory_entry *entry = (struct fat_directory_entry *)entries[index];
+    struct fat_directory_entry *entries = (struct fat_directory_entry *)fat_directory_entries;
+    struct fat_directory_entry *entry = entries + index;
+
+    struct directory_entry directory_entry =
+        {
+            // .name = (char *)entry->name,
+            // .ext = (char *)entry->ext,
+            .attributes = entry->attributes,
+            .size = entry->size,
+            .access_date = entry->access_date,
+            .creation_date = entry->creation_date,
+            .creation_time = entry->creation_time,
+            .creation_time_tenths = entry->creation_time_tenths,
+            .modification_date = entry->modification_date,
+            .modification_time = entry->modification_time,
+            .is_archive = entry->attributes & FAT_FILE_ARCHIVE,
+            .is_device = entry->attributes & FAT_FILE_DEVICE,
+            .is_directory = entry->attributes & FAT_FILE_SUBDIRECTORY,
+            .is_hidden = entry->attributes & FAT_FILE_HIDDEN,
+            .is_long_name = entry->attributes == FAT_FILE_LONG_NAME,
+            .is_read_only = entry->attributes & FAT_FILE_READ_ONLY,
+            .is_system = entry->attributes & FAT_FILE_SYSTEM,
+            .is_volume_label = entry->attributes & FAT_FILE_VOLUME_LABEL,
+        };
+
+    // TODO: Check for a memory leak here
+    char *name = trim(substring((char *)entry->name, 0, 7));
+    char *ext = trim(substring((char *)entry->ext, 0, 2));
+
+    directory_entry.name = name;
+    directory_entry.ext = ext;
+
+    // kfree(name);
+    // kfree(ext);
+    return directory_entry;
+}
+
+struct file_directory get_fs_root_directory(struct disk *disk)
+{
+    struct fat_private *fat_private = disk->fs_private;
+    struct file_directory root_directory =
+        {
+            .name = "root",
+            .entry_count = fat_private->root_directory.entry_count,
+            .entries = fat_private->root_directory.entries,
+            .get_entry = get_directory_entry,
+        };
+    return root_directory;
+}
+
+struct file_directory get_subdirectory(struct disk *disk, const char *path)
+{
+    // path comes a fully qualified path
+    // e.g. 0:/subdirectory/subsubdirectory/file.txt
+    // use strtok to get the name of the first subdirectory
+    char *path_copy = strdup(path);
+    char *token = strtok(path_copy, "/");
+    if (strncmp(token, "0:", 2) == 0)
+    {
+        token = strtok(NULL, "/");
+    }
+
+    struct fat_private *fat_private = disk->fs_private;
+    struct fat_item *current_item = fat16_find_item_in_directory(disk, &fat_private->root_directory, token);
+
+    char item_name[MAX_PATH_LENGTH];
+
+    while (token != NULL && current_item != NULL && current_item->type == FAT_ITEM_TYPE_DIRECTORY)
+    {
+        strncpy(item_name, token, MAX_PATH_LENGTH);
+        token = strtok(NULL, "/");
+        if (token != NULL)
+        {
+            struct fat_item *next_item = fat16_find_item_in_directory(disk, current_item->directory, token);
+            fat16_fat_item_free(current_item);
+            current_item = next_item;
+        }
+    }
+
+    kfree(path_copy);
+
+    ASSERT(current_item != 0, "Failed to find subdirectory");
+    ASSERT(current_item->type == FAT_ITEM_TYPE_DIRECTORY, "Failed to find subdirectory");
+
+    struct file_directory subdirectory =
+        {
+            .name = (char*)item_name,
+            .entry_count = current_item->directory->entry_count,
+            .entries = current_item->directory->entries,
+            .get_entry = get_directory_entry,
+        };
+
+    return subdirectory;
+}
+
+////////////////////

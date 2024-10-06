@@ -19,16 +19,25 @@
 #include <terminal.h>
 #include <tss.h>
 #include <syscall.h>
+#include "ssp.h"
 
 // Divide by zero error
 extern void cause_problem();
 void paging_demo();
-void fs_demo();
 void multitasking_demo();
+void opendir_test();
 
-static struct page_directory *kernel_page_directory = 0;
+#if UINT32_MAX == UINTPTR_MAX
+#define STACK_CHK_GUARD 0xe2dee396
+#else
+#define STACK_CHK_GUARD 0x595e9fbd94fda766
+#endif
 
-void panic(const char *msg)
+uintptr_t __stack_chk_guard = 0xe2dee396;
+
+extern struct page_directory *kernel_page_directory;
+
+__attribute__((noreturn)) void panic(const char *msg)
 {
     kprintf(KRED "KERNEL PANIC: " KWHT);
     kprintf("%s\n", msg);
@@ -36,60 +45,42 @@ void panic(const char *msg)
     {
         asm volatile("hlt");
     }
+
+    __builtin_unreachable();
 }
 
 void kernel_page()
 {
-    // dbgprintf("Switching to kernel page\n");
     kernel_registers();
     paging_switch_directory(kernel_page_directory);
 }
 
-struct tss tss;
-struct gdt gdt_real[TOTAL_GDT_SEGMENTS];
-struct gdt_structured gdt_structured[TOTAL_GDT_SEGMENTS] = {
-    {.base = 0x00, .limit = 0x00, .type = 0x00},                  // NULL
-    {.base = 0x00, .limit = 0xFFFFFFFF, .type = 0x9A},            // Kernel code
-    {.base = 0x00, .limit = 0xFFFFFFFF, .type = 0x92},            // Kernel data
-    {.base = 0x00, .limit = 0xFFFFFFFF, .type = 0xF8},            // User code
-    {.base = 0x00, .limit = 0xFFFFFFFF, .type = 0xF2},            // User data
-    {.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0xE9}, // TSS
-};
-
 void kernel_main()
 {
-    idt_init();
-    init_serial();
+    __stack_chk_guard = 0xe2dee396;
+    disable_interrupts();
     terminal_clear();
     kprintf(KCYN "Kernel is starting\n");
-    memset(gdt_real, 0, sizeof(gdt_real));
-    gdt_structured_to_gdt(gdt_real, gdt_structured, TOTAL_GDT_SEGMENTS);
-    // dbgprintf("Loading GDT\n");
-
-    gdt_load(gdt_real, sizeof(gdt_real));
-
+    init_serial();
+    idt_init();
+    // gdt_init();
+    // tss_init();
+    init_gdt();
+    init_tss();
     kheap_init();
+
+    paging_init();
     fs_init();
     disk_search_and_init();
 
-    // dbgprintf("Initializing the TSS \n");
-    memset(&tss, 0, sizeof(tss));
-    tss.esp0 = 0x60000; // Kernel stack
-    tss.ss0 = DATA_SELECTOR;
-    // dbgprintf("Kernel stack address: %x\n", tss.esp0);
-
-    // dbgprintf("Loading the TSS\n");
-    tss_load(0x28);
-
-    kernel_page_directory = paging_create_directory(
-        PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
-    paging_switch_directory(kernel_page_directory);
-    enable_paging();
-
-    terminal_clear();
-    kprintf("Kernel is running\n");
     register_syscalls();
+
     keyboard_init();
+    kprintf("Kernel is running\n");
+
+    ///////////////////
+    opendir_test();
+    ///////////////////
 
     struct process *process = NULL;
     int res = process_load_switch("0:/sh", &process);
@@ -98,13 +89,52 @@ void kernel_main()
         panic("Failed to load shell");
     }
 
+    // enable_interrupts();
+
     task_run_first_task();
 
-    enable_interrupts();
+    panic("Kernel finished");
+}
 
-    while (1)
+void opendir_test()
+{
+    struct file_directory directory = fs_open_dir("0:/");
+
+    char *name = kmalloc(MAX_PATH_LENGTH);
+    strncpy(name, directory.name, MAX_PATH_LENGTH);
+    kprintf("Directory: %s\n", name);
+    kfree(name);
+    kprintf("Entries in directory: %d\n", directory.entry_count);
+    for (int i = 0; i < directory.entry_count; i++)
     {
-        asm volatile("hlt");
+        struct directory_entry entry = directory.get_entry(directory.entries, i);
+        if (entry.is_long_name)
+        {
+            continue;
+        }
+        if (strlen(entry.ext) > 0)
+        {
+            kprintf("%s.%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
+                    entry.name,
+                    entry.ext,
+                    entry.is_directory,
+                    entry.is_long_name,
+                    entry.is_read_only,
+                    entry.is_hidden,
+                    entry.is_system,
+                    entry.is_volume_label);
+        }
+        else
+        {
+            kprintf("%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
+                    entry.name,
+                    entry.is_directory,
+                    entry.is_long_name,
+                    entry.is_read_only,
+                    entry.is_hidden,
+                    entry.is_system,
+                    entry.is_volume_label);
+        }
     }
 }
 
@@ -121,32 +151,6 @@ void multitasking_demo()
     strncpy(argument.argument, "Program 1", sizeof(argument.argument));
     argument.next = NULL;
     process_inject_arguments(process, &argument);
-}
-
-void fs_demo()
-{
-    int fd = fopen("0:/hello.txt", "r");
-    if (fd)
-    {
-        dbgprintf("File opened\n");
-        char buffer[14];
-        // fseek(fd, 2, SEEK_SET);
-        fread(buffer, 13, 1, fd);
-        buffer[13] = 0x00;
-        dbgprintf("File contents: %s\n", buffer);
-
-        struct file_stat stat;
-        fstat(fd, &stat);
-
-        dbgprintf("File size: %d bytes\n", stat.size);
-
-        // dbgprintf("File flags: %x\n", stat.flags);
-
-        if (fclose(fd) == 0)
-        {
-            dbgprintf("File closed\n");
-        }
-    }
 }
 
 void paging_demo()

@@ -53,7 +53,6 @@ static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void isr80h_wrapper();
 
-
 void interrupt_handler(int interrupt, struct interrupt_frame *frame)
 {
     kernel_page();
@@ -87,7 +86,7 @@ void idt_set(int interrupt, void *handler)
 
 void idt_exception_handler(int interrupt)
 {
-    kprintf(KRED "\n%s" KWHT, exception_messages[interrupt]);
+    kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
     process_terminate(task_current()->process);
     kprintf("\nThe process with id %d has been terminated.", task_current()->process->pid);
     task_next();
@@ -96,6 +95,7 @@ void idt_exception_handler(int interrupt)
 void idt_clock(int interrupt)
 {
     outb(0x20, 0x20);
+    // Uncomment to enable multitasking
     // task_next();
 }
 
@@ -145,7 +145,8 @@ void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler)
 
     if (syscalls[command])
     {
-        panic("The command is already registered");
+        kprintf("The syscall is already registered %x\n", syscalls[command]);
+        panic("The syscall is already registered");
     }
 
     syscalls[command] = handler;
