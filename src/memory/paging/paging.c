@@ -164,6 +164,7 @@ int paging_map_to(struct page_directory *directory, void *virtual_address, void 
     if ((uint32_t)physical_end_address < (uint32_t)physical_start_address)
     {
         // dbgprintf("Physical end address %x is less than physical start address %x\n", (uint32_t)physical_end_address, (uint32_t)physical_start_address);
+        // ASSERT(false, "Physical end address is less than physical start address");
         res = -EINVARG;
     }
 
@@ -190,7 +191,7 @@ uint32_t paging_get(struct page_directory *directory, void *virtual_address)
     int res = paging_get_indexes(virtual_address, &directory_index, &table_index);
     if (res < 0)
     {
-        // dbgprintf("Failed to get indexes for virtual address %x\n", virtual_address);
+        // ASSERT(false, "Failed to get indexes");
         return 0;
     }
 
@@ -225,13 +226,6 @@ int paging_set(struct page_directory *directory, void *virtual_address, uint32_t
 
 void paging_init()
 {
-    // struct page_directory *directory = paging_create_directory(
-    //     PAGING_DIRECTORY_ENTRY_IS_PRESENT |
-    //     PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-    //     PAGING_DIRECTORY_ENTRY_SUPERVISOR);
-    // paging_switch_directory(directory);
-    // enable_paging();
-
     kernel_page_directory = paging_create_directory(
         PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     paging_switch_directory(kernel_page_directory);
