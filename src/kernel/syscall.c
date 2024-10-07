@@ -10,6 +10,8 @@
 #include "string.h"
 #include "status.h"
 #include "file.h"
+#include "kheap.h"
+#include "memory.h"
 
 void register_syscalls()
 {
@@ -27,6 +29,47 @@ void register_syscalls()
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_CLEAR_SCREEN, sys_clear_screen);
+    register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
+}
+
+void *sys_open_dir(struct interrupt_frame *frame)
+{
+    void *path_ptr = task_get_stack_item(task_current(), 0);
+    char path[MAX_PATH_LENGTH];
+
+    copy_string_from_task(task_current(), path_ptr, path, sizeof(path));
+
+    struct file_directory *directory = task_virtual_to_physical_address(
+        task_current(),
+        task_get_stack_item(task_current(), 1));
+
+    void *result = process_malloc(task_current()->process, sizeof(struct file_directory));
+
+    struct file_directory dir = fs_open_dir((const char *)path);
+
+    // kprintf("Directory: %s\n", dir.name);
+
+    memcpy(result, &dir, sizeof(struct file_directory));
+
+    directory = result;
+
+    if (directory)
+    {
+    }
+
+    return NULL;
+}
+
+void *sys_get_program_arguments(struct interrupt_frame *frame)
+{
+    struct process *process = task_current()->process;
+    struct process_arguments *arguments = task_virtual_to_physical_address(
+        task_current(),
+        task_get_stack_item(task_current(), 0));
+
+    process_get_arguments(process, &arguments->argc, &arguments->argv);
+
+    return NULL;
 }
 
 void *sys_clear_screen(struct interrupt_frame *frame)
@@ -177,18 +220,6 @@ void *sys_invoke_system(struct interrupt_frame *frame)
 
     task_switch(process->task);
     task_return(&process->task->registers);
-
-    return NULL;
-}
-
-void *sys_get_program_arguments(struct interrupt_frame *frame)
-{
-    struct process *process = task_current()->process;
-    struct process_arguments *arguments = task_virtual_to_physical_address(
-        task_current(),
-        task_get_stack_item(task_current(), 0));
-
-    process_get_arguments(process, &arguments->argc, &arguments->argv);
 
     return NULL;
 }

@@ -27,8 +27,14 @@ FLAGS = -g \
 	-Wno-unused-parameter \
 	-nostartfiles \
 	-nodefaultlibs \
-	-Iinc \
+	-Wextra \
+	-std=gnu23 \
+	-pedantic-errors \
 	-Wall
+
+
+	# -fstack-protector \
+	# -fsanitize=undefined \
 
 all: ./bin/boot.bin ./bin/kernel.bin apps
 	rm -rf ./bin/os.bin
@@ -51,7 +57,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	nasm -f elf -g $< -o $@
 
 ./build/%.o: ./src/%.c
-	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -c $< -o $@
 
 grub: ./bin/kernel-grub.bin
 	grub-file --is-x86-multiboot ./bin/kernel-grub.bin

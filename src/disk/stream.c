@@ -48,7 +48,8 @@ int disk_stream_read(struct disk_stream *stream, void *out, int size)
 
     for (int i = 0; i < to_read; i++)
     {
-        *(char *)out++ = buffer[offset + i];
+        *(char *)out = buffer[offset + i];
+        out = (char *)out + 1;
     }
 
     stream->position += to_read;

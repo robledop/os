@@ -76,7 +76,7 @@ struct elf32_shdr *elf_section(struct elf_header *header, int index)
 
 void *elf_phdr_phys_address(struct elf_file *file, struct elf32_phdr *phdr)
 {
-    return elf_memory(file) + phdr->p_offset;
+    return (char *)elf_memory(file) + phdr->p_offset;
 }
 
 char *elf_str_table(struct elf_header *header)
@@ -114,14 +114,14 @@ int elf_process_phdr_pt_load(struct elf_file *elf_file, struct elf32_phdr *phdr)
     if (elf_file->virtual_base_address >= (void *)phdr->p_vaddr || elf_file->virtual_base_address == 0x00)
     {
         elf_file->virtual_base_address = (void *)phdr->p_vaddr;
-        elf_file->physical_base_address = elf_memory(elf_file) + phdr->p_offset;
+        elf_file->physical_base_address = (char *)elf_memory(elf_file) + phdr->p_offset;
     }
 
     unsigned int end_virtual_address = phdr->p_vaddr + phdr->p_filesz;
     if (elf_file->virtual_end_address <= (void *)(end_virtual_address) || elf_file->virtual_end_address == 0x00)
     {
         elf_file->virtual_end_address = (void *)end_virtual_address;
-        elf_file->physical_end_address = elf_memory(elf_file) + phdr->p_offset + phdr->p_filesz;
+        elf_file->physical_end_address = (char *)elf_memory(elf_file) + phdr->p_offset + phdr->p_filesz;
     }
     return 0;
 }

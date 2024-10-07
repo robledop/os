@@ -125,7 +125,7 @@ void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
 void print(const char *str)
 {
     size_t len = strlen(str);
-    for (int i = 0; i < len; i++)
+    for (size_t i = 0; i < len; i++)
     {
         terminal_write_char(str[i], forecolor, backcolor);
     }
@@ -134,7 +134,7 @@ void print(const char *str)
 void ksprintf(const char *str, int max)
 {
     size_t len = strnlen(str, max);
-    for (int i = 0; i < len; i++)
+    for (size_t i = 0; i < len; i++)
     {
         terminal_write_char(str[i], forecolor, backcolor);
     }

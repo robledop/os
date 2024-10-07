@@ -9,6 +9,7 @@
 #include "terminal.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
+typedef void (*INTERRUPT_HANDLER_FUNCTION)(void);
 
 char *exception_messages[] = {
     "Division By Zero",
@@ -47,7 +48,7 @@ char *exception_messages[] = {
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-extern void *interrupt_pointer_table[TOTAL_INTERRUPTS];
+extern INTERRUPT_HANDLER_FUNCTION interrupt_pointer_table[TOTAL_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[TOTAL_INTERRUPTS];
 static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
@@ -66,7 +67,7 @@ void interrupt_handler(int interrupt, struct interrupt_frame *frame)
     outb(0x20, 0x20);
 }
 
-void idt_set(int interrupt, void *handler)
+void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
 {
     struct idt_desc *desc = &idt_descriptors[interrupt];
     desc->offset_1 = (uint32_t)handler & 0x0000FFFF;

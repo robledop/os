@@ -1,8 +1,7 @@
 #ifndef STDLIBSTRING_H
 #define STDLIBSTRING_H
 
-#include <stdbool.h>
-#include <stddef.h>
+#include "types.h"
 
 int strlen(const char *s);
 size_t strnlen(const char *s, size_t maxlen);

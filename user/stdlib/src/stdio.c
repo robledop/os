@@ -266,3 +266,13 @@ int printf(const char *fmt, ...)
 
     return 0;
 }
+
+int opendir(struct file_directory *directory, const char *path)
+{
+    *directory = os_open_dir(path);
+    if (!directory)
+    {
+        return -1;
+    }
+    return 0;
+}

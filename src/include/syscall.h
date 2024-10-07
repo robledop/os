@@ -16,7 +16,8 @@ enum SysCalls
     SYSCALL_CLOSE,
     SYSCALL_STAT,
     SYSCALL_READ,
-    SYSCALL_CLEAR_SCREEN
+    SYSCALL_CLEAR_SCREEN,
+    SYSCALL_OPEN_DIR,
 };
 
 void register_syscalls();
@@ -36,5 +37,6 @@ void *sys_close(struct interrupt_frame *frame);
 void *sys_stat(struct interrupt_frame *frame);
 void *sys_read(struct interrupt_frame *frame);
 void *sys_clear_screen(struct interrupt_frame *frame);
+void *sys_open_dir(struct interrupt_frame *frame);
 
 #endif

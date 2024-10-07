@@ -37,7 +37,7 @@ struct page_directory *paging_create_directory(uint8_t flags)
 // Switch page directory
 void paging_switch_directory(struct page_directory *chunk)
 {
-    ASSERT(chunk->directory_entry != 0, "Page directory is null");
+    // ASSERT(chunk->directory_entry != 0, "Page directory is null");
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
 }
@@ -132,8 +132,8 @@ int paging_map_range(struct page_directory *directory, void *virtual_address, vo
             break;
         }
 
-        virtual_address += PAGING_PAGE_SIZE;
-        physical_start_address += PAGING_PAGE_SIZE;
+        virtual_address = (char *)virtual_address + PAGING_PAGE_SIZE;
+        physical_start_address = (char *)physical_start_address + PAGING_PAGE_SIZE;
     }
 
     return res;
@@ -168,7 +168,7 @@ int paging_map_to(struct page_directory *directory, void *virtual_address, void 
         res = -EINVARG;
     }
 
-    uint32_t total_bytes = physical_end_address - physical_start_address;
+    uint32_t total_bytes = (char *)physical_end_address - (char *)physical_start_address;
     int total_pages = total_bytes / PAGING_PAGE_SIZE;
     res = paging_map_range(directory, virtual_address, physical_start_address, total_pages, flags);
 

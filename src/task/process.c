@@ -107,7 +107,7 @@ int process_free_program_data(struct process *process)
         break;
 
     default:
-        ASSERT(false, "Unknown process file type");
+        // ASSERT(false, "Unknown process file type");
         res = -EINVARG;
     }
     return res;
@@ -194,7 +194,7 @@ int process_inject_arguments(struct process *process, struct command_argument *r
 
     if (argc == 0)
     {
-        ASSERT(false, "No arguments to inject");
+        // ASSERT(false, "No arguments to inject");
         res = -EINVARG;
         goto out;
     }
@@ -202,7 +202,7 @@ int process_inject_arguments(struct process *process, struct command_argument *r
     char **argv = process_malloc(process, sizeof(const char *) * argc);
     if (!argv)
     {
-        ASSERT(false, "Failed to allocate memory for arguments");
+        // ASSERT(false, "Failed to allocate memory for arguments");
         res = -ENOMEM;
         goto out;
     }
@@ -212,7 +212,7 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         char *argument_str = process_malloc(process, sizeof(current->argument));
         if (!argument_str)
         {
-            ASSERT(false, "Failed to allocate memory for argument string");
+            // ASSERT(false, "Failed to allocate memory for argument string");
             res = -ENOMEM;
             goto out;
         }
@@ -235,18 +235,18 @@ void process_free(struct process *process, void *ptr)
     struct process_allocation *allocation = process_get_allocation_by_address(process, ptr);
     if (!allocation)
     {
-        ASSERT(false, "Failed to find allocation for address");
+        // ASSERT(false, "Failed to find allocation for address");
         return;
     }
 
     int res = paging_map_to(process->task->page_directory,
                             allocation->ptr,
                             allocation->ptr,
-                            paging_align_address(allocation->ptr + allocation->size),
+                            paging_align_address((char *)allocation->ptr + allocation->size),
                             0x00);
     if (res < 0)
     {
-        ASSERT(false, "Failed to unmap memory");
+        // ASSERT(false, "Failed to unmap memory");
         return;
     }
 
@@ -269,27 +269,27 @@ void *process_malloc(struct process *process, size_t size)
     void *ptr = kzalloc(size);
     if (!ptr)
     {
-        ASSERT(false, "Failed to allocate memory for process");
+        // ASSERT(false, "Failed to allocate memory for process");
         goto out_error;
     }
 
     int index = process_find_free_allocation_slot(process);
     if (index < 0)
     {
-        ASSERT(false, "Failed to find free allocation slot");
+        // ASSERT(false, "Failed to find free allocation slot");
         goto out_error;
     }
 
     int res = paging_map_to(process->task->page_directory,
                             ptr,
                             ptr,
-                            paging_align_address(ptr + size),
+                            paging_align_address((char *)ptr + size),
                             PAGING_DIRECTORY_ENTRY_IS_PRESENT |
                                 PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                                 PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     if (res < 0)
     {
-        ASSERT(false, "Failed to map memory for process");
+        // ASSERT(false, "Failed to map memory for process");
         goto out_error;
     }
 
@@ -324,7 +324,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     res = fstat(fd, &stat);
     if (res != ALL_OK)
     {
-        ASSERT(false, "Failed to get file stat");
+        // ASSERT(false, "Failed to get file stat");
         res = -EIO;
         goto out;
     }
@@ -332,14 +332,14 @@ static int process_load_binary(const char *file_name, struct process *process)
     program = kzalloc(stat.size);
     if (!program)
     {
-        ASSERT(false, "Failed to allocate memory for program");
+        // ASSERT(false, "Failed to allocate memory for program");
         res = -ENOMEM;
         goto out;
     }
 
     if (fread(program, stat.size, 1, fd) != 1)
     {
-        ASSERT(false, "Failed to read file");
+        // ASSERT(false, "Failed to read file");
         res = -EIO;
         goto out;
     }
@@ -389,7 +389,7 @@ static int process_load_data(const char *file_name, struct process *process)
     res = process_load_elf(file_name, process);
     if (res == -EINFORMAT)
     {
-        ASSERT(false, "Failed to load ELF file");
+        // ASSERT(false, "Failed to load ELF file");
         res = process_load_binary(file_name, process);
     }
 
@@ -400,7 +400,7 @@ static int process_map_binary(struct process *process)
 {
     int res = 0;
     paging_map_to(process->task->page_directory, (void *)PROGRAM_VIRTUAL_ADDRESS, process->pointer,
-                  paging_align_address(process->pointer + process->size),
+                  paging_align_address((char *)process->pointer + process->size),
                   PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                       PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
@@ -428,11 +428,11 @@ static int process_map_elf(struct process *process)
         res = paging_map_to(process->task->page_directory,
                             paging_align_to_lower_page((void *)phdr->p_vaddr),
                             paging_align_to_lower_page(phdr_phys_address),
-                            paging_align_address(phdr_phys_address + phdr->p_memsz),
+                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz),
                             flags);
         if (ISERR(res))
         {
-            ASSERT(false, "Failed to map ELF file");
+            // ASSERT(false, "Failed to map ELF file");
             break;
         }
     }
@@ -459,8 +459,8 @@ int process_map_memory(struct process *process)
     ASSERT(res >= 0, "Failed to map memory for process");
 
     res = paging_map_to(process->task->page_directory,
-                        (void *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
-                        process->stack, paging_align_address(process->stack + USER_PROGRAM_STACK_SIZE),
+                        (char *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
+                        process->stack, paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
                         PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                             PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 

@@ -12,7 +12,10 @@
         "stdio.h": "c",
         "stddef.h": "c",
         "memory.h": "c",
-        "serial.h": "c"
+        "serial.h": "c",
+        "unistd.h": "c",
+        "errno.h": "c",
+        "tss.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

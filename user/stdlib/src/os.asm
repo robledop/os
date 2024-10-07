@@ -144,9 +144,9 @@ global os_stat:function
 os_stat:
     push ebp
     mov ebp, esp
-    push dword [ebp + 8] ; fd
+    push dword [ebp + 8]  ; fd
     push dword [ebp + 12] ; stat
-    mov eax, 11          ; sys_stat command
+    mov eax, 11           ; sys_stat command
     int 0x80
     add esp, 8
     mov esp, ebp
@@ -179,3 +179,16 @@ os_clear_screen:
     pop ebp
     ret
 
+
+; int os_open_dir(struct file_directory* directory, const char* path)
+global os_open_dir:function
+os_open_dir:
+    push ebp
+    mov ebp, esp
+    push dword [ebp + 8]  ; directory
+    push dword [ebp + 12] ; path
+    mov eax, 14           ; sys_open_dir command
+    int 0x80
+    add esp, 8
+    pop ebp
+    ret

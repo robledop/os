@@ -1,22 +1,11 @@
 #ifndef OS_H
 #define OS_H
 
-#include <stddef.h>
-#include <stdbool.h>
+#include "types.h"
+#include "stdio.h"
 
 #define MAX_PATH_LENGTH 1024
 
-struct command_argument
-{
-    char argument[512];
-    struct command_argument *next;
-};
-
-struct process_arguments
-{
-    int argc;
-    char **argv;
-};
 
 struct command_argument *os_parse_command(const char *command, int max);
 void os_terminal_readline(char *out, int max, bool output_while_typing);
@@ -28,13 +17,14 @@ void os_free(void *ptr);
 void os_putchar(char c);
 void os_putchar_color(char c, unsigned char forecolor, unsigned char backcolor);
 void os_process_get_arguments(struct process_arguments *args);
-int os_system(struct command_argument* args);
+int os_system(struct command_argument *args);
 int os_system_run(const char *command);
 void os_exit();
-int os_open(const char* file_name, const char* mode);
+int os_open(const char *file_name, const char *mode);
 int os_close(int fd);
 int os_stat(int fd, struct file_stat *stat);
 int os_read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 void os_clear_screen();
+struct file_directory os_open_dir(const char *path);
 
 #endif

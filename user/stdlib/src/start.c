@@ -10,5 +10,6 @@ void c_start()
     int res = main(arguments.argc, arguments.argv);
     if (res == 0)
     {
+        os_exit();
     }
 }

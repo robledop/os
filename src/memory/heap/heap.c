@@ -13,7 +13,7 @@ static int heap_validate_table(void *ptr, void *end, struct heap_table *table)
 {
     int res = 0;
 
-    size_t table_size = (size_t)(end - ptr);
+    size_t table_size = (size_t)((char *)end - (char *)ptr);
     size_t total_blocks = table_size / HEAP_BLOCK_SIZE;
 
     // If the total number of blocks is not a multiple of HEAP_BLOCK_SIZE, return an error
@@ -96,7 +96,7 @@ static void *heap_block_to_address(struct heap *heap, uint32_t block)
 // blocks_needed: The number of blocks to mark as taken
 static void heap_mark_blocks_taken(struct heap *heap, uint32_t start_block, uint32_t blocks_needed)
 {
-    int end_block = (start_block + blocks_needed) - 1;
+    uint32_t end_block = (start_block + blocks_needed) - 1;
     // Mark the first block as taken
     HEAP_BLOCK_TABLE_ENTRY entry = HEAP_BLOCK_TAKEN | HEAP_BLOCK_IS_FIRST;
 
@@ -107,7 +107,7 @@ static void heap_mark_blocks_taken(struct heap *heap, uint32_t start_block, uint
     }
 
     // Mark the rest of the blocks as taken
-    for (int i = start_block; i <= end_block + blocks_needed; i++)
+    for (uint32_t i = start_block; i <= end_block + blocks_needed; i++)
     {
         heap->table->entries[i] = entry;
         entry = HEAP_BLOCK_TAKEN;
@@ -125,7 +125,7 @@ static void heap_mark_blocks_taken(struct heap *heap, uint32_t start_block, uint
 // - HEAP_BLOCK_FREE
 static int heap_get_entry_type(HEAP_BLOCK_TABLE_ENTRY entry)
 {
-  	// Currently the type is stored in the least significant bit
+    // Currently the type is stored in the least significant bit
     return entry & 0b00001111;
 }
 
@@ -138,10 +138,10 @@ static int heap_get_start_block(struct heap *heap, uint32_t blocks_needed)
     // The block number of the first block that can hold the requested number of blocks
     int start_block = -1;
     // The number of free blocks found so far
-    int free_blocks = 0;
+    uint32_t free_blocks = 0;
 
     // Search for the first block that can hold the requested number of blocks
-    for (int i = 0; i < table->total; i++)
+    for (size_t i = 0; i < table->total; i++)
     {
         // If the block is not free, reset the free block counter
         if (heap_get_entry_type(table->entries[i]) != HEAP_BLOCK_FREE)

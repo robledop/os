@@ -31,7 +31,7 @@ size_t strlen(const char *s)
 // Gets the length of a string
 size_t strnlen(const char *s, size_t maxlen)
 {
-    int n;
+    size_t n;
 
     for (n = 0; s[n]; n++)
     {
@@ -45,7 +45,7 @@ size_t strnlen(const char *s, size_t maxlen)
 
 int strnlen_terminator(const char *s, size_t maxlen, char terminator)
 {
-    int n;
+    size_t n;
 
     for (n = 0; s[n]; n++)
     {

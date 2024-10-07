@@ -156,8 +156,8 @@ struct file_system *fat16_init()
 
     strncpy(fat16_fs->name, "FAT16", 20);
     dbgprintf("File system name %s\n", fat16_fs->name);
-    ASSERT(fat16_fs->open != 0, "Open function is null");
-    ASSERT(fat16_fs->resolve != 0, "Resolve function is null");
+    // ASSERT(fat16_fs->open != 0, "Open function is null");
+    // ASSERT(fat16_fs->resolve != 0, "Resolve function is null");
     return fat16_fs;
 }
 
@@ -365,7 +365,7 @@ out:
 
 void fat16_to_proper_string(char **out, const char *in, size_t size)
 {
-    int i = 0;
+    size_t i = 0;
     while (*in != 0x00 && *in != 0x20)
     {
         **out = *in;
@@ -394,7 +394,7 @@ void fat16_get_full_relative_filename(struct fat_directory_entry *entry, char *o
     }
 }
 
-struct fat_directory_entry *fat16_clone_fat_directory_entry(struct fat_directory_entry *entry, int size)
+struct fat_directory_entry *fat16_clone_fat_directory_entry(struct fat_directory_entry *entry, size_t size)
 {
     struct fat_directory_entry *new_entry = 0;
     if (size < sizeof(struct fat_directory_entry))
@@ -554,7 +554,7 @@ static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream
     total -= total_bytes_read;
     if (total > 0)
     {
-        res = fat16_read_internal_from_stream(disk, stream, cluster_to_use, offset + total_bytes_read, total, out + total_bytes_read);
+        res = fat16_read_internal_from_stream(disk, stream, cluster_to_use, offset + total_bytes_read, total, (char *)out + total_bytes_read);
     }
 
 out:

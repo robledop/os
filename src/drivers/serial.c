@@ -43,7 +43,7 @@ void serial_write(char *str)
     {
         return;
     }
-    for (int i = 0; i < strlen(str); i++)
+    for (size_t i = 0; i < strlen(str); i++)
     {
         serial_put(str[i]);
     }
