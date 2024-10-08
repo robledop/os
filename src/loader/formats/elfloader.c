@@ -148,7 +148,7 @@ int elf_process_pheaders(struct elf_file *elf_file)
         res = elf_process_pheader(elf_file, phdr);
         if (res < 0)
         {
-            // dbgprintf("Failed to process program header %d\n", i);
+            warningf("Failed to process program header %d\n", i);
             break;
         }
     }
@@ -162,15 +162,14 @@ int elf_process_loaded(struct elf_file *elf_file)
     res = elf_validate_loaded(header);
     if (res < 0)
     {
-        // dbgprintf("Failed to validate loaded ELF file\n");
+        warningf("Failed to validate loaded ELF file\n");
         goto out;
     }
 
     res = elf_process_pheaders(elf_file);
     if (res < 0)
     {
-        // dbgprintf("Failed to process program headers for ELF file\n");
-        // kprintf("Failed to process program headers for ELF file\n");
+        warningf("Failed to process program headers for ELF file\n");
         goto out;
     }
 
@@ -185,7 +184,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     int res = fopen(filename, "r");
     if (res <= 0)
     {
-        // dbgprintf("Failed to open file %s\n", filename);
+        warningf("Failed to open file %s\n", filename);
         res = -EIO;
         goto out;
     }
@@ -195,7 +194,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     res = fstat(fd, &stat);
     if (res < 0)
     {
-        // dbgprintf("Failed to get file stat for %s\n", filename);
+        warningf("Failed to get file stat for %s\n", filename);
         goto out;
     }
 
@@ -203,14 +202,14 @@ int elf_load(const char *filename, struct elf_file **file_out)
     res = fread(elf_file->elf_memory, stat.size, 1, fd);
     if (res < 0)
     {
-        // dbgprintf("Failed to read file %s\n", filename);
+        warningf("Failed to read file %s\n", filename);
         goto out;
     }
 
     res = elf_process_loaded(elf_file);
     if (res < 0)
     {
-        // dbgprintf("Failed to process loaded ELF file %s\n", filename);
+        warningf("Failed to process loaded ELF file %s\n", filename);
         goto out;
     }
 
@@ -224,6 +223,7 @@ void elf_close(struct elf_file *file)
 {
     if (!file)
     {
+        warningf("Invalid ELF file\n");
         return;
     }
 

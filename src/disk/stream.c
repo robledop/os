@@ -10,6 +10,7 @@ struct disk_stream *disk_stream_create(int disk_index)
     struct disk *disk = disk_get(disk_index);
     if (!disk)
     {
+        warningf("Failed to get disk %d\n", disk_index);
         return NULL;
     }
 
@@ -42,7 +43,7 @@ int disk_stream_read(struct disk_stream *stream, void *out, int size)
     int res = disk_read_block(stream->disk, sector, 1, buffer);
     if (res < 0)
     {
-        dbgprintf("Failed to read block\n");
+        warningf("Failed to read block\n");
         return res;
     }
 

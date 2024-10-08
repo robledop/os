@@ -5,6 +5,7 @@
 #include "status.h"
 #include <terminal.h>
 #include "serial.h"
+#include "kernel.h"
 
 struct disk disk;
 
@@ -23,7 +24,6 @@ int disk_read_sector(int lba, int total, void *buffer)
     unsigned short *ptr = (unsigned short *)buffer;
     for (int b = 0; b < total; b++)
     {
-        // Wait for the drive to be ready to send data
         dbgprintf("Waiting for drive to be ready\n");
         char status = inb(0x1F7);
 
@@ -31,6 +31,12 @@ int disk_read_sector(int lba, int total, void *buffer)
 
         while ((status & 0x08) == 0)
         {
+            if (status & 0x01)
+            {
+                panic("Error: Drive fault\n");
+                return -EIO;
+            }
+
             dbgprintf("Status: %x\n", status);
             status = inb(0x1F7);
         }
@@ -43,13 +49,12 @@ int disk_read_sector(int lba, int total, void *buffer)
         }
     }
 
-    dbgprintf("Read sector %d\n", lba);
     return 0;
 }
 
 void disk_search_and_init()
 {
-    // print("Initializing disk\n");
+    dbgprintf("Searching for disks\n");
     memset(&disk, 0, sizeof(disk));
     disk.type = DISK_TYPE_PHYSICAL;
     disk.sector_size = SECTOR_SIZE;
@@ -72,7 +77,7 @@ int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffe
     dbgprintf("Reading block from disk %d, lba: %d, total: %d\n", idisk->id, lba, total);
     if (idisk != &disk)
     {
-        dbgprintf("Invalid disk\n");
+        warningf("Invalid disk\n");
         return -EIO;
     }
 

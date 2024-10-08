@@ -5,12 +5,12 @@
 #include "kernel.h"
 #include "keyboard.h"
 
-int classic_keyboard_init();
-void classic_keyboard_interrupt_handler(int interrupt);
+int ps2_keyboard_init();
+void ps2_keyboard_interrupt_handler(int interrupt);
 
-struct keyboard classic_keyboard = {
-    .name = {"classic"},
-    .init = classic_keyboard_init,
+struct keyboard ps2_keyboard = {
+    .name = {"ps2"},
+    .init = ps2_keyboard_init,
 };
 
 #define PS2_CAPSLOCK 0x3A
@@ -78,29 +78,28 @@ int keyboard_get_char()
     return c;
 }
 
-int classic_keyboard_init()
+int ps2_keyboard_init()
 {
-    idt_register_interrupt_callback(ISR_KEYBOARD, classic_keyboard_interrupt_handler);
+    idt_register_interrupt_callback(ISR_KEYBOARD, ps2_keyboard_interrupt_handler);
 
-    outb(KBD_STATUS_PORT, 0xAE); // keyboard enable command 
+    outb(KBD_STATUS_PORT, 0xAE); // keyboard enable command
     outb(KBD_DATA_PORT, 0xFF);   // keyboard reset command
 
-    kbd_led_handling(0x07); 
+    kbd_led_handling(0x07);
 
     return 0;
 }
 
-
-void classic_keyboard_interrupt_handler(int interrupt)
+void ps2_keyboard_interrupt_handler(int interrupt)
 {
     kernel_page();
 
     int c = keyboard_get_char();
-    if(c > 0)
+    if (c > 0)
     {
         keyboard_push(c);
     }
     task_page();
 }
 
-struct keyboard *classic_init() { return &classic_keyboard; }
+struct keyboard *ps2_init() { return &ps2_keyboard; }

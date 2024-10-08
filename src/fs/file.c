@@ -121,7 +121,7 @@ struct file_system *fs_resolve(struct disk *disk)
     {
         if (file_systems[i] != 0)
         {
-            // ASSERT(file_systems[i]->resolve != 0, "File system does not have resolve function");
+            ASSERT(file_systems[i]->resolve != 0, "File system does not have resolve function");
             if (file_systems[i]->resolve(disk) == 0)
             {
                 return file_systems[i];
@@ -204,6 +204,7 @@ int fopen(const char *path, const char *mode)
     void *descriptor_private_data = disk->fs->open(disk, root_path->first, file_mode);
     if (ISERR(descriptor_private_data))
     {
+        warningf("Failed to open file\n");
         res = ERROR_I(descriptor_private_data);
         goto out;
     }
@@ -308,22 +309,22 @@ struct file_directory fs_open_dir(const char *name)
 {
     struct path_root *root_path = pathparser_parse(name, NULL);
 
-    // ASSERT(root_path != 0, "Failed to parse path");
+    ASSERT(root_path != 0, "Failed to parse path");
 
     struct disk *disk = disk_get(root_path->drive_number);
 
-    // ASSERT(disk != 0, "Failed to get disk");
-    // ASSERT(disk->fs != 0, "Disk has no file system");
+    ASSERT(disk != 0, "Failed to get disk");
+    ASSERT(disk->fs != 0, "Disk has no file system");
 
     if (root_path->first == NULL)
     {
-        // ASSERT(disk->fs->get_root_directory != 0, "File system does not support getting root directory");
+        ASSERT(disk->fs->get_root_directory != 0, "File system does not support getting root directory");
         return disk->fs->get_root_directory(disk);
     }
 
-    // ASSERT(disk->fs->get_subdirectory != 0, "File system does not support getting sub directory");
-    // ASSERT(name != NULL, "Name is null");
-    // ASSERT(disk != NULL, "Disk is null");
+    ASSERT(disk->fs->get_subdirectory != 0, "File system does not support getting sub directory");
+    ASSERT(name != NULL, "Name is null");
+    ASSERT(disk != NULL, "Disk is null");
 
     struct file_directory dir = disk->fs->get_subdirectory(disk, name);
 

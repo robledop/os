@@ -1,6 +1,6 @@
 [BITS 32]
 
-section .asm
+section .text
 
 global restore_general_purpose_registers
 global task_return

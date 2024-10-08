@@ -63,10 +63,7 @@ void kernel_main()
     kprintf(KCYN "Kernel is starting\n");
     init_serial();
     idt_init();
-    // gdt_init();
-    // tss_init();
     init_gdt();
-    init_tss();
     kheap_init();
 
     paging_init();
@@ -79,7 +76,7 @@ void kernel_main()
     kprintf("Kernel is running\n");
 
     ///////////////////
-    opendir_test();
+    // opendir_test();
     ///////////////////
 
     struct process *process = NULL;

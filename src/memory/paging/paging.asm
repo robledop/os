@@ -1,6 +1,6 @@
 [BITS 32]
 
-section .asm
+section .text
 
 global paging_load_directory
 global enable_paging
@@ -8,7 +8,7 @@ global enable_paging
 extern print
 
 paging_load_directory:
-    push ebp
+   push ebp
     mov ebp, esp
     mov eax, [ebp+8]  ; Get the address of the page directory from the stack
     mov cr3, eax      ; Load the page directory address into CR3

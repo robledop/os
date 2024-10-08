@@ -18,6 +18,15 @@ uint8_t backcolor = 0x00; // Default cyan
 static int cursor_y;
 static int cursor_x;
 
+void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
+{
+    outb(0x3D4, 0x0A);
+    outb(0x3D5, (inb(0x3D5) & 0xC0) | cursor_start);
+
+    outb(0x3D4, 0x0B);
+    outb(0x3D5, (inb(0x3D5) & 0xE0) | cursor_end);
+}
+
 void update_cursor(int row, int col)
 {
     unsigned short position = (row * VGA_WIDTH) + col;
@@ -331,4 +340,6 @@ void terminal_clear()
             write_character(' ', forecolor, backcolor, x, y);
         }
     }
+
+    enable_cursor(14, 15);
 }

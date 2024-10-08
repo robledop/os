@@ -3,6 +3,7 @@
 #include "config.h"
 #include "kheap.h"
 #include "status.h"
+#include "serial.h"
 
 static int path_valid_format(const char *path)
 {
@@ -15,6 +16,7 @@ static int get_drive_by_path(const char **path)
 {
     if (!path_valid_format(*path))
     {
+        warningf("Invalid path format\n");
         return -EBADPATH;
     }
 
@@ -66,6 +68,7 @@ struct path_part *parse_path_part(struct path_part *last_part, const char **path
     const char *path_part_str = get_path_part(path);
     if (path_part_str == 0)
     {
+        warningf("Failed to get path part\n");
         return 0;
     }
 
@@ -103,24 +106,28 @@ struct path_root *pathparser_parse(const char *path, const char *current_directo
 
     if (strlen(path) > MAX_PATH_LENGTH)
     {
+        warningf("Path too long\n");
         goto out;
     }
 
     res = get_drive_by_path(&tmp_path);
     if (res < 0)
     {
+        warningf("Failed to get drive by path\n");
         goto out;
     }
 
     root = create_root(res);
     if (!root)
     {
+        warningf("Failed to create root\n");
         goto out;
     }
 
     struct path_part *first_part = parse_path_part(NULL, &tmp_path);
     if (!first_part)
     {
+        warningf("Failed to parse first part\n");
         goto out;
     }
 

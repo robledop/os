@@ -21,6 +21,7 @@ void kheap_init()
     int res = heap_create(&kernel_heap, (void *)HEAP_ADDRESS, end, &kernel_heap_table);
     if (res < 0)
     {
+        warningf("Failed to create heap\n");
         panic("Failed to create heap\n");
     }
 }
@@ -35,6 +36,7 @@ void *kzalloc(size_t size)
     void *ptr = kmalloc(size);
     if (!ptr)
     {
+        warningf("Failed to allocate memory\n");
         return NULL;
     }
     memset(ptr, 0x00, size);

@@ -2,6 +2,7 @@
 #include "status.h"
 #include "memory.h"
 #include <stdbool.h>
+#include "serial.h"
 
 // https://wiki.osdev.org/Memory_Map_(x86)
 
@@ -19,6 +20,7 @@ static int heap_validate_table(void *ptr, void *end, struct heap_table *table)
     // If the total number of blocks is not a multiple of HEAP_BLOCK_SIZE, return an error
     if (table->total != total_blocks)
     {
+        warningf("Invalid table size\n");
         res = -EINVARG;
         goto out;
     }
@@ -49,6 +51,7 @@ int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *tabl
     // Validate the alignment of the start and end pointers
     if (!heap_validate_alignment(ptr) || !heap_validate_alignment(end))
     {
+        warningf("Invalid alignment\n");
         res = -EINVARG;
         goto out;
     }
@@ -60,6 +63,7 @@ int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *tabl
     res = heap_validate_table(ptr, end, table);
     if (res < 0)
     {
+        warningf("Failed to validate table\n");
         goto out;
     }
 
@@ -168,6 +172,7 @@ static int heap_get_start_block(struct heap *heap, uint32_t blocks_needed)
     // If no free blocks were found, return an error
     if (start_block == -1)
     {
+        warningf("No free blocks found\n");
         return -ENOMEM;
     }
 
@@ -183,6 +188,7 @@ void *heap_malloc_blocks(struct heap *heap, uint32_t blocks_needed)
     // If no free blocks were found, return
     if (start_block < 0)
     {
+        warningf("Failed to find free blocks\n");
         goto out;
     }
 

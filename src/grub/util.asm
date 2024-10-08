@@ -1,5 +1,7 @@
 [BITS] 32
 
+section .text
+
     global kernel_registers
 
 kernel_registers:

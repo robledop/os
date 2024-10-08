@@ -119,6 +119,6 @@ static unsigned char ctlmap[256] =
 
 #pragma GCC diagnostic pop
 
-struct keyboard *classic_init();
+struct keyboard *ps2_init();
 
 #endif

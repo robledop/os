@@ -96,7 +96,10 @@ gdt_descriptor:
   [BITS 32]
 load32:
   mov eax, 1
-  mov ecx, 100
+; Number of sectors to read
+; sectors * 512 = bytes
+; this must be the size of the kernel
+  mov ecx, 256
   mov edi, 0x0100000
   call ata_lba_read
   jmp CODE_SEG:0x0100000
@@ -158,11 +161,3 @@ ata_lba_read:
   ; pad the end with 510 bytes
   times 510-($ - $$) db 0
   dw 0xAA55
-
-  ; nasm -f bin ./boot.asm -o ./boot.bin to compile this
-  ; qemu-system-x86_64 -hda ./boot.bin to run in on qemu
-
-  ; To burn this into an USB drive
-  ; sudo fdisk -l
-  ; To list all drives and find the USB stick like /dev/sdb
-  ; sudo dd if=./boot.bin of=/dev/sdb

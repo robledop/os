@@ -1,4 +1,4 @@
-section .asm
+section .text
 
 extern syscall_handler
 extern interrupt_handler

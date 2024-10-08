@@ -60,7 +60,7 @@ int32_t serial_printf(char *fmt, ...)
     int num = 0;
 
     va_start(args, fmt);
-    int i = 0;
+    size_t i = 0;
     while (*fmt != '\0' && i++ < sizeof(str))
     {
         switch (*fmt)

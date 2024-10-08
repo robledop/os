@@ -30,6 +30,8 @@ FLAGS = -g \
 	-Wextra \
 	-std=gnu23 \
 	-pedantic-errors \
+	-fstack-protector \
+	-fsanitize=undefined \
 	-Wall
 
 
@@ -45,6 +47,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount /mnt/d
 	rm -rf ./hello.txt ./file2.txt
+# stat --format=%n:%s ./kernel.bin
 
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
@@ -68,7 +71,7 @@ grub: ./bin/kernel-grub.bin
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o
-	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./bin/kernel-grub.bin ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS) -v -T ./src/grub/linker.ld -Wl,--verbose -o ./bin/kernel-grub.bin ./build/kernelfull.o
 
 qemu: all
 	qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on

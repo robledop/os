@@ -4,19 +4,17 @@
 #include <stdint.h>
 #include "terminal.h"
 
-// #define DEBUG_SERIAL
+#define DEBUG_SERIAL
+#define DEBUG_WARNINGS
 
 #ifdef DEBUG_SERIAL
-// #define dbgprintf(a, ...) serial_printf("%s(): " a, __func__, ##__VA_ARGS__)
-#define dbgprintf(a, ...) kprintf(a, ##__VA_ARGS__)
-// #define dbgprintf(a, ...) serial_printf(a, ##__VA_ARGS__)
+#define dbgprintf(a, ...) serial_printf("%s(): " a "\n", __func__, ##__VA_ARGS__)
 #else
 #define dbgprintf(a, ...)
 #endif
 
 #ifdef DEBUG_WARNINGS
-// #define warningf(a, ...) serial_printf("WARNING: %s(): " a, __func__, ##__VA_ARGS__)
-#define warningf(a, ...) serial_printf("WARNING: " a, ##__VA_ARGS__)
+#define warningf(a, ...) serial_printf("WARNING: file: %s, line: %d: \n" a "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #else
 #define warningf(a, ...)
 #endif

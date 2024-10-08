@@ -8,13 +8,13 @@
 static struct keyboard *keyboard_list_head = NULL;
 static struct keyboard *keyboard_list_tail = NULL;
 
-void keyboard_init() { keyboard_insert(classic_init()); }
+void keyboard_init() { keyboard_insert(ps2_init()); }
 
 int keyboard_insert(struct keyboard *kbd)
 {
     if (kbd->init == NULL)
     {
-        // dbgprintf("keyboard->init is NULL\n");
+        warningf("keyboard->init is NULL\n");
         return -EINVARG;
     }
 
@@ -51,7 +51,7 @@ void keyboard_push(char c)
     struct process *process = process_current();
     if (!process)
     {
-        // dbgprintf("No current process\n");
+        warningf("No current process\n");
         return;
     }
 
@@ -67,7 +67,7 @@ char keyboard_pop()
 {
     if (!task_current())
     {
-        // dbgprintf("No current task\n");
+        warningf("No current task\n");
         return 0;
     }
 

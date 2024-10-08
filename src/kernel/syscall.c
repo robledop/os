@@ -47,7 +47,6 @@ void *sys_open_dir(struct interrupt_frame *frame)
 
     struct file_directory dir = fs_open_dir((const char *)path);
 
-    // kprintf("Directory: %s\n", dir.name);
 
     memcpy(result, &dir, sizeof(struct file_directory));
 
@@ -193,7 +192,7 @@ void *sys_invoke_system(struct interrupt_frame *frame)
         task_get_stack_item(task_current(), 0));
     if (!arguments || strlen(arguments->argument) == 0)
     {
-        dbgprintf("Invalid arguments\n");
+        warningf("Invalid arguments\n");
         return ERROR(-EINVARG);
     }
 
@@ -208,13 +207,14 @@ void *sys_invoke_system(struct interrupt_frame *frame)
     int res = process_load_switch(path, &process);
     if (res < 0)
     {
-        dbgprintf("Failed to load process %s\n", program_name);
+        warningf("Failed to load process %s\n", program_name);
         return ERROR(res);
     }
 
     res = process_inject_arguments(process, root_command_argument);
     if (res < 0)
     {
+        warningf("Failed to inject arguments for process %s\n", program_name);
         return ERROR(res);
     }
 

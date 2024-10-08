@@ -130,16 +130,6 @@ struct file_directory get_fs_root_directory(struct disk *disk);
 struct file_directory get_subdirectory(struct disk *disk, const char *path);
 
 struct file_system *fat16_fs;
-//     .resolve = fat16_resolve,
-//     .open = fat16_open,
-//     .read = fat16_read,
-//     .seek = fat16_seek,
-//     .stat = fat16_stat,
-//     .close = fat16_close,
-
-//     .get_root_directory = get_fs_root_directory,
-//     .get_subdirectory = get_subdirectory,
-// };
 
 struct file_system *fat16_init()
 {
@@ -156,8 +146,9 @@ struct file_system *fat16_init()
 
     strncpy(fat16_fs->name, "FAT16", 20);
     dbgprintf("File system name %s\n", fat16_fs->name);
-    // ASSERT(fat16_fs->open != 0, "Open function is null");
-    // ASSERT(fat16_fs->resolve != 0, "Resolve function is null");
+    ASSERT(fat16_fs->open != 0, "Open function is null");
+    ASSERT(fat16_fs->resolve != 0, "Resolve function is null");
+
     return fat16_fs;
 }
 
@@ -188,7 +179,7 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     struct disk_stream *stream = fat_private->directory_stream;
     if (disk_stream_seek(stream, directory_start_pos) != ALL_OK)
     {
-        dbgprintf("Failed to seek to directory start");
+        warningf("Failed to seek to directory start");
         res = -EIO;
         goto out;
     }
@@ -197,7 +188,7 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     {
         if (disk_stream_read(stream, &entry, sizeof(entry)) != ALL_OK)
         {
-            dbgprintf("Failed to read directory entry");
+            warningf("Failed to read directory entry");
             res = -EIO;
             goto out;
         }
@@ -318,8 +309,8 @@ int fat16_resolve(struct disk *disk)
 
     if (fat_private->header.shared.extended_header.signature != 0x29)
     {
-        dbgprintf("Invalid FAT16 signature: %x\n", fat_private->header.shared.extended_header.signature);
-        dbgprintf("File system not supported\n");
+        warningf("Invalid FAT16 signature: %x\n", fat_private->header.shared.extended_header.signature);
+        warningf("File system not supported\n");
 
         res = -EFSNOTUS;
         goto out;
@@ -858,6 +849,7 @@ static void fat16_free_file_descriptor(struct fat_file_descriptor *descriptor)
 {
     if (!descriptor)
     {
+        warningf("Invalid file descriptor\n");
         return;
     }
 

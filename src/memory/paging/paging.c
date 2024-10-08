@@ -14,7 +14,7 @@ void paging_load_directory(uint32_t *directory);
 
 struct page_directory *paging_create_directory(uint8_t flags)
 {
-    // dbgprintf("Allocating page directory. Flags %x\n", flags);
+    dbgprintf("Allocating page directory. Flags %x\n", flags);
     uint32_t *directory = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
     uint32_t offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++)
@@ -30,21 +30,21 @@ struct page_directory *paging_create_directory(uint8_t flags)
 
     struct page_directory *chunk = kzalloc(sizeof(struct page_directory));
     chunk->directory_entry = directory;
-    // dbgprintf("Page directory allocated at %x\n", chunk->directory_entry);
+    dbgprintf("Page directory allocated at %x\n", chunk->directory_entry);
     return chunk;
 }
 
 // Switch page directory
 void paging_switch_directory(struct page_directory *chunk)
 {
-    // ASSERT(chunk->directory_entry != 0, "Page directory is null");
+    ASSERT(chunk->directory_entry != 0, "Page directory is null");
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;
 }
 
 void paging_free_directory(struct page_directory *page_directory)
 {
-    // dbgprintf("Freeing page directory %x\n", &page_directory);
+    dbgprintf("Freeing page directory %x\n", &page_directory);
 
     for (int i = 0; i < PAGING_ENTRIES_PER_DIRECTORY; i++)
     {
@@ -102,17 +102,17 @@ void *paging_align_to_lower_page(void *address)
 
 int paging_map(struct page_directory *directory, void *virtual_address, void *physical_address, int flags)
 {
-    // dbgprintf("Mapping virtual address %x to physical address %x\n", virtual_address, physical_address);
+    dbgprintf("Mapping virtual address %x to physical address %x\n", virtual_address, physical_address);
 
     if (!paging_is_aligned(virtual_address))
     {
-        // dbgprintf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
+        warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
         return -EINVARG;
     }
 
     if (!paging_is_aligned(physical_address))
     {
-        // dbgprintf("Physical address %x is not page aligned\n", (uint32_t)physical_address);
+        warningf("Physical address %x is not page aligned\n", (uint32_t)physical_address);
         return -EINVARG;
     }
 
@@ -128,7 +128,7 @@ int paging_map_range(struct page_directory *directory, void *virtual_address, vo
         res = paging_map(directory, virtual_address, physical_start_address, flags);
         if (res < 0)
         {
-            // dbgprintf("Failed to map page %d\n", i);
+            warningf("Failed to map page %d\n", i);
             break;
         }
 
@@ -145,26 +145,26 @@ int paging_map_to(struct page_directory *directory, void *virtual_address, void 
 
     if ((uint32_t)virtual_address % PAGING_PAGE_SIZE)
     {
-        // dbgprintf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
+        warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
         res = -EINVARG;
     }
 
     if (!paging_is_aligned(physical_start_address))
     {
-        // dbgprintf("Physical start address %x is not page aligned\n", (uint32_t)physical_start_address);
+        warningf("Physical start address %x is not page aligned\n", (uint32_t)physical_start_address);
         res = -EINVARG;
     }
 
     if (!paging_is_aligned(physical_end_address))
     {
-        // dbgprintf("Physical end address %x is not page aligned\n", (uint32_t)physical_end_address);
+        warningf("Physical end address %x is not page aligned\n", (uint32_t)physical_end_address);
         res = -EINVARG;
     }
 
     if ((uint32_t)physical_end_address < (uint32_t)physical_start_address)
     {
-        // dbgprintf("Physical end address %x is less than physical start address %x\n", (uint32_t)physical_end_address, (uint32_t)physical_start_address);
-        // ASSERT(false, "Physical end address is less than physical start address");
+        warningf("Physical end address %x is less than physical start address %x\n", (uint32_t)physical_end_address, (uint32_t)physical_start_address);
+        ASSERT(false, "Physical end address is less than physical start address");
         res = -EINVARG;
     }
 
@@ -191,7 +191,7 @@ uint32_t paging_get(struct page_directory *directory, void *virtual_address)
     int res = paging_get_indexes(virtual_address, &directory_index, &table_index);
     if (res < 0)
     {
-        // ASSERT(false, "Failed to get indexes");
+        ASSERT(false, "Failed to get indexes");
         return 0;
     }
 
@@ -202,10 +202,11 @@ uint32_t paging_get(struct page_directory *directory, void *virtual_address)
 
 int paging_set(struct page_directory *directory, void *virtual_address, uint32_t value)
 {
-    // dbgprintf("Setting page at virtual address %x to value %x\n", virtual_address, value);
+    dbgprintf("Setting page at virtual address %x to value %x\n", virtual_address, value);
 
     if (!paging_is_aligned(virtual_address))
     {
+        warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
         return -EINVARG;
     }
 
@@ -214,6 +215,7 @@ int paging_set(struct page_directory *directory, void *virtual_address, uint32_t
     int res = paging_get_indexes(virtual_address, &directory_index, &table_index);
     if (res < 0)
     {
+        warningf("Failed to get indexes\n");
         return res;
     }
 

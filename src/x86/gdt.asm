@@ -1,17 +1,22 @@
-section .asm
+global gdt_flush
 
-global gdt_load
+section .text
 
-gdt_load:
+gdt_flush:
+    ; Get the pointer to gdt_ptr from the stack
     mov eax, [esp + 4]
-    mov [gdt_descriptor + 2], eax
-    mov ax, [esp + 8]
-    mov [gdt_descriptor], ax
-    lgdt [gdt_descriptor]
+    lgdt [eax]        ; Load the new GDT
+
+    ; Reload the segment registers with the new selectors
+    mov ax, 0x10      ; Data segment selector offset (0x10)
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    ; Far jump to reload the code segment selector and flush the pipeline
+    jmp 0x08:flush_label
+
+flush_label:
     ret
-
-section .data
-
-gdt_descriptor:
-    dw 0x00 ; size
-    dd 0x00 ; start address
