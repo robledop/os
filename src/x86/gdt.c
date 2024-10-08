@@ -25,7 +25,7 @@ void init_gdt()
     gdt_set_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
     // TSS segment
-    write_tss(5, 0x10, 0x600000);
+    write_tss(5, 0x10, KERNEL_STACK_ADDRESS);
 
     // Load the new GDT
     gdt_flush((uint32_t)&gdt_ptr);
