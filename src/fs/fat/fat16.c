@@ -11,6 +11,7 @@
 #include "serial.h"
 #include "assert.h"
 
+
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 2
 #define FAT16_FAT_BAD_SECTOR 0xFF7
@@ -349,7 +350,7 @@ out:
         disk->fs_private = NULL;
     }
 
-    dbgprintf("FAT16 resolve result: %d\n", res);
+    fat16_print_partition_stats(disk);
 
     return res;
 }
@@ -434,6 +435,8 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
         goto out;
     }
 
+    warningf("res: %d\n", res);
+
     uint32_t fat_table_position = fat16_get_first_sector(fs_private) * disk->sector_size;
     res = disk_stream_seek(stream, fat_table_position * (cluster * FAT16_FAT_ENTRY_SIZE));
     if (res < 0)
@@ -442,6 +445,8 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
         goto out;
     }
 
+    warningf("res: %d\n", res);
+
     uint16_t result = 0;
     res = disk_stream_read(stream, &result, sizeof(result));
     if (res < 0)
@@ -449,10 +454,17 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
         warningf("Failed to read FAT table\n");
         goto out;
     }
+    dbgprintf("FAT entry for cluster %d: %x\n", cluster, result);
+    kprintf("FAT entry for cluster %d: %x\n", cluster, result);
+    ASSERT(result != 0, "Invalid FAT entry");
+
+    warningf("res: %d\n", res);
 
     res = result;
 
 out:
+
+    warningf("res: %d\n", res);
     return res;
 }
 
@@ -512,6 +524,7 @@ out:
 
 static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream *stream, int start_cluster, int offset, int total, void *out)
 {
+    dbgprintf("Reading from cluster %d, offset %d, total %d\n", start_cluster, offset, total);
     int res = 0;
     struct fat_private *fs_private = disk->fs_private;
     int size_of_cluster = fs_private->header.primary_header.sectors_per_cluster * disk->sector_size;
@@ -519,6 +532,7 @@ static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream
     if (cluster_to_use < 0)
     {
         warningf("Failed to get cluster for offset\n");
+        ASSERT(false, "Failed to get cluster for offset");
         res = cluster_to_use;
         goto out;
     }
@@ -554,6 +568,7 @@ out:
 
 static int fat16_read_internal(struct disk *disk, int start_cluster, int offset, int total, void *out)
 {
+    dbgprintf("Reading from cluster %d, offset %d, total %d\n", start_cluster, offset, total);
     struct fat_private *fs_private = disk->fs_private;
     struct disk_stream *stream = fs_private->cluster_read_stream;
 
@@ -681,6 +696,7 @@ struct fat_item *fat16_find_item_in_directory(struct disk *disk, struct fat_dire
 
 struct fat_item *fat16_get_directory_entry(struct disk *disk, struct path_part *path)
 {
+    dbgprintf("Getting directory entry for: %s\n", path->part);
     struct fat_private *fat_private = disk->fs_private;
     struct fat_item *current_item = 0;
     struct fat_item *root_item = fat16_find_item_in_directory(disk, &fat_private->root_directory, path->part);
@@ -708,11 +724,13 @@ struct fat_item *fat16_get_directory_entry(struct disk *disk, struct path_part *
     }
 
 out:
+    dbgprintf("Found item: %s\n", current_item ? "yes" : "no");
     return current_item;
 }
 
 void *fat16_open(struct disk *disk, struct path_part *path, FILE_MODE mode)
 {
+    dbgprintf("Opening file: %s\n", path->part);
     struct fat_file_descriptor *descriptor = NULL;
     int error_code = 0;
     if (mode != FILE_MODE_READ)
@@ -754,6 +772,7 @@ error_out:
 // typedef int (*FS_READ_FUNCTION)(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out);
 int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmemb, char *out)
 {
+    dbgprintf("Reading %d bytes from file\n", size * nmemb);
     int res = 0;
 
     struct fat_file_descriptor *fat_desc = descriptor;
@@ -953,7 +972,7 @@ struct file_directory get_subdirectory(struct disk *disk, const char *path)
 
     struct file_directory subdirectory =
         {
-            .name = (char*)item_name,
+            .name = (char *)item_name,
             .entry_count = current_item->directory->entry_count,
             .entries = current_item->directory->entries,
             .get_entry = get_directory_entry,
@@ -963,3 +982,54 @@ struct file_directory get_subdirectory(struct disk *disk, const char *path)
 }
 
 ////////////////////
+
+void fat16_print_partition_stats(struct disk *disk)
+{
+    struct fat_private *fat_private = disk->fs_private;
+    struct disk_stream *stream = disk_stream_create(disk->id);
+    if (!stream)
+    {
+        warningf("Failed to create disk stream");
+        panic("Failed to create disk stream");
+    }
+
+    if (disk_stream_read(stream, &fat_private->header, sizeof(fat_private->header)) != ALL_OK)
+    {
+        warningf("Failed to read FAT16 header\n");
+        disk_stream_close(stream);
+        panic("Failed to read FAT16 header");
+    }
+
+    int sector_size = fat_private->header.primary_header.bytes_per_sector;
+    int fat_copies = fat_private->header.primary_header.fat_copies;
+    int heads = fat_private->header.primary_header.heads;
+    int hidden_sectors = fat_private->header.primary_header.hidden_sectors;
+    int media_type = fat_private->header.primary_header.media_type;
+    int reserved_sectors = fat_private->header.primary_header.reserved_sectors;
+    int root_entries = fat_private->header.primary_header.root_entries;
+    int sectors_per_cluster = fat_private->header.primary_header.sectors_per_cluster;
+    int sectors_per_fat = fat_private->header.primary_header.sectors_per_fat;
+    int sectors_per_track = fat_private->header.primary_header.sectors_per_track;
+    int total_sectors = fat_private->header.primary_header.total_sectors;
+    int total_sectors_large = fat_private->header.primary_header.total_sectors_large;
+    int partition_size = total_sectors * sector_size;
+
+    dbgprintf("Sector size: %d\n", sector_size);
+    dbgprintf("FAT copies: %d\n", fat_copies);
+    dbgprintf("Heads: %d\n", heads);
+    dbgprintf("Hidden sectors: %d\n", hidden_sectors);
+    dbgprintf("Media type: %d\n", media_type);
+    dbgprintf("OEM name: %s\n", fat_private->header.primary_header.oem_name);
+    dbgprintf("Reserved sectors: %d\n", reserved_sectors);
+    dbgprintf("Root entries: %d\n", root_entries);
+    dbgprintf("Sectors per cluster: %d\n", sectors_per_cluster);
+    dbgprintf("Sectors per FAT: %d\n", sectors_per_fat);
+    dbgprintf("Sectors per track: %d\n", sectors_per_track);
+    dbgprintf("Total sectors: %d\n", total_sectors);
+    dbgprintf("Total sectors large: %d\n", total_sectors_large);
+    dbgprintf("Partition size: %d MiB\n", partition_size / 1024 / 1024);
+
+    disk->sector_size = sector_size;
+
+    disk_stream_close(stream);
+}

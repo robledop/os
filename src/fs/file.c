@@ -89,6 +89,7 @@ static int file_new_descriptor(struct file_descriptor **desc_out)
             struct file_descriptor *desc = (struct file_descriptor *)kzalloc(sizeof(struct file_descriptor));
             if (desc == 0)
             {
+                warningf("Failed to allocate memory for file descriptor\n");
                 res = -ENOMEM;
                 break;
             }
@@ -161,6 +162,7 @@ FILE_MODE file_get_mode_from_string(const char *mode)
 //  - a: append
 int fopen(const char *path, const char *mode)
 {
+    dbgprintf("Opening file %s in mode %s\n", path, mode);
     int res = 0;
 
     struct path_root *root_path = pathparser_parse(path, NULL);
@@ -234,6 +236,7 @@ out:
 
 int fstat(int fd, struct file_stat *stat)
 {
+    dbgprintf("Getting file stat for file descriptor %d\n", fd);
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
@@ -258,6 +261,7 @@ int fseek(int fd, int offset, FILE_SEEK_MODE whence)
 
 int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
 {
+    dbgprintf("Reading %d bytes from file descriptor %d\n", size * nmemb, fd);
     if (size == 0 || nmemb == 0 || fd < 1)
     {
         warningf("Invalid arguments\n");

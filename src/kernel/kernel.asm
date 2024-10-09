@@ -18,7 +18,7 @@ _start:
   mov gs, ax
   mov ss, ax
   ; Remember that the stack grows downwards
-  mov ebp, 0x00200000 ; Set stack pointer
+  mov ebp, 0x00600000 ; Set stack pointer
 ;   mov ebp, 0x00EFFFFF ; Set stack pointer
   mov esp, ebp
 

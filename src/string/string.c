@@ -21,6 +21,10 @@ inline void reverse(char s[])
 // Gets the length of a string
 size_t strlen(const char *s)
 {
+    if(s == NULL)
+    {
+        return 0;
+    }
     int n;
 
     for (n = 0; s[n]; n++)

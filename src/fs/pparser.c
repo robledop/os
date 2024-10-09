@@ -14,6 +14,7 @@ static int path_valid_format(const char *path)
 
 static int get_drive_by_path(const char **path)
 {
+    dbgprintf("Getting drive by path %s\n", *path);
     if (!path_valid_format(*path))
     {
         warningf("Invalid path format\n");
@@ -60,15 +61,18 @@ static const char *get_path_part(const char **path)
         path_part = 0;
     }
 
+
     return path_part;
 }
 
 struct path_part *parse_path_part(struct path_part *last_part, const char **path)
 {
+    dbgprintf("Parsing path part\n");
+    dbgprintf("Last part: %s\n", last_part ? last_part->part : "NULL");
+    dbgprintf("Path: %s\n", *path);
     const char *path_part_str = get_path_part(path);
     if (path_part_str == 0)
     {
-        warningf("Failed to get path part\n");
         return 0;
     }
 
@@ -100,6 +104,7 @@ void pathparser_free(struct path_root *root)
 
 struct path_root *pathparser_parse(const char *path, const char *current_directory_path)
 {
+    dbgprintf("Parsing path %s\n", path);
     int res = 0;
     const char *tmp_path = path;
     struct path_root *root = 0;
@@ -110,6 +115,7 @@ struct path_root *pathparser_parse(const char *path, const char *current_directo
         goto out;
     }
 
+    // This will remove the 0:/ part from the path
     res = get_drive_by_path(&tmp_path);
     if (res < 0)
     {
@@ -140,5 +146,6 @@ struct path_root *pathparser_parse(const char *path, const char *current_directo
     }
 
 out:
+    dbgprintf("Returning path %s\n", root ? "root" : "NULL");
     return root;
 }

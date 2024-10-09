@@ -21,6 +21,8 @@
 #include <syscall.h>
 #include "ssp.h"
 
+#include "my_fat.h"
+
 // Divide by zero error
 extern void cause_problem();
 void paging_demo();
@@ -67,8 +69,11 @@ void kernel_main()
     kheap_init();
 
     paging_init();
+
     fs_init();
     disk_search_and_init();
+
+    // test();
 
     register_syscalls();
 
@@ -79,6 +84,7 @@ void kernel_main()
     // opendir_test();
     ///////////////////
 
+    dbgprintf("Loading shell\n");
     struct process *process = NULL;
     int res = process_load_switch("0:/sh", &process);
     if (res < 0)

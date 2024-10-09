@@ -308,14 +308,14 @@ out_error:
 
 static int process_load_binary(const char *file_name, struct process *process)
 {
-    // dbgprintf("Loading binary %s\n", file_name);
+    dbgprintf("Loading binary %s\n", file_name);
 
     int res = 0;
     void *program = NULL;
     int fd = fopen(file_name, "r");
     if (!fd)
     {
-        // dbgprintf("Failed to open file %s\n", file_name);
+        warningf("Failed to open file %s\n", file_name);
         res = -EIO;
         goto out;
     }
@@ -324,7 +324,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     res = fstat(fd, &stat);
     if (res != ALL_OK)
     {
-        // ASSERT(false, "Failed to get file stat");
+        ASSERT(false, "Failed to get file stat");
         res = -EIO;
         goto out;
     }
@@ -332,14 +332,14 @@ static int process_load_binary(const char *file_name, struct process *process)
     program = kzalloc(stat.size);
     if (!program)
     {
-        // ASSERT(false, "Failed to allocate memory for program");
+        ASSERT(false, "Failed to allocate memory for program");
         res = -ENOMEM;
         goto out;
     }
 
     if (fread(program, stat.size, 1, fd) != 1)
     {
-        // ASSERT(false, "Failed to read file");
+        ASSERT(false, "Failed to read file");
         res = -EIO;
         goto out;
     }
@@ -348,8 +348,8 @@ static int process_load_binary(const char *file_name, struct process *process)
     process->pointer = program;
     process->size = stat.size;
 
-    // dbgprintf("Loaded binary %s to %x\n", file_name, program);
-    // dbgprintf("Program size: %d\n", stat.size);
+    dbgprintf("Loaded binary %s to %x\n", file_name, program);
+    dbgprintf("Program size: %d\n", stat.size);
 
 out:
     if (res < 0)
@@ -371,7 +371,8 @@ static int process_load_elf(const char *file_name, struct process *process)
     res = elf_load(file_name, &elf_file);
     if (ISERR(res))
     {
-        // ASSERT(false, "Failed to load ELF file");
+        warningf("Failed to load ELF file\n");
+        warningf("Error code: %d\n", res);
         goto out;
     }
 
@@ -384,12 +385,13 @@ out:
 
 static int process_load_data(const char *file_name, struct process *process)
 {
+    dbgprintf("Loading data for process %s\n", file_name);
     int res = 0;
 
     res = process_load_elf(file_name, process);
     if (res == -EINFORMAT)
     {
-        // ASSERT(false, "Failed to load ELF file");
+        warningf("Failed to load ELF file, trying to load as binary\n");
         res = process_load_binary(file_name, process);
     }
 
@@ -483,6 +485,8 @@ int process_get_free_slot()
 
 int process_load_switch(const char *file_name, struct process **process)
 {
+    dbgprintf("Loading and switching process %s\n", file_name);
+    
     int res = process_load(file_name, process);
     if (res == 0)
     {
@@ -494,12 +498,13 @@ int process_load_switch(const char *file_name, struct process **process)
 
 int process_load(const char *file_name, struct process **process)
 {
-    // dbgprintf("Loading process %s\n", file_name);
+    dbgprintf("Loading process %s\n", file_name);
     int res = 0;
     int process_slot = process_get_free_slot();
     if (process_slot < 0)
     {
         ASSERT(false, "Failed to get free process slot");
+        warningf("Failed to get free process slot\n");
         res = -EINSTKN;
         goto out;
     }
@@ -517,11 +522,12 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     struct process *proc;
     void *program_stack_pointer = 0;
 
-    // dbgprintf("Loading process %s to slot %d\n", file_name, slot);
+    dbgprintf("Loading process %s to slot %d\n", file_name, slot);
 
     if (process_get(slot) != 0)
     {
         ASSERT(false, "Process slot is not empty");
+        warningf("Process slot is not empty\n");
         res = -EINSTKN;
         goto out;
     }
@@ -529,6 +535,7 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     if (!proc)
     {
         ASSERT(false, "Failed to allocate memory for process");
+        warningf("Failed to allocate memory for process\n");
         res = -ENOMEM;
         goto out;
     }
@@ -537,8 +544,8 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     res = process_load_data(file_name, proc);
     if (res < 0)
     {
-        // ASSERT(false, "Failed to load data for process");
-
+        ASSERT(false, "Failed to load data for process");
+        warningf("Failed to load data for process\n");
         goto out;
     }
 
@@ -546,6 +553,7 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     if (!program_stack_pointer)
     {
         ASSERT(false, "Failed to allocate memory for program stack");
+        warningf("Failed to allocate memory for program stack\n");
         res = -ENOMEM;
         goto out;
     }
@@ -554,12 +562,13 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     proc->stack = program_stack_pointer;
     proc->pid = slot;
 
-    // dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, slot);
+    dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, slot);
 
     task = task_create(proc);
     if (ERROR_I(task) == 0)
     {
         ASSERT(false, "Failed to create task");
+        warningf("Failed to create task\n");
         res = -ENOMEM;
         goto out;
     }
@@ -570,6 +579,7 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     if (res < 0)
     {
         ASSERT(false, "Failed to map memory for process");
+        warningf("Failed to map memory for process\n");
         goto out;
     }
 

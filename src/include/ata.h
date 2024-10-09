@@ -14,11 +14,12 @@ struct disk
 
     struct file_system *fs;
 
-    void* fs_private;
+    void *fs_private;
 };
 
 void disk_search_and_init();
 struct disk *disk_get(int index);
 int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffer);
+int disk_read(uint32_t lba, uint8_t *buffer);
 
 #endif

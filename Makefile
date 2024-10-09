@@ -18,8 +18,8 @@ FLAGS = -g \
 	-falign-loops \
 	-fstrength-reduce \
 	-fno-omit-frame-pointer \
-	-finline-functions \
 	-Wno-unused-function \
+	-Wno-unused-variable \
 	-fno-builtin \
 	-Werror \
 	-Wno-unused-label \
@@ -29,12 +29,12 @@ FLAGS = -g \
 	-nodefaultlibs \
 	-Wextra \
 	-std=gnu23 \
-	-pedantic-errors \
 	-fstack-protector \
 	-fsanitize=undefined \
 	-Wall
 
 
+	# -pedantic-errors \
 	# -fstack-protector \
 	# -fsanitize=undefined \
 
@@ -46,7 +46,6 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	sudo mount -t vfat ./bin/os.bin /mnt/d
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount /mnt/d
-	rm -rf ./hello.txt ./file2.txt
 # stat --format=%n:%s ./kernel.bin
 
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
@@ -62,22 +61,31 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 ./build/%.o: ./src/%.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -c $< -o $@
 
-grub: ./bin/kernel-grub.bin
-	grub-file --is-x86-multiboot ./bin/kernel-grub.bin
+grub: ./bin/kernel-grub.bin apps
+	grub-file --is-x86-multiboot ./rootfs/boot/myos.kernel
+
+	rm -rf ./disk.img
+
+	
+	dd if=/dev/zero of=./disk.img bs=512 count=131072
+	mkfs.vfat -c -F 16 -S 512 ./disk.img
 	sudo mount -t vfat ./disk.img /mnt/d
-	sudo cp ./bin/kernel-grub.bin /mnt/d/boot/myos.kernel
+	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop0
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount -q /mnt/d
+	# VBoxManage convertdd ./disk.img ./disk.vdi
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
-	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o
-	i686-elf-gcc $(FLAGS) -v -T ./src/grub/linker.ld -Wl,--verbose -o ./bin/kernel-grub.bin ./build/kernelfull.o
+	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o 
+	# i686-elf-gcc $(FLAGS) -v -T ./src/grub/linker.ld -Wl,--verbose -o ./rootfs/boot/myos.kernel $(filter-out ./build/kernel/%.asm.o, $(FILES))
+	i686-elf-gcc $(FLAGS) -v -T ./src/grub/linker.ld -Wl,--verbose -o ./rootfs/boot/myos.kernel ./build/kernelfull.o
 
 qemu: all
 	qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 qemu_grub: grub 
-	qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	# qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on
 
 apps:
 	cd ./user && $(MAKE) all
@@ -86,4 +94,4 @@ apps_clean:
 	cd ./user && $(MAKE) clean
 
 clean: apps_clean
-	rm -rf ./bin ./build ./mnt
+	rm -rf ./bin ./build ./mnt ./disk.img ./disk.vdi

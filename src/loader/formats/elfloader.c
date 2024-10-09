@@ -179,6 +179,7 @@ out:
 
 int elf_load(const char *filename, struct elf_file **file_out)
 {
+    dbgprintf("Loading ELF file %s\n", filename);
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     int fd = 0;
     int res = fopen(filename, "r");
