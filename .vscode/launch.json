@@ -93,8 +93,8 @@
                     "description": "Add kernelfull.o symbols"
                 },
                 {
-                    "text": "add-symbol-file ${workspaceRoot}/build/stage2.o 0x1000",
-                    "description": "Add stage2.o symbols"
+                    "text": "add-symbol-file ${workspaceRoot}/build/stage2full.o 0x1000",
+                    "description": "Add stage2full.o symbols"
                 },
                 // {
                 //     "text": "add-symbol-file ${workspaceRoot}/rootfs/echo 0x400000",

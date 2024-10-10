@@ -86,16 +86,17 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
-	./pad.sh ./bin/kernel.bin
+	./pad.sh ./bin/kernel.bin 512
 
 ./bin/boot.bin: ./src/boot/boot.asm 
+	$(shell mkdir -p ./build/boot)
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
-	nasm -f elf -g ./src/boot/stage2.asm -o ./bin/stage2.asm.o
-	i686-elf-gcc -g $(STAGE2_FLAGS) -c ./src/boot/stage2.c -o ./bin/stage2.o
-	i686-elf-ld -g -relocatable ./bin/stage2.asm.o ./bin/stage2.o -o ./build/stage2.o
-	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2.o
+	nasm -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
+	i686-elf-gcc -g $(STAGE2_FLAGS) -c ./src/boot/stage2.c -o ./build/boot/stage2.o
+	i686-elf-ld -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
+	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
 
-	./pad.sh ./bin/stage2.bin
+	./pad.sh ./bin/stage2.bin 512
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
