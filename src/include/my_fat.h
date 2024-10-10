@@ -1,6 +1,27 @@
 #ifndef MY_FAT_H
 #define MY_FAT_H
+#include <stdint.h>
+
+typedef struct
+{
+    uint8_t name[8];
+    uint8_t ext[3];
+    uint8_t attr;
+    uint8_t reserved;
+    uint8_t creation_time_tenth;
+    uint16_t creation_time;
+    uint16_t creation_date;
+    uint16_t last_access_date;
+    uint16_t ignore_in_fat12_fat16;
+    uint16_t last_write_time;
+    uint16_t last_write_date;
+    uint16_t first_cluster;
+    uint32_t file_size;
+} __attribute__((packed)) DirectoryEntry_t;
 
 void test();
+
+DirectoryEntry_t *fat16_get_file(const char *filename);
+int fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer);
 
 #endif

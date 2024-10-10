@@ -15,13 +15,11 @@
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-#define SECTOR_SIZE 512
 #define MAX_PATH_LENGTH 108
 #define MAX_FILE_SYSTEMS 10
 #define MAX_FILE_DESCRIPTORS 512
 
 #define MAX_FMT_STR 10240
-
 
 #define PROGRAM_VIRTUAL_ADDRESS 0x400000
 
@@ -39,6 +37,14 @@
 #define MAX_SYSCALLS 1024
 #define KEYBOARD_BUFFER_SIZE 1024
 
-#define __myos_libc 1
+#ifdef GRUB
+// #define KERNEL_STACK_ADDRESS 0x22c000
+// #define KERNEL_STACK_ADDRESS 0x7c00
+#define KERNEL_STACK_ADDRESS 0x900000
+#else
+#define KERNEL_STACK_ADDRESS 0x900000
+#endif
+
+// #define __myos_libc 1
 
 #endif

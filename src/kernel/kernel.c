@@ -28,6 +28,7 @@ extern void cause_problem();
 void paging_demo();
 void multitasking_demo();
 void opendir_test();
+void display_grub_info(multiboot_info_t *mbd, unsigned int magic);
 
 #if UINT32_MAX == UINTPTR_MAX
 #define STACK_CHK_GUARD 0xe2dee396
@@ -35,14 +36,14 @@ void opendir_test();
 #define STACK_CHK_GUARD 0x595e9fbd94fda766
 #endif
 
-uintptr_t __stack_chk_guard = 0xe2dee396;
+uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 
 extern struct page_directory *kernel_page_directory;
 
 __attribute__((noreturn)) void panic(const char *msg)
 {
     kprintf(KRED "KERNEL PANIC: " KWHT);
-    kprintf("%s\n", msg);
+    kprintf(KRED "%s\n", msg);
     while (1)
     {
         asm volatile("hlt");
@@ -57,18 +58,24 @@ void kernel_page()
     paging_switch_directory(kernel_page_directory);
 }
 
-void kernel_main()
+void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 {
-    __stack_chk_guard = 0xe2dee396;
-    disable_interrupts();
-    terminal_clear();
-    kprintf(KCYN "Kernel is starting\n");
+    __stack_chk_guard = STACK_CHK_GUARD;
     init_serial();
-    idt_init();
-    init_gdt();
-    kheap_init();
 
+    terminal_clear();
+
+    display_grub_info(mbd, magic);
+
+    init_gdt();
+
+    idt_init();
+    kheap_init();
     paging_init();
+
+    disable_interrupts();
+
+    kprintf(KCYN "Kernel is starting\n");
 
     fs_init();
     disk_search_and_init();
@@ -177,4 +184,53 @@ void paging_demo()
 
     dbgprintf("ptr1 after: %s\n", ptr1);
     dbgprintf("ptr2: %s\n", ptr2);
+}
+
+void display_grub_info(multiboot_info_t *mbd, unsigned int magic)
+{
+#ifdef GRUB
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+    {
+        panic("invalid magic number!");
+    }
+
+    /* Check bit 6 to see if we have a valid memory map */
+    if (!(mbd->flags >> 6 & 0x1))
+    {
+        panic("invalid memory map given by GRUB bootloader");
+    }
+
+    kprintf("Memory map addr: %x\n", mbd->mmap_addr);
+    kprintf("Memory map length: %x\n", mbd->mmap_length);
+    kprintf("Bootloader name: %s\n", mbd->boot_loader_name);
+    kprintf("Framebuffer address: %x\n", mbd->framebuffer_addr);
+
+    /* Loop through the memory map and display the values */
+    unsigned int i;
+    for (i = 0; i < mbd->mmap_length;
+         i += sizeof(multiboot_memory_map_t))
+    {
+        multiboot_memory_map_t *mmmt =
+            (multiboot_memory_map_t *)(mbd->mmap_addr + i);
+
+        uint32_t type = mmmt->type;
+        kprintf("Start Addr: %x | Length: %x | Size: %x ",
+                mmmt->addr, mmmt->len, mmmt->size);
+        kprintf("| Type %d\n", type);
+
+        dbgprintf("Start Addr: %x | Length: %x | Size: %x | Type: %x\n",
+                  mmmt->addr, mmmt->len, mmmt->size, type);
+
+        if (type == MULTIBOOT_MEMORY_AVAILABLE)
+        {
+            kprintf("Available memory: %d KiB\n", mmmt->len / 1024);
+            /*
+             * Do something with this memory block!
+             * BE WARNED that some of memory shown as availiable is actually
+             * actively being used by the kernel! You'll need to take that
+             * into account before writing to memory!
+             */
+        }
+    }
+#endif
 }

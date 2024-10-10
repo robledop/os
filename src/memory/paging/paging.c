@@ -4,6 +4,8 @@
 #include "string.h"
 #include "serial.h"
 #include "assert.h"
+#include <stdbool.h>
+#include "config.h"
 
 // https://wiki.osdev.org/Paging
 
@@ -11,6 +13,11 @@ struct page_directory *kernel_page_directory = 0;
 
 static uint32_t *current_directory = 0;
 void paging_load_directory(uint32_t *directory);
+
+bool paging_is_video_memory(uint32_t address)
+{
+    return address >= 0xB8000 && address <= 0xBFFFF;
+} 
 
 struct page_directory *paging_create_directory(uint8_t flags)
 {
@@ -102,6 +109,7 @@ void *paging_align_to_lower_page(void *address)
 
 int paging_map(struct page_directory *directory, void *virtual_address, void *physical_address, int flags)
 {
+    ASSERT(!paging_is_video_memory((uint32_t)physical_address), "Trying to map video memory");
     dbgprintf("Mapping virtual address %x to physical address %x\n", virtual_address, physical_address);
 
     if (!paging_is_aligned(virtual_address))
@@ -121,6 +129,7 @@ int paging_map(struct page_directory *directory, void *virtual_address, void *ph
 
 int paging_map_range(struct page_directory *directory, void *virtual_address, void *physical_start_address, int total_pages, int flags)
 {
+    ASSERT(!paging_is_video_memory((uint32_t)physical_start_address), "Trying to map video memory");
     int res = 0;
 
     for (int i = 0; i < total_pages; i++)
@@ -141,6 +150,8 @@ int paging_map_range(struct page_directory *directory, void *virtual_address, vo
 
 int paging_map_to(struct page_directory *directory, void *virtual_address, void *physical_start_address, void *physical_end_address, int flags)
 {
+    ASSERT(!paging_is_video_memory((uint32_t)physical_start_address), "Trying to map video memory");
+    ASSERT(!paging_is_video_memory((uint32_t)physical_end_address), "Trying to map video memory");
     int res = 0;
 
     if ((uint32_t)virtual_address % PAGING_PAGE_SIZE)

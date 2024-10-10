@@ -10,6 +10,7 @@
 #include "config.h"
 #include "serial.h"
 #include "terminal.h"
+#include "my_fat.h"
 
 const char elf_signature[] = {0x7f, 'E', 'L', 'F'};
 
@@ -182,6 +183,11 @@ int elf_load(const char *filename, struct elf_file **file_out)
     dbgprintf("Loading ELF file %s\n", filename);
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     int fd = 0;
+
+    // DirectoryEntry_t* file = fat16_get_file(filename);
+    // elf_file->elf_memory = kzalloc(file->file_size);
+    // fat16_read_file(file, elf_file->elf_memory);
+
     int res = fopen(filename, "r");
     if (res <= 0)
     {
@@ -213,10 +219,13 @@ int elf_load(const char *filename, struct elf_file **file_out)
         warningf("Failed to process loaded ELF file %s\n", filename);
         goto out;
     }
+    elf_file->in_memory_size = stat.size;
 
     *file_out = elf_file;
+    
 out:
     fclose(fd);
+    // kfree(file);
     return res;
 }
 

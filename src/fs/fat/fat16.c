@@ -11,7 +11,6 @@
 #include "serial.h"
 #include "assert.h"
 
-
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 2
 #define FAT16_FAT_BAD_SECTOR 0xFF7
@@ -164,6 +163,7 @@ static void fat16_init_private(struct disk *disk, struct fat_private *fat_privat
 
 int fat16_sector_to_absolute(struct disk *disk, int sector)
 {
+    ASSERT(disk->sector_size > 0, "Invalid sector size");
     return sector * disk->sector_size;
 }
 
@@ -176,6 +176,7 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     struct fat_private *fat_private = disk->fs_private;
     int res = 0;
     int i = 0;
+    ASSERT(disk->sector_size > 0, "Invalid sector size");
     int directory_start_pos = directory_start_sector * disk->sector_size;
     struct disk_stream *stream = fat_private->directory_stream;
     if (disk_stream_seek(stream, directory_start_pos) != ALL_OK)
@@ -227,6 +228,8 @@ out:
 int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private, struct fat_directory *directory)
 {
     dbgprintf("Getting root directory\n");
+
+    ASSERT(disk->sector_size > 0, "Invalid sector size");
 
     int res = 0;
     struct fat_directory_entry *dir = NULL;
@@ -425,6 +428,7 @@ static uint32_t fat16_get_first_sector(struct fat_private *fat_private)
 
 static int fat16_get_fat_entry(struct disk *disk, int cluster)
 {
+    ASSERT(disk->sector_size > 0, "Invalid sector size");
     int res = -1;
     struct fat_private *fs_private = disk->fs_private;
     struct disk_stream *stream = fs_private->fat_read_stream;
@@ -456,7 +460,7 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     }
     dbgprintf("FAT entry for cluster %d: %x\n", cluster, result);
     kprintf("FAT entry for cluster %d: %x\n", cluster, result);
-    ASSERT(result != 0, "Invalid FAT entry");
+    // ASSERT(result != 0, "Invalid FAT entry");
 
     warningf("res: %d\n", res);
 
@@ -524,6 +528,7 @@ out:
 
 static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream *stream, int start_cluster, int offset, int total, void *out)
 {
+    ASSERT(disk->sector_size > 0, "Invalid sector size");
     dbgprintf("Reading from cluster %d, offset %d, total %d\n", start_cluster, offset, total);
     int res = 0;
     struct fat_private *fs_private = disk->fs_private;
@@ -1010,9 +1015,10 @@ void fat16_print_partition_stats(struct disk *disk)
     int sectors_per_cluster = fat_private->header.primary_header.sectors_per_cluster;
     int sectors_per_fat = fat_private->header.primary_header.sectors_per_fat;
     int sectors_per_track = fat_private->header.primary_header.sectors_per_track;
-    int total_sectors = fat_private->header.primary_header.total_sectors;
-    int total_sectors_large = fat_private->header.primary_header.total_sectors_large;
-    int partition_size = total_sectors * sector_size;
+    int total_sectors = fat_private->header.primary_header.total_sectors != 0
+                            ? fat_private->header.primary_header.total_sectors
+                            : fat_private->header.primary_header.total_sectors_large;
+    // unsigned long long partition_size = total_sectors * sector_size;
 
     dbgprintf("Sector size: %d\n", sector_size);
     dbgprintf("FAT copies: %d\n", fat_copies);
@@ -1026,10 +1032,7 @@ void fat16_print_partition_stats(struct disk *disk)
     dbgprintf("Sectors per FAT: %d\n", sectors_per_fat);
     dbgprintf("Sectors per track: %d\n", sectors_per_track);
     dbgprintf("Total sectors: %d\n", total_sectors);
-    dbgprintf("Total sectors large: %d\n", total_sectors_large);
-    dbgprintf("Partition size: %d MiB\n", partition_size / 1024 / 1024);
-
-    disk->sector_size = sector_size;
+    // dbgprintf("Partition size: %d MiB\n", partition_size / 1024 / 1024);
 
     disk_stream_close(stream);
 }

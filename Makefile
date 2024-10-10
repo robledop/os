@@ -20,6 +20,7 @@ FLAGS = -g \
 	-fno-omit-frame-pointer \
 	-Wno-unused-function \
 	-Wno-unused-variable \
+	-fno-inline-functions \
 	-fno-builtin \
 	-Werror \
 	-Wno-unused-label \
@@ -29,10 +30,15 @@ FLAGS = -g \
 	-nodefaultlibs \
 	-Wextra \
 	-std=gnu23 \
-	-fstack-protector \
-	-fsanitize=undefined \
+	-pedantic \
 	-Wall
 
+ifeq ($(filter grub,$(MAKECMDGOALS)),grub)
+    FLAGS += -DGRUB
+endif
+ifeq ($(filter qemu_grub,$(MAKECMDGOALS)),qemu_grub)
+    FLAGS += -DGRUB
+endif
 
 	# -pedantic-errors \
 	# -fstack-protector \
@@ -41,6 +47,7 @@ FLAGS = -g \
 all: ./bin/boot.bin ./bin/kernel.bin apps
 	rm -rf ./bin/os.bin
 	dd if=./bin/boot.bin >> ./bin/os.bin
+	# dd if=./bin/stage2.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
@@ -54,6 +61,8 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 
 ./bin/boot.bin: ./src/boot/boot.asm
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
+	# nasm -f bin -g ./src/boot/stage1.asm -o ./bin/boot.bin
+	# nasm -f bin -g ./src/boot/stage2.asm -o ./bin/stage2.bin
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -63,25 +72,22 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 
 grub: ./bin/kernel-grub.bin apps
 	grub-file --is-x86-multiboot ./rootfs/boot/myos.kernel
-
 	rm -rf ./disk.img
-
-	
 	dd if=/dev/zero of=./disk.img bs=512 count=131072
 	mkfs.vfat -c -F 16 -S 512 ./disk.img
 	sudo mount -t vfat ./disk.img /mnt/d
-	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop0
+	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop2
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount -q /mnt/d
 	# VBoxManage convertdd ./disk.img ./disk.vdi
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o 
-	# i686-elf-gcc $(FLAGS) -v -T ./src/grub/linker.ld -Wl,--verbose -o ./rootfs/boot/myos.kernel $(filter-out ./build/kernel/%.asm.o, $(FILES))
-	i686-elf-gcc $(FLAGS) -v -T ./src/grub/linker.ld -Wl,--verbose -o ./rootfs/boot/myos.kernel ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.kernel ./build/kernelfull.o
 
 qemu: all
-	qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	# qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on
 
 qemu_grub: grub 
 	# qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
@@ -94,4 +100,4 @@ apps_clean:
 	cd ./user && $(MAKE) clean
 
 clean: apps_clean
-	rm -rf ./bin ./build ./mnt ./disk.img ./disk.vdi
+	rm -rf ./bin ./build ./mnt ./disk.img ./disk.vdi ./rootfs/boot/myos.kernel

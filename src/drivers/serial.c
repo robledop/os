@@ -7,7 +7,7 @@
 #include <stdarg.h>
 
 #define PORT 0x3f8 // COM1
-#define MAX_FMT_STR_SERIAL 50
+#define MAX_FMT_STR_SERIAL 100
 static int serial_init_done = 0;
 
 // extern int __cli_cnt;

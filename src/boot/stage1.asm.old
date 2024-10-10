@@ -1,0 +1,96 @@
+; bootloader.asm (Stage 1 Bootloader)
+BITS 16
+ORG 0x7C00
+
+  ; BIOS Paramater Block
+  ; https://wiki.osdev.org/FAT#Boot_Record
+  jmp short start
+  nop
+
+  ; FAT16 Header
+OEMID            db 'OSDEV   '   ; OEM Identifier
+ByterPerSector   dw 0x200        ; 512 bytes per sector
+SectorPerCluster db 0x80         ; 128 sectors per cluster
+ReservedSectors  dw 512          ; 200 reserved sectors
+FATCopies        db 2            ; 2 FAT copies
+RootDirEntries   dw 0x40         ; 64 root directory entries
+NumSectors       dw 0x00         ; 0 sectors
+MediaType        db 0xf8         ; Media type
+SectorsPerFAT    dw 0x100        ; 256 sectors per FAT
+SectorsPerTrack  dw 0x20         ; 32 sectors per track
+NumberOfHeads    dw 0x40         ; 64 heads
+HiddenSectors    dd 0x00         ; 0 hidden sectors
+SectorsBig       dd 0x773594
+
+  ; Extended BPB (DOS 4.0)
+DriveNumber      db 0x80         ; Drive number
+WinNTBit         db 0x00         ; Windows NT bit
+Signature        db 0x29         ; Signature
+VolumeID         dd 0xD105       ; Volume ID
+VolumeIDString   db 'NO NAME    '; Volume ID String
+SystemIDString   db 'FAT16   '   ; System ID String
+
+start:
+    cli
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov sp, 0x7C00
+    sti
+
+    ; Store the boot drive number passed by BIOS
+    mov [BootDrive], dl
+
+    ; Set up the Disk Address Packet (DAP) to load Stage 2
+    lea si, [Stage2_DAP]
+
+    ; DAP size (16 bytes)
+    mov byte [si], 16            ; dap_size (1 byte)
+    mov byte [si+1], 0           ; dap_reserved (1 byte)
+
+    ; Number of sectors to read
+    mov word [si+2], STAGE2_SECTORS  ; dap_num_sectors (2 bytes)
+
+    ; Transfer buffer pointer (Segment:Offset)
+    mov word [si+4], STAGE2_OFFSET   ; dap_buffer (Offset)
+    mov word [si+6], STAGE2_SEGMENT  ; dap_buffer (Segment)
+
+    ; Starting LBA (split into 4 words)
+    mov ax, word [STAGE2_LBA]            ; Lower 16 bits
+    mov word [si+8], ax
+
+    mov ax, word [STAGE2_LBA + 2]        ; Next 16 bits
+    mov word [si+10], ax
+
+    ; For LBA values larger than 32 bits, set the upper words accordingly
+    mov word [si+12], 0                  ; Upper 16 bits (zero if LBA < 32 bits)
+    mov word [si+14], 0                  ; Upper 16 bits (zero if LBA < 32 bits)
+
+    ; Read Stage 2 using INT 13h Extended Read
+    mov ah, 0x42
+    mov dl, [BootDrive]
+    mov si, Stage2_DAP
+    int 0x13
+    jc disk_error
+
+    ; Jump to Stage 2
+    jmp STAGE2_SEGMENT:STAGE2_OFFSET
+
+disk_error:
+    ; Handle disk read error (you can display an error message here)
+    hlt
+
+BootDrive db 0x00
+
+Stage2_DAP:
+    times 16 db 0                  ; Allocate 16 bytes for the DAP
+
+; Constants
+STAGE2_SEGMENT equ 0x0800          ; Segment where Stage 2 will be loaded (0x0800:0x0000)
+STAGE2_OFFSET  equ 0x0000          ; Offset where Stage 2 will be loaded
+STAGE2_LBA     dd 2                ; Starting LBA of Stage 2 (double word for 32-bit LBA)
+STAGE2_SECTORS equ 4               ; Number of sectors to read for Stage 2
+
+times 510 - ($ - $$) db 0
+dw 0xAA55                          ; Boot signature

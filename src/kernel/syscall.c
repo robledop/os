@@ -47,7 +47,6 @@ void *sys_open_dir(struct interrupt_frame *frame)
 
     struct file_directory dir = fs_open_dir((const char *)path);
 
-
     memcpy(result, &dir, sizeof(struct file_directory));
 
     directory = result;
@@ -164,8 +163,8 @@ void *sys_putchar(struct interrupt_frame *frame)
 
 void *sys_putchar_color(struct interrupt_frame *frame)
 {
-    unsigned char backcolor = (unsigned char)(int)task_get_stack_item(task_current(), 0);
-    unsigned char forecolor = (unsigned char)(int)task_get_stack_item(task_current(), 1);
+    unsigned char backcolor = (unsigned char)(uint32_t)task_get_stack_item(task_current(), 0);
+    unsigned char forecolor = (unsigned char)(uint32_t)task_get_stack_item(task_current(), 1);
     char c = (char)(int)task_get_stack_item(task_current(), 2);
 
     terminal_write_char(c, forecolor, backcolor);

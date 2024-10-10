@@ -4,3 +4,4 @@ typedef unsigned int uint32_t;
 typedef unsigned long long size_t;
 #define bool _Bool
 #define NULL ((void *)0)
+#define true 1

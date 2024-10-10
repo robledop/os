@@ -4,6 +4,7 @@
 #include "kheap.h"
 #include "serial.h"
 #include "assert.h"
+#include "memory.h"
 
 struct disk_stream *disk_stream_create(int disk_index)
 {
@@ -29,17 +30,19 @@ int disk_stream_seek(struct disk_stream *stream, int position)
 
 int disk_stream_read(struct disk_stream *stream, void *out, int size)
 {
+    ASSERT(stream->disk->sector_size > 0, "Invalid sector size");
     // ASSERT(size > 0, "Invalid size");
     dbgprintf("Reading %d bytes from disk stream\n", size);
-    int sector = stream->position / SECTOR_SIZE;
-    int offset = stream->position % SECTOR_SIZE;
+    int sector = stream->position / stream->disk->sector_size;
+    int offset = stream->position % stream->disk->sector_size;
     int to_read = size;
-    bool overflow = (offset + to_read) >= SECTOR_SIZE;
-    char buffer[SECTOR_SIZE];
+    bool overflow = (offset + to_read) >= stream->disk->sector_size;
+    char buffer[stream->disk->sector_size];
+    // memset(buffer, 0, stream->disk->sector_size);
 
     if (overflow)
     {
-        to_read -= (offset + to_read) - SECTOR_SIZE;
+        to_read -= (offset + to_read) - stream->disk->sector_size;
     }
 
     int res = disk_read_block(stream->disk, sector, 1, buffer);
@@ -51,9 +54,9 @@ int disk_stream_read(struct disk_stream *stream, void *out, int size)
 
     for (int i = 0; i < to_read; i++)
     {
-        // *(char *)out = buffer[offset + i];
-        // out = (char *)out + 1;
-        *(char *)out++ = buffer[offset + i];
+        *(char *)out = buffer[offset + i];
+        out = (char *)out + 1;
+        // *(char *)out++ = buffer[offset + i];
     }
 
     stream->position += to_read;

@@ -2,10 +2,14 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Launch QEMU",
+            "label": "Launch QEMU with GRUB",
             "type": "shell",
-            // "command": "~/source/os/build.sh && qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on"
             "command": "make clean && make qemu_grub"
+        },
+        {
+            "label": "Launch QEMU without GRUB",
+            "type": "shell",
+            "command": "make clean && make qemu"
         }
     ]
 }

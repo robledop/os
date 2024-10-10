@@ -1,11 +1,18 @@
 #include "gdt.h"
 #include "tss.h"
+#include "terminal.h"
+#include "config.h"
 
 struct gdt_entry gdt_entries[6];
 struct gdt_ptr gdt_ptr;
 
 void init_gdt()
 {
+
+    // uintptr_t kernel_stack_address = 0;
+    // asm volatile("mov %%esp, %0"
+    //              : "=r"(kernel_stack_address));
+
     gdt_ptr.limit = (sizeof(struct gdt_entry) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;
 

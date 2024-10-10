@@ -1,7 +1,10 @@
 #ifndef KERNEL_H
 #define KERNEL_H
+#include "multiboot.h"
 
-void kernel_main();
+#include <stdint.h>
+
+void kernel_main(multiboot_info_t *mbd, unsigned int magic);
 void panic(const char *msg);
 void kernel_page();
 void kernel_registers();

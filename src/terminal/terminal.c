@@ -5,6 +5,7 @@
 #include "string.h"
 #include <stdarg.h>
 #include <stdint.h>
+#include "assert.h"
 
 #define VIDEO_MEMORY 0xB8000
 #define BYTES_PER_CHAR 2
@@ -37,9 +38,13 @@ void update_cursor(int row, int col)
     outb(0x3D5, (unsigned char)((position >> 8) & 0xFF));
 }
 
-void write_character(unsigned char c, unsigned char forecolour, unsigned char backcolour, int x, int y)
+void write_character(unsigned char c, unsigned char fcolor, unsigned char bcolor, int x, int y)
 {
-    unsigned short int attrib = (backcolour << 4) | (forecolour & 0x0F);
+    ASSERT(x < VGA_WIDTH, "X is out of bounds");
+    ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
+    ASSERT(fcolor != 0x00, "Foreground color is black");
+
+    unsigned short int attrib = (bcolor << 4) | (fcolor & 0x0F);
     volatile unsigned short int *where;
     where = (volatile unsigned short int *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
     *where = c | (attrib << 8);
@@ -133,6 +138,12 @@ void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
 
 void print(const char *str)
 {
+    if (forecolor == 0x00 && backcolor == 0x00)
+    {
+        forecolor = 0x0F;
+        backcolor = 0x00;
+    }
+
     size_t len = strlen(str);
     for (size_t i = 0; i < len; i++)
     {
@@ -151,6 +162,13 @@ void ksprintf(const char *str, int max)
 
 void kprintf(char *fmt, ...)
 {
+    // This should not happen
+    if (forecolor == 0x00 && backcolor == 0x00)
+    {
+        forecolor = 0x0F;
+        backcolor = 0x00;
+    }
+
     va_list args;
 
     int x_offset = 0;
@@ -333,6 +351,8 @@ void terminal_clear()
 {
     cursor_x = 0;
     cursor_y = 0;
+    forecolor = 0x0F;
+    backcolor = 0x00;
     for (int y = 0; y < VGA_HEIGHT; y++)
     {
         for (int x = 0; x < VGA_WIDTH; x++)

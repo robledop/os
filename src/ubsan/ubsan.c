@@ -102,34 +102,6 @@ __attribute__((noreturn)) static void ubsan_abort(const struct ubsan_source_loca
 #define ABORT_VARIANT_VP_VP_UP_VP(name) \
     ABORT_VARIANT(name, (void *a, void *b, uintptr_t c, void *d), (a, b, c, d))
 
-// TODO: After releasing Sortix 1.1, remove this compatibility for gcc 5.2.0,
-//       as __ubsan_handle_type_mismatch_v1 fixes the ABI.
-// #if 1
-// struct ubsan_type_mismatch_data
-// {
-//     struct ubsan_source_location location;
-//     struct ubsan_type_descriptor *type;
-//     uintptr_t alignment;
-//     unsigned char type_check_kind;
-// };
-
-// void __ubsan_handle_type_mismatch(void *data_raw,
-//                                   void *pointer_raw)
-// {
-//     struct ubsan_type_mismatch_data *data =
-//         (struct ubsan_type_mismatch_data *)data_raw;
-//     ubsan_value_handle_t pointer = (ubsan_value_handle_t)pointer_raw;
-//     const char *violation = "type mismatch";
-//     if (!pointer)
-//         violation = "null pointer access";
-//     else if (data->alignment && (pointer & (data->alignment - 1)))
-//         violation = "unaligned access";
-//     ubsan_abort(&data->location, violation);
-// }
-
-// ABORT_VARIANT_VP_VP(type_mismatch)
-// #endif
-
 struct ubsan_type_mismatch_v1_data
 {
     struct ubsan_source_location location;
@@ -333,13 +305,7 @@ ABORT_VARIANT_VP_VP(vla_bound_not_positive)
 
 struct ubsan_float_cast_overflow_data
 {
-    // TODO: Remove this GCC 5.x compatibility after releasing Sortix 1.1. The
-    //       GCC developers accidentally forgot the source location. Their
-    //       libubsan probes to see if it looks like a path, but we don't need
-    //       to maintain compatibility with multiple gcc releases. See below.
-#if !(defined(__GNUC__) && __GNUC__ < 6)
     struct ubsan_source_location location;
-#endif
     struct ubsan_type_descriptor *from_type;
     struct ubsan_type_descriptor *to_type;
 };
@@ -453,24 +419,6 @@ void __ubsan_handle_function_type_mismatch(void *data_raw,
 
 ABORT_VARIANT_VP_VP(function_type_mismatch)
 
-// TODO: After releasing Sortix 1.1, remove this compatibility for gcc 5.2.0,
-//       as __ubsan_handle_nonnull_return_v1 fixes the ABI.
-#if 1
-struct ubsan_nonnull_return_data
-{
-    struct ubsan_source_location attr_location;
-};
-
-void __ubsan_handle_nonnull_return(void *data_raw)
-{
-    struct ubsan_nonnull_return_data *data =
-        (struct ubsan_nonnull_return_data *)data_raw;
-    ubsan_abort(&data->attr_location, "null return");
-}
-
-ABORT_VARIANT_VP(nonnull_return)
-#endif
-
 struct ubsan_nonnull_return_v1_data
 {
     struct ubsan_source_location attr_location;
@@ -503,21 +451,10 @@ struct ubsan_nonnull_arg_data
 {
     struct ubsan_source_location location;
     struct ubsan_source_location attr_location;
-// TODO: After releasing Sortix 1.1, do this unconditionally for modern gcc.
-#if !(defined(__GNUC__) && __GNUC__ < 6)
     int arg_index;
-#endif
 };
 
-// TODO: After releasing Sortix 1.1, do this unconditionally for modern gcc.
-//       Old GCC's libubsan does not have the second parameter, but its builtin
-//       somehow has it and conflict if we don't match it.
-#if !(defined(__GNUC__) && __GNUC__ < 6)
 void __ubsan_handle_nonnull_arg(void *data_raw)
-#else
-void __ubsan_handle_nonnull_arg(void *data_raw,
-                                intptr_t index_raw)
-#endif
 {
     struct ubsan_nonnull_arg_data *data =
         (struct ubsan_nonnull_arg_data *)data_raw;
@@ -536,11 +473,7 @@ void __ubsan_handle_nullability_arg(void *data_raw)
     ubsan_abort(&data->location, "nullability argument");
 }
 
-#if !(defined(__GNUC__) && __GNUC__ < 6)
 ABORT_VARIANT_VP(nonnull_arg)
-#else
-ABORT_VARIANT_VP_IP(nonnull_arg);
-#endif
 ABORT_VARIANT_VP(nullability_arg)
 
 struct ubsan_pointer_overflow_data

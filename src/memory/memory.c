@@ -9,6 +9,7 @@ void *memset(void *ptr, int value, size_t size)
     {
         p[i] = (unsigned char)value;
     }
+
     return ptr;
 }
 
@@ -25,13 +26,6 @@ void *memcpy(void *dest, const void *src, size_t n)
 
 void *memsetw(void *dest, uint16_t value, size_t n)
 {
-    // uint16_t *d = dest;
-    // for (size_t i = 0; i < n; i++)
-    // {
-    //     d[i] = value;
-    // }
-    // return dest;
-
     uint16_t *ptr = dest;
     while (n--)
     {

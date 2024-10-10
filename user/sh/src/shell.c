@@ -3,6 +3,7 @@
 #include "stdlib.h"
 #include "os.h"
 #include "string.h"
+#include "types.h"
 
 int main(int argc, char **argv)
 {

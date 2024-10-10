@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#define KERNEL_STACK_ADDRESS 0x600000
 
 struct gdt_entry
 {
