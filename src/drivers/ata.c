@@ -102,7 +102,6 @@ void disk_search_and_init()
     }
 
     dbgprintf("Detected sector size: %d\n", disk.sector_size);
-    kprintf("Detected sector size: %d\n", disk.sector_size);
 
     disk.fs = fs_resolve(&disk);
 }

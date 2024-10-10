@@ -76,6 +76,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     disable_interrupts();
 
     kprintf(KCYN "Kernel is starting\n");
+    terminal_clear();
 
     fs_init();
     disk_search_and_init();
@@ -200,9 +201,9 @@ void display_grub_info(multiboot_info_t *mbd, unsigned int magic)
         panic("invalid memory map given by GRUB bootloader");
     }
 
+    kprintf("Bootloader name: %s\n", mbd->boot_loader_name);
     kprintf("Memory map addr: %x\n", mbd->mmap_addr);
     kprintf("Memory map length: %x\n", mbd->mmap_length);
-    kprintf("Bootloader name: %s\n", mbd->boot_loader_name);
     kprintf("Framebuffer address: %x\n", mbd->framebuffer_addr);
 
     /* Loop through the memory map and display the values */

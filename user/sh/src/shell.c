@@ -7,7 +7,7 @@
 
 int main(int argc, char **argv)
 {
-    printf(KWHT "Shell started\n");
+    printf(KWHT "User mode shell started\n");
     while (1)
     {
         printf(KGRN "> " KWHT);
