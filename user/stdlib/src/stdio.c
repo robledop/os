@@ -18,6 +18,7 @@ void putchar_color(char c, unsigned char forecolor, unsigned char backcolor)
     os_putchar_color(c, forecolor, backcolor);
 }
 
+// HACK: This function is a workaround for the fact that the OS does not support relative paths yet
 // WARNING: The return value must be freed by the caller
 char *normalize_path(const char *path)
 {

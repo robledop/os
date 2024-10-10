@@ -162,12 +162,7 @@ void ksprintf(const char *str, int max)
 
 void kprintf(char *fmt, ...)
 {
-    // This should not happen
-    if (forecolor == 0x00 && backcolor == 0x00)
-    {
-        forecolor = 0x0F;
-        backcolor = 0x00;
-    }
+    ASSERT(forecolor != 0x00, "Foreground color is black");
 
     va_list args;
 
@@ -351,8 +346,6 @@ void terminal_clear()
 {
     cursor_x = 0;
     cursor_y = 0;
-    forecolor = 0x0F;
-    backcolor = 0x00;
     for (int y = 0; y < VGA_HEIGHT; y++)
     {
         for (int x = 0; x < VGA_WIDTH; x++)
