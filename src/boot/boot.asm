@@ -20,7 +20,7 @@
 OEMID            db 'OSDEV   '   ; OEM Identifier
 ByterPerSector   dw 0x200        ; 512 bytes per sector
 SectorPerCluster db 0x80         ; 128 sectors per cluster
-ReservedSectors  dw 500          ; 500 reserved sectors
+ReservedSectors  dw 512          ; 512 reserved sectors
 FATCopies        db 2            ; 2 FAT copies
 RootDirEntries   dw 0x40         ; 64 root directory entries
 NumSectors       dw 0x00         ; 0 sectors

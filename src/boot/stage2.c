@@ -9,20 +9,29 @@ int disk_read_sector(int lba, int total, void *buffer);
 
 void load_kernel()
 {
-    // This will read from sector 2 up to 500
+    // This will read from sector 2 up to 512
     // They need to be marked as reserved in the boot sector (boot.asm)
     // and the kernel needs to be small enough to fit there
     // You can calculate how many sectors the kernel will use
     // by running stat -c %s ./bin/kernel.bin
     // and then dividing by 512
 
-    disk_read_sector(2, 254, (void *)0x100000);
+    // Sector 0 is the first stage bootloader
+    // Sector 1 is the second stage bootloader
+    // So we start reading from sector 2
+
+    // reads 256 sectors starting from sector 2 to 257
+    disk_read_sector(2, 256, (void *)0x100000);
+
     // Split the command in two because the ATA PIO mode only allows 256 sectors to be read at a time
     // I may need to do more reads if the kernel grows
-    disk_read_sector(254, 246, (void *)(0x100000 + 512 * 252));
 
-    void (*kernel_main)() = (void (*)())0x100000;
-    kernel_main();
+    // reads 254 sectors starting from sector 258 to 512
+    disk_read_sector(258, 254, (void *)(0x100000 + 512 * 256));
+
+    // Starts running kernel.asm
+    void (*kernel_asm)() = (void (*)())0x100000;
+    kernel_asm();
 }
 
 int disk_read_sector(int lba, int total, void *buffer)
