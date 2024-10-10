@@ -4,6 +4,8 @@
 
   CODE_SEG equ gdt_code - gdt_start
   DATA_SEG equ gdt_data - gdt_start
+  SECTORS_TO_READ equ 1
+  STAGE2_ADDRESS equ 0x1000
 
   ; BIOS Paramater Block
   ; https://wiki.osdev.org/FAT#Boot_Record
@@ -14,7 +16,7 @@
 OEMID            db 'OSDEV   '   ; OEM Identifier
 ByterPerSector   dw 0x200        ; 512 bytes per sector
 SectorPerCluster db 0x80         ; 128 sectors per cluster
-ReservedSectors  dw 300          ; 200 reserved sectors
+ReservedSectors  dw 500          ; 200 reserved sectors
 FATCopies        db 2            ; 2 FAT copies
 RootDirEntries   dw 0x40         ; 64 root directory entries
 NumSectors       dw 0x00         ; 0 sectors
@@ -99,10 +101,10 @@ load32:
 ; Number of sectors to read
 ; sectors * 512 = bytes
 ; this must be the size of the kernel
-  mov ecx, 256
-  mov edi, 0x0100000
+  mov ecx, SECTORS_TO_READ
+  mov edi, STAGE2_ADDRESS
   call ata_lba_read
-  jmp CODE_SEG:0x0100000
+  jmp CODE_SEG:STAGE2_ADDRESS
 
 ata_lba_read:
   mov ebx, eax ; Backup the LBA

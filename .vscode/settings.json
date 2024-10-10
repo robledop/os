@@ -17,7 +17,8 @@
         "errno.h": "c",
         "tss.h": "c",
         "terminal.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "io.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

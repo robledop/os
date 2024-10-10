@@ -8,7 +8,7 @@ ASM_OBJS := $(ASM_FILES:./src/%.asm=./build/%.asm.o)
 C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
 INCLUDES = -I ./src/include
-FLAGS = -g \
+STAGE2_FLAGS = -g \
 	-ffreestanding \
 	-O0 \
 	-nostdlib \
@@ -33,6 +33,37 @@ FLAGS = -g \
 	-pedantic \
 	-Wall
 
+FLAGS = -g \
+	-ffreestanding \
+	-O0 \
+	-nostdlib \
+	-falign-jumps \
+	-falign-functions \
+	-falign-labels \
+	-falign-loops \
+	-fstrength-reduce \
+	-fno-omit-frame-pointer \
+	-Wno-unused-function \
+	-Wno-unused-variable \
+	-fno-inline-functions \
+	-fno-builtin \
+	-Werror \
+	-Wno-unused-label \
+	-Wno-cpp \
+	-Wno-unused-parameter \
+	-nostartfiles \
+	-nodefaultlibs \
+	-Wextra \
+	-std=gnu23 \
+	-pedantic \
+	-fstack-protector \
+	-fsanitize=undefined \
+	-Wall
+
+	# -pedantic-errors \
+	# -fstack-protector \
+	# -fsanitize=undefined \
+
 ifeq ($(filter grub,$(MAKECMDGOALS)),grub)
     FLAGS += -DGRUB
 endif
@@ -40,14 +71,11 @@ ifeq ($(filter qemu_grub,$(MAKECMDGOALS)),qemu_grub)
     FLAGS += -DGRUB
 endif
 
-	# -pedantic-errors \
-	# -fstack-protector \
-	# -fsanitize=undefined \
 
 all: ./bin/boot.bin ./bin/kernel.bin apps
 	rm -rf ./bin/os.bin
 	dd if=./bin/boot.bin >> ./bin/os.bin
-	# dd if=./bin/stage2.bin >> ./bin/os.bin
+	dd if=./bin/stage2.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
@@ -58,11 +86,16 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
+	./pad.sh ./bin/kernel.bin
 
-./bin/boot.bin: ./src/boot/boot.asm
+./bin/boot.bin: ./src/boot/boot.asm 
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
-	# nasm -f bin -g ./src/boot/stage1.asm -o ./bin/boot.bin
-	# nasm -f bin -g ./src/boot/stage2.asm -o ./bin/stage2.bin
+	nasm -f elf -g ./src/boot/stage2.asm -o ./bin/stage2.asm.o
+	i686-elf-gcc -g $(STAGE2_FLAGS) -c ./src/boot/stage2.c -o ./bin/stage2.o
+	i686-elf-ld -g -relocatable ./bin/stage2.asm.o ./bin/stage2.o -o ./build/stage2.o
+	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2.o
+
+	./pad.sh ./bin/stage2.bin
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -76,7 +109,7 @@ grub: ./bin/kernel-grub.bin apps
 	dd if=/dev/zero of=./disk.img bs=512 count=131072
 	mkfs.vfat -c -F 16 -S 512 ./disk.img
 	sudo mount -t vfat ./disk.img /mnt/d
-	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop2
+	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop1
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount -q /mnt/d
 	# VBoxManage convertdd ./disk.img ./disk.vdi

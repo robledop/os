@@ -14,7 +14,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ~/source/os/src -d ~/source/os/src/kernel -d ~/source/os/src/memory/paging -d ~/source/os/src/disk -d ~/source/os/src/fs/fat -d ~/source/os/src/idt -d ~/source/os/src/include -d ~/source/os/user/stdlib/src -d ~/source/os/src/x86 -d ~/source/os/src/grub -d ~/source/os/src/task",
+            "miDebuggerArgs": "-d ~/source/os/src -d ~/source/os/src/kernel -d ~/source/os/src/memory/paging -d ~/source/os/src/disk -d ~/source/os/src/fs/fat -d ~/source/os/src/idt -d ~/source/os/src/include -d ~/source/os/user/stdlib/src -d ~/source/os/src/x86 -d ~/source/os/src/grub -d ~/source/os/src/task -d ~/source/os/src/boot",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",
@@ -91,6 +91,10 @@
                 {
                     "text": "add-symbol-file ~/source/os/build/kernelfull.o 0x100000",
                     "description": "Add kernelfull.o symbols"
+                },
+                {
+                    "text": "add-symbol-file ~/source/os/build/stage2.o 0x8000",
+                    "description": "Add stage2.o symbols"
                 },
                 // {
                 //     "text": "add-symbol-file /home/robledo/source/os/rootfs/echo 0x400000",
