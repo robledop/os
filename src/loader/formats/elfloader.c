@@ -3,7 +3,7 @@
 #include "status.h"
 #include <stdbool.h>
 #include "memory.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "string.h"
 #include "paging.h"
 #include "kernel.h"
@@ -184,7 +184,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     int fd = 0;
 
-    // DirectoryEntry_t* file = fat16_get_file(filename);
+    // DirectoryEntry_t* file = my_fat16_get_file(filename);
     // elf_file->elf_memory = kzalloc(file->file_size);
     // fat16_read_file(file, elf_file->elf_memory);
 
@@ -222,7 +222,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     elf_file->in_memory_size = stat.size;
 
     *file_out = elf_file;
-    
+
 out:
     fclose(fd);
     // kfree(file);

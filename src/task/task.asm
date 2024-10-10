@@ -48,7 +48,7 @@ task_return:
     iretd
 
 
-; void restore_general_purpose_registers(struc registers* regs)
+; void restore_general_purpose_registers(struct registers* regs)
 restore_general_purpose_registers:
     push ebp
 

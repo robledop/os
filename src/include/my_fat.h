@@ -2,6 +2,8 @@
 #define MY_FAT_H
 #include <stdint.h>
 
+// Tests with the FAT16 file system
+
 typedef struct
 {
     uint8_t name[8];
@@ -21,7 +23,7 @@ typedef struct
 
 void test();
 
-DirectoryEntry_t *fat16_get_file(const char *filename);
-int fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer);
+DirectoryEntry_t *my_fat16_get_file(const char *filename);
+int my_fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer);
 
 #endif

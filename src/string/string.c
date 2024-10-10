@@ -1,5 +1,5 @@
 #include "string.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include <stdbool.h>
 #include <stdint.h>
 

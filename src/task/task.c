@@ -1,12 +1,12 @@
 #include "task.h"
-#include "status.h"
-#include "kernel.h"
-#include "serial.h"
-#include "kheap.h"
-#include "memory.h"
-#include "idt.h"
-#include "string.h"
 #include "elfloader.h"
+#include "idt.h"
+#include "kernel.h"
+#include "kernel_heap.h"
+#include "memory.h"
+#include "serial.h"
+#include "status.h"
+#include "string.h"
 #include "terminal.h"
 
 struct task *current_task = 0;
@@ -114,8 +114,7 @@ out:
 
 int task_switch(struct task *task)
 {
-    // kprintf("Switching to task %d from process %d\n", current_task->process->pid, task->process->pid);
-    // dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
+    dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
 
     current_task = task;
     paging_switch_directory(task->page_directory);
@@ -157,11 +156,9 @@ int copy_string_from_task(struct task *task, void *virtual, void *physical, int 
     }
 
     uint32_t old_entry = paging_get(task->page_directory, tmp);
-    paging_map(
-        task->page_directory,
-        tmp,
-        tmp,
-        PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    paging_map(task->page_directory, tmp, tmp,
+               PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+                   PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     paging_switch_directory(task->page_directory);
     strncpy(tmp, virtual, max);
     kernel_page();
@@ -224,9 +221,8 @@ void task_run_first_task()
 int task_init(struct task *task, struct process *process)
 {
     memset(task, 0, sizeof(struct task));
-    task->page_directory = paging_create_directory(
-        PAGING_DIRECTORY_ENTRY_IS_PRESENT |
-        PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    task->page_directory =
+        paging_create_directory(PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     if (!task->page_directory)
     {
         dbgprintf("Failed to create page directory for task %x\n", &task);

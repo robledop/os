@@ -4,7 +4,7 @@
 
 #include "string.h"
 #include "memory.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "serial.h"
 
 #define SECTOR_SIZE 512
@@ -31,14 +31,13 @@ typedef struct
     uint32_t total_sectors_large;
 } __attribute__((packed)) BPB_t;
 
-
 // Global variables to hold filesystem info
 BPB_t bpb;
 uint32_t root_dir_sectors;
 uint32_t first_data_sector;
 uint32_t total_clusters;
 
-void get_null_terminated_string(char **out, const char *in, size_t size)
+void my_fat16_get_null_terminated_string(char **out, const char *in, size_t size)
 {
     size_t i = 0;
     while (*in != 0x00 && *in != 0x20)
@@ -57,15 +56,15 @@ void get_null_terminated_string(char **out, const char *in, size_t size)
     **out = 0x00;
 }
 
-void fat16_get_relative_filename(DirectoryEntry_t *entry, char *out, int max_len)
+void my_fat16_get_relative_filename(DirectoryEntry_t *entry, char *out, int max_len)
 {
     memset(out, 0x00, max_len);
     char *out_tmp = out;
-    get_null_terminated_string(&out_tmp, (const char *)entry->name, sizeof(entry->name));
+    my_fat16_get_null_terminated_string(&out_tmp, (const char *)entry->name, sizeof(entry->name));
     if (entry->ext[0] != 0x00 && entry->ext[0] != 0x20)
     {
         *out_tmp++ = '.';
-        get_null_terminated_string(&out_tmp, (const char *)entry->ext, sizeof(entry->ext));
+        my_fat16_get_null_terminated_string(&out_tmp, (const char *)entry->ext, sizeof(entry->ext));
     }
 }
 
@@ -106,7 +105,7 @@ int my_fat16_init()
 }
 
 // Function to read a cluster
-int fat16_read_cluster(uint16_t cluster, uint8_t *buffer)
+int my_fat16_read_cluster(uint16_t cluster, uint8_t *buffer)
 {
     uint32_t first_sector = first_data_sector + ((cluster - 2) * bpb.sectors_per_cluster);
     for (uint8_t i = 0; i < bpb.sectors_per_cluster; i++)
@@ -122,7 +121,7 @@ int fat16_read_cluster(uint16_t cluster, uint8_t *buffer)
 }
 
 // Function to read the root directory
-int fat16_read_root_dir(DirectoryEntry_t *entries, uint16_t max_entries)
+int my_fat16_read_root_dir(DirectoryEntry_t *entries, uint16_t max_entries)
 {
     uint32_t root_dir_sector = bpb.reserved_sectors + (bpb.fat_copies * bpb.sectors_per_fat);
     uint16_t entries_read = 0;
@@ -161,7 +160,7 @@ int fat16_read_root_dir(DirectoryEntry_t *entries, uint16_t max_entries)
     return entries_read;
 }
 
-int fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer)
+int my_fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer)
 {
     uint16_t cluster = file_entry->first_cluster;
     uint32_t bytes_read = 0;
@@ -169,10 +168,10 @@ int fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer)
 
     while (cluster < 0xFFF8)
     {
-        if (fat16_read_cluster(cluster, buffer + bytes_read) != 0)
+        if (my_fat16_read_cluster(cluster, buffer + bytes_read) != 0)
         {
             dbgprintf("Failed to read cluster %d\n", cluster);
-            return -1; 
+            return -1;
         }
         bytes_read += bpb.sectors_per_cluster * bpb.bytes_per_sector;
         if (bytes_read >= file_size)
@@ -188,27 +187,27 @@ int fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer)
         if (disk_read(fat_sector, sector) != 0)
         {
             dbgprintf("Failed to read FAT sector %d\n", fat_sector);
-            return -1; 
+            return -1;
         }
         cluster = *(uint16_t *)&sector[ent_offset];
     }
     return 0; // Success
 }
 
-DirectoryEntry_t *fat16_get_file(const char *filename)
+DirectoryEntry_t *my_fat16_get_file(const char *filename)
 {
-    if(istrncmp(filename, "0:/", 3) == 0)
+    if (istrncmp(filename, "0:/", 3) == 0)
     {
         filename += 3;
     }
 
     DirectoryEntry_t entries[10];
-    int num_entries = fat16_read_root_dir(entries, 10);
+    int num_entries = my_fat16_read_root_dir(entries, 10);
 
     for (int i = 0; i < num_entries; i++)
     {
         char name[108];
-        fat16_get_relative_filename(&entries[i], name, sizeof(name));
+        my_fat16_get_relative_filename(&entries[i], name, sizeof(name));
         if (istrncmp(name, filename, 8) == 0)
         {
             DirectoryEntry_t *entry = kzalloc(sizeof(DirectoryEntry_t));

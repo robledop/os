@@ -1,15 +1,14 @@
 #include <kernel.h>
-#include <ata.h>
+#include <disk.h>
 #include <config.h>
 #include <file.h>
 #include <gdt.h>
 #include <idt.h>
 #include <io.h>
 #include <keyboard.h>
-#include <kheap.h>
+#include <kernel_heap.h>
 #include <memory.h>
 #include <paging.h>
-#include <pparser.h>
 #include <process.h>
 #include <serial.h>
 #include <status.h>
@@ -19,7 +18,7 @@
 #include <terminal.h>
 #include <tss.h>
 #include <syscall.h>
-#include "ssp.h"
+#include <ssp.h>
 
 #include "my_fat.h"
 
@@ -79,7 +78,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     terminal_clear();
 
     fs_init();
-    disk_search_and_init();
+    disk_init();
 
     // test();
 

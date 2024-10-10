@@ -1,10 +1,11 @@
 #include "stream.h"
 #include <stdbool.h>
 #include "config.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "serial.h"
 #include "assert.h"
 #include "memory.h"
+#include "disk.h"
 
 struct disk_stream *disk_stream_create(int disk_index)
 {

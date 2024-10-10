@@ -10,20 +10,6 @@
 #define MAX_FMT_STR_SERIAL 100
 static int serial_init_done = 0;
 
-// extern int __cli_cnt;
-int __cli_cnt = 0;
-
-#define ENTER_CRITICAL() \
-    __cli_cnt++;         \
-    asm("cli");
-
-#define LEAVE_CRITICAL() \
-    __cli_cnt--;         \
-    if (__cli_cnt == 0)  \
-    {                    \
-        asm("sti");      \
-    }
-
 void serial_put(char a)
 {
     if (!serial_init_done)
@@ -53,7 +39,6 @@ int32_t serial_printf(char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL
-    ENTER_CRITICAL();
     va_list args;
 
     char str[MAX_FMT_STR_SERIAL];

@@ -3,9 +3,9 @@
 #include "string.h"
 #include "memory.h"
 #include <stdint.h>
-#include "ata.h"
+#include "disk.h"
 #include "stream.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "kernel.h"
 #include "config.h"
 #include "serial.h"
@@ -358,7 +358,7 @@ out:
     return res;
 }
 
-void fat16_to_proper_string(char **out, const char *in, size_t size)
+void fat16_get_null_terminated_string(char **out, const char *in, size_t size)
 {
     size_t i = 0;
     while (*in != 0x00 && *in != 0x20)
@@ -377,15 +377,15 @@ void fat16_to_proper_string(char **out, const char *in, size_t size)
     **out = 0x00;
 }
 
-void fat16_get_full_relative_filename(struct fat_directory_entry *entry, char *out, int max_len)
+void fat16_get_relative_filename(struct fat_directory_entry *entry, char *out, int max_len)
 {
     memset(out, 0x00, max_len);
     char *out_tmp = out;
-    fat16_to_proper_string(&out_tmp, (const char *)entry->name, sizeof(entry->name));
+    fat16_get_null_terminated_string(&out_tmp, (const char *)entry->name, sizeof(entry->name));
     if (entry->ext[0] != 0x00 && entry->ext[0] != 0x20)
     {
         *out_tmp++ = '.';
-        fat16_to_proper_string(&out_tmp, (const char *)entry->ext, sizeof(entry->ext));
+        fat16_get_null_terminated_string(&out_tmp, (const char *)entry->ext, sizeof(entry->ext));
     }
 }
 
@@ -412,7 +412,7 @@ struct fat_directory_entry *fat16_clone_fat_directory_entry(struct fat_directory
 
 static uint32_t fat16_get_first_cluster(struct fat_directory_entry *entry)
 {
-    // return (entry->cluster_high << 16) | entry->cluster_low;
+    // This is only necessary for FAT32. FAT16 and FAT12 can use just cluster_low
     return entry->cluster_high | entry->cluster_low;
 }
 
@@ -460,7 +460,7 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     }
     dbgprintf("FAT entry for cluster %d: %x\n", cluster, result);
     kprintf("FAT entry for cluster %d: %x\n", cluster, result);
-    // ASSERT(result != 0, "Invalid FAT entry");
+    ASSERT(result != 0, "Invalid FAT entry");
 
     warningf("res: %d\n", res);
 
@@ -687,7 +687,7 @@ struct fat_item *fat16_find_item_in_directory(struct disk *disk, struct fat_dire
     char tmp_filename[MAX_PATH_LENGTH];
     for (int i = 0; i < directory->entry_count; i++)
     {
-        fat16_get_full_relative_filename(&directory->entries[i], tmp_filename, sizeof(tmp_filename));
+        fat16_get_relative_filename(&directory->entries[i], tmp_filename, sizeof(tmp_filename));
         if (istrncmp(tmp_filename, name, sizeof(tmp_filename)) == 0)
         {
             return fat16_new_fat_item_for_directory_entry(disk, &directory->entries[i]);

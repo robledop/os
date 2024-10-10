@@ -1,8 +1,25 @@
 #ifndef FILE_H
 #define FILE_H
-#include "pparser.h"
+#include "path_parser.h"
 #include <stdint.h>
 #include <stdbool.h>
+
+/////////////////////
+typedef unsigned int FS_ITEM_TYPE;
+#define FS_ITEM_TYPE_DIRECTORY 0
+#define FS_ITEM_TYPE_FILE 1
+
+struct fs_item
+{
+    union
+    {
+        struct fat_directory_entry *item;
+        struct fat_directory *directory;
+    };
+    FS_ITEM_TYPE type;
+};
+////////////////////
+
 
 typedef unsigned int FILE_SEEK_MODE;
 enum

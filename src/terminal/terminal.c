@@ -160,6 +160,7 @@ void ksprintf(const char *str, int max)
     }
 }
 
+// TODO: There seems to be a bug that prevents more than 3 arguments from being printed
 void kprintf(char *fmt, ...)
 {
     ASSERT(forecolor != 0x00, "Foreground color is black");

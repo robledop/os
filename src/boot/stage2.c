@@ -5,7 +5,7 @@ typedef unsigned int uint32_t;
 uint8_t inb(uint16_t p);
 uint16_t inw(uint16_t p);
 void outb(uint16_t portid, uint8_t value);
-int disk_read_sector(int lba, int total, void *buffer);
+int ata_read_sector(int lba, int total, void *buffer);
 
 void load_kernel()
 {
@@ -21,20 +21,20 @@ void load_kernel()
     // So we start reading from sector 2
 
     // reads 256 sectors starting from sector 2 to 257
-    disk_read_sector(2, 256, (void *)0x100000);
+    ata_read_sector(2, 256, (void *)0x100000);
 
     // Split the command in two because the ATA PIO mode only allows 256 sectors to be read at a time
     // I may need to do more reads if the kernel grows
 
     // reads 254 sectors starting from sector 258 to 512
-    disk_read_sector(258, 254, (void *)(0x100000 + 512 * 256));
+    ata_read_sector(258, 254, (void *)(0x100000 + 512 * 256));
 
     // Starts running kernel.asm
     void (*kernel_asm)() = (void (*)())0x100000;
     kernel_asm();
 }
 
-int disk_read_sector(int lba, int total, void *buffer)
+int ata_read_sector(int lba, int total, void *buffer)
 {
     outb(0x1F6, (lba >> 24) | 0xE0);
     outb(0x1F2, total);

@@ -1,31 +1,16 @@
 #include "file.h"
 #include "config.h"
 #include "memory.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "status.h"
 #include "fat16.h"
 #include "string.h"
-#include "ata.h"
+#include "disk.h"
 #include "kernel.h"
 #include "serial.h"
 #include "assert.h"
 #include "terminal.h"
 
-/////////////////////
-typedef unsigned int FS_ITEM_TYPE;
-#define FS_ITEM_TYPE_DIRECTORY 0
-#define FS_ITEM_TYPE_FILE 1
-
-struct fs_item
-{
-    union
-    {
-        struct fat_directory_entry *item;
-        struct fat_directory *directory;
-    };
-    FS_ITEM_TYPE type;
-};
-////////////////////
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
@@ -133,7 +118,7 @@ struct file_system *fs_resolve(struct disk *disk)
     return 0;
 }
 
-FILE_MODE file_get_mode_from_string(const char *mode)
+FILE_MODE file_get_mode(const char *mode)
 {
     if (strncmp(mode, "r", 1) == 0)
     {
@@ -195,7 +180,7 @@ int fopen(const char *path, const char *mode)
         goto out;
     }
 
-    FILE_MODE file_mode = file_get_mode_from_string(mode);
+    FILE_MODE file_mode = file_get_mode(mode);
     if (file_mode == FILE_MODE_INVALID)
     {
         warningf("Invalid file mode\n");

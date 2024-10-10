@@ -1,7 +1,7 @@
-#include "pparser.h"
+#include "path_parser.h"
 #include "string.h"
 #include "config.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "status.h"
 #include "serial.h"
 

@@ -10,7 +10,7 @@
 #include "string.h"
 #include "status.h"
 #include "file.h"
-#include "kheap.h"
+#include "kernel_heap.h"
 #include "memory.h"
 
 void register_syscalls()
