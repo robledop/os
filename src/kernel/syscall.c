@@ -4,7 +4,7 @@
 #include "task.h"
 #include "terminal.h"
 #include "process.h"
-#include <stdint.h>
+#include "types.h"
 #include "kernel.h"
 #include "serial.h"
 #include "string.h"
@@ -12,6 +12,7 @@
 #include "file.h"
 #include "kernel_heap.h"
 #include "memory.h"
+#include "types.h"
 
 void register_syscalls()
 {
@@ -173,7 +174,7 @@ void *sys_putchar_color(struct interrupt_frame *frame)
 
 void *sys_malloc(struct interrupt_frame *frame)
 {
-    size_t size = (size_t)task_get_stack_item(task_current(), 0);
+    uintptr_t size = (uintptr_t)task_get_stack_item(task_current(), 0);
     return process_malloc(task_current()->process, size);
 }
 

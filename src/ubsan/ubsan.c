@@ -17,7 +17,7 @@
  * Undefined behavior sanitizer runtime support.
  */
 
-#include <stdint.h>
+#include "types.h"
 #include "kernel.h"
 #include "terminal.h"
 #define SCRAM_UNDEFINED_BEHAVIOR 3

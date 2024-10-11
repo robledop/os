@@ -18,7 +18,13 @@
         "tss.h": "c",
         "terminal.h": "c",
         "types.h": "c",
-        "io.h": "c"
+        "io.h": "c",
+        "ata.h": "c",
+        "disk.h": "c",
+        "file.h": "c",
+        "stdbool.h": "c",
+        "fat16.h": "c",
+        "pci.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

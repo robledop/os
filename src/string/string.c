@@ -1,7 +1,7 @@
 #include "string.h"
 #include "kernel_heap.h"
 #include <stdbool.h>
-#include <stdint.h>
+#include "types.h"
 
 /*
  * Functions from Kerninghan/Ritchie - The C Programming Language
@@ -21,7 +21,7 @@ inline void reverse(char s[])
 // Gets the length of a string
 size_t strlen(const char *s)
 {
-    if(s == NULL)
+    if (s == NULL)
     {
         return 0;
     }

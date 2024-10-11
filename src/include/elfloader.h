@@ -1,8 +1,7 @@
 #ifndef ELFLOADER_H
 #define ELFLOADER_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include "types.h"
 
 #include "elf.h"
 #include "config.h"

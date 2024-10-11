@@ -1,5 +1,5 @@
 #include "ps2_kbd.h"
-#include <stdint.h>
+#include "types.h"
 #include "idt.h"
 #include "io.h"
 #include "kernel.h"
@@ -102,4 +102,7 @@ void ps2_keyboard_interrupt_handler(int interrupt)
     task_page();
 }
 
-struct keyboard *ps2_init() { return &ps2_keyboard; }
+struct keyboard *ps2_init()
+{
+    return &ps2_keyboard;
+}

@@ -2,8 +2,7 @@
 #define HEAP_H
 
 #include "config.h"
-#include <stdint.h>
-#include <stddef.h>
+#include "types.h"
 
 #define HEAP_BLOCK_TAKEN 0x01
 #define HEAP_BLOCK_FREE 0x00

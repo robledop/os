@@ -35,7 +35,7 @@ void serial_write(char *str)
     }
 }
 
-int32_t serial_printf(char *fmt, ...)
+int serial_printf(char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL

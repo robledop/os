@@ -5,7 +5,7 @@
 struct tss_entry tss_entry;
 
 // Function to write the TSS descriptor into the GDT
-void write_tss(int32_t num, uint16_t ss0, uint32_t esp0)
+void write_tss(int num, uint16_t ss0, uint32_t esp0)
 {
     uint32_t base = (uint32_t)&tss_entry;
     uint32_t limit = base + sizeof(struct tss_entry);

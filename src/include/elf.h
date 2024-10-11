@@ -1,8 +1,7 @@
 #ifndef EFL_H
 #define ELF_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include "types.h"
 
 #define PF_X 0x01
 #define PF_W 0x02

@@ -7,6 +7,7 @@
 #include "status.h"
 #include "task.h"
 #include "terminal.h"
+#include "assert.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 typedef void (*INTERRUPT_HANDLER_FUNCTION)(void);
@@ -129,6 +130,7 @@ int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION i
     if (interrupt < 0 || interrupt >= TOTAL_INTERRUPTS)
     {
         dbgprintf("Interrupt out of bounds: %d\n", interrupt);
+        ASSERT(false, "Interrupt out of bounds");
         return -EINVARG;
     }
     dbgprintf("Registering interrupt callback: %d\n", interrupt);
@@ -160,6 +162,7 @@ void *handle_syscall(int syscall, struct interrupt_frame *frame)
     if (syscall < 0 || syscall >= MAX_SYSCALLS)
     {
         dbgprintf("Invalid command: %d\n", syscall);
+        ASSERT(false, "Invalid command");
         return NULL;
     }
 
@@ -167,6 +170,7 @@ void *handle_syscall(int syscall, struct interrupt_frame *frame)
     if (!handler)
     {
         dbgprintf("No handler for command: %d\n", syscall);
+        ASSERT(false, "No handler for command");
         return NULL;
     }
 

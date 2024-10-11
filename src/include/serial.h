@@ -1,7 +1,7 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#include <stdint.h>
+#include "types.h"
 #include "terminal.h"
 
 #define DEBUG_SERIAL
@@ -20,6 +20,6 @@
 #endif
 
 void init_serial();
-int32_t serial_printf(char *fmt, ...);
+int serial_printf(char *fmt, ...);
 void serial_put(char a);
 #endif

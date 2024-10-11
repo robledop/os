@@ -220,7 +220,7 @@ DirectoryEntry_t *my_fat16_get_file(const char *filename)
     return NULL;
 }
 
-void test()
+void my_fat_init()
 {
     dbgprintf("Initializing FAT16 driver\n");
     if (my_fat16_init() != 0)

@@ -73,14 +73,15 @@ endif
 
 
 all: ./bin/boot.bin ./bin/kernel.bin apps
-	rm -rf ./bin/os.bin
-	dd if=./bin/boot.bin >> ./bin/os.bin
-	dd if=./bin/stage2.bin >> ./bin/os.bin
-	dd if=./bin/kernel.bin >> ./bin/os.bin
-	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
-	sudo mount -t vfat ./bin/os.bin /mnt/d
+	dd if=/dev/zero of=./bin/disk.img bs=512 count=262144
+	mkfs.vfat -R 512 -c -F 16 -S 512 ./bin/disk.img
+	dd if=./bin/boot.bin of=./bin/disk.img bs=512 count=1 seek=0 conv=notrunc
+	dd if=./bin/stage2.bin of=./bin/disk.img bs=512 count=1 seek=1 conv=notrunc
+	dd if=./bin/kernel.bin of=./bin/disk.img bs=512 count=316 seek=2 conv=notrunc
+	sudo mount -t vfat ./bin/disk.img /mnt/d
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount /mnt/d
+
 # stat --format=%n:%s ./kernel.bin
 
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
@@ -104,13 +105,14 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 ./build/%.o: ./src/%.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -c $< -o $@
 
-grub: ./bin/kernel-grub.bin apps
+grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	grub-file --is-x86-multiboot ./rootfs/boot/myos.kernel
 	rm -rf ./disk.img
-	dd if=/dev/zero of=./disk.img bs=512 count=131072
+	dd if=/dev/zero of=./disk.img bs=512 count=262144
 	mkfs.vfat -c -F 16 -S 512 ./disk.img
+	# dd if=./bin/boot.bin of=./disk.img bs=512 count=1 seek=0 conv=notrunc
 	sudo mount -t vfat ./disk.img /mnt/d
-	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop1
+	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop0
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount -q /mnt/d
 	# VBoxManage convertdd ./disk.img ./disk.vdi
@@ -120,8 +122,8 @@ grub: ./bin/kernel-grub.bin apps
 	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.kernel ./build/kernelfull.o
 
 qemu: all
-	# qemu-system-i386 -boot d -hda ./bin/os.bin -m 512 -serial stdio -display gtk,zoom-to-fit=on
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/os.bin -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on
+	# qemu-system-i386 -boot d -hda ./bin/disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on
 
 qemu_grub: grub 
 	# qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on

@@ -4,17 +4,22 @@
 #include "status.h"
 #include "task.h"
 #include "terminal.h"
+#include "assert.h"
 
 static struct keyboard *keyboard_list_head = NULL;
 static struct keyboard *keyboard_list_tail = NULL;
 
-void keyboard_init() { keyboard_insert(ps2_init()); }
+void keyboard_init()
+{
+    keyboard_register(ps2_init());
+}
 
-int keyboard_insert(struct keyboard *kbd)
+int keyboard_register(struct keyboard *kbd)
 {
     if (kbd->init == NULL)
     {
         warningf("keyboard->init is NULL\n");
+        ASSERT(false, "keyboard->init is NULL");
         return -EINVARG;
     }
 

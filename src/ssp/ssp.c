@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "types.h"
 #include "kernel.h"
 
 // https://wiki.osdev.org/Stack_Smashing_Protector

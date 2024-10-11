@@ -184,9 +184,10 @@ int elf_load(const char *filename, struct elf_file **file_out)
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     int fd = 0;
 
-    // DirectoryEntry_t* file = my_fat16_get_file(filename);
+    // DirectoryEntry_t *file = my_fat16_get_file(filename);
     // elf_file->elf_memory = kzalloc(file->file_size);
-    // fat16_read_file(file, elf_file->elf_memory);
+    // my_fat16_read_file(file, elf_file->elf_memory);
+    // int res = 0;
 
     int res = fopen(filename, "r");
     if (res <= 0)
@@ -220,6 +221,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
         goto out;
     }
     elf_file->in_memory_size = stat.size;
+    // elf_file->in_memory_size = file->file_size;
 
     *file_out = elf_file;
 

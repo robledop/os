@@ -1,6 +1,6 @@
 #ifndef MY_FAT_H
 #define MY_FAT_H
-#include <stdint.h>
+#include "types.h"
 
 // Tests with the FAT16 file system
 
@@ -21,7 +21,7 @@ typedef struct
     uint32_t file_size;
 } __attribute__((packed)) DirectoryEntry_t;
 
-void test();
+void my_fat_init();
 
 DirectoryEntry_t *my_fat16_get_file(const char *filename);
 int my_fat16_read_file(DirectoryEntry_t *file_entry, uint8_t *buffer);

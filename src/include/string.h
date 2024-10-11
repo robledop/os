@@ -1,9 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include "types.h"
 
 size_t strlen(const char *s);
 size_t strnlen(const char *s, size_t maxlen);

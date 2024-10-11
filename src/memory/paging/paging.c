@@ -79,6 +79,7 @@ int paging_get_indexes(void *virtual_address, uint32_t *directory_index_out, uin
     int res = 0;
     if (!paging_is_aligned(virtual_address))
     {
+        ASSERT(false, "Virtual address is not aligned");
         res = -EINVARG;
         goto out;
     }
@@ -115,12 +116,14 @@ int paging_map(struct page_directory *directory, void *virtual_address, void *ph
     if (!paging_is_aligned(virtual_address))
     {
         warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
+        ASSERT(false, "Virtual address is not aligned");
         return -EINVARG;
     }
 
     if (!paging_is_aligned(physical_address))
     {
         warningf("Physical address %x is not page aligned\n", (uint32_t)physical_address);
+        ASSERT(false, "Physical address is not aligned");
         return -EINVARG;
     }
 
@@ -138,6 +141,7 @@ int paging_map_range(struct page_directory *directory, void *virtual_address, vo
         if (res < 0)
         {
             warningf("Failed to map page %d\n", i);
+            ASSERT(false, "Failed to map page");
             break;
         }
 
@@ -157,18 +161,21 @@ int paging_map_to(struct page_directory *directory, void *virtual_address, void 
     if ((uint32_t)virtual_address % PAGING_PAGE_SIZE)
     {
         warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
+        ASSERT(false, "Virtual address is not aligned");
         res = -EINVARG;
     }
 
     if (!paging_is_aligned(physical_start_address))
     {
         warningf("Physical start address %x is not page aligned\n", (uint32_t)physical_start_address);
+        ASSERT(false, "Physical start address is not aligned"); 
         res = -EINVARG;
     }
 
     if (!paging_is_aligned(physical_end_address))
     {
         warningf("Physical end address %x is not page aligned\n", (uint32_t)physical_end_address);
+        ASSERT(false, "Physical end address is not aligned");
         res = -EINVARG;
     }
 
@@ -218,6 +225,7 @@ int paging_set(struct page_directory *directory, void *virtual_address, uint32_t
     if (!paging_is_aligned(virtual_address))
     {
         warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
+        ASSERT(false, "Virtual address is not aligned");
         return -EINVARG;
     }
 
@@ -227,6 +235,7 @@ int paging_set(struct page_directory *directory, void *virtual_address, uint32_t
     if (res < 0)
     {
         warningf("Failed to get indexes\n");
+        ASSERT(false, "Failed to get indexes");
         return res;
     }
 

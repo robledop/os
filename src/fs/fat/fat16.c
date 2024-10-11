@@ -2,7 +2,7 @@
 #include "status.h"
 #include "string.h"
 #include "memory.h"
-#include <stdint.h>
+#include "types.h"
 #include "disk.h"
 #include "stream.h"
 #include "kernel_heap.h"
@@ -12,7 +12,7 @@
 #include "assert.h"
 
 #define FAT16_SIGNATURE 0x29
-#define FAT16_FAT_ENTRY_SIZE 2
+#define FAT16_FAT_ENTRY_SIZE 0x02
 #define FAT16_FAT_BAD_SECTOR 0xFF7
 #define FAT16_UNUSED 0x00
 
@@ -412,12 +412,20 @@ struct fat_directory_entry *fat16_clone_fat_directory_entry(struct fat_directory
 
 static uint32_t fat16_get_first_cluster(struct fat_directory_entry *entry)
 {
-    // This is only necessary for FAT32. FAT16 and FAT12 can use just cluster_low
-    return entry->cluster_high | entry->cluster_low;
+    // return entry->cluster_low | (entry->cluster_high << 16);
+    return entry->cluster_low;
 }
 
 static int fat16_cluster_to_sector(struct fat_private *fat_private, int cluster)
 {
+    // int root_dir_sectors = ((fat_private->header.primary_header.root_entries * 32) + (fat_private->header.primary_header.bytes_per_sector - 1)) / fat_private->header.primary_header.bytes_per_sector;
+
+    // int first_data_sector = fat_private->header.primary_header.reserved_sectors + (fat_private->header.primary_header.fat_copies * fat_private->header.primary_header.sectors_per_fat) + root_dir_sectors;
+
+    // int sector = ((cluster - 2) * fat_private->header.primary_header.sectors_per_cluster) + first_data_sector;
+
+    // return sector;
+
     return fat_private->root_directory.ending_sector_position + ((cluster - 2) * fat_private->header.primary_header.sectors_per_cluster);
 }
 
@@ -428,7 +436,9 @@ static uint32_t fat16_get_first_sector(struct fat_private *fat_private)
 
 static int fat16_get_fat_entry(struct disk *disk, int cluster)
 {
-    ASSERT(disk->sector_size > 0, "Invalid sector size");
+    // ASSERT(false, "This seems to never be called when we are not using GRUB");
+    kprintf("Getting FAT entry for cluster %d\n", cluster);
+    // ASSERT(disk->sector_size > 0, "Invalid sector size");
     int res = -1;
     struct fat_private *fs_private = disk->fs_private;
     struct disk_stream *stream = fs_private->fat_read_stream;
@@ -485,34 +495,30 @@ static int fat16_get_cluster_for_offset(struct disk *disk, int start_cluster, in
     {
         int entry = fat16_get_fat_entry(disk, cluster_to_use);
 
-        // - 0xFF8 to 0xFFF: These values are reserved to mark the end of a cluster chain.
+        // - 0xFFF8 to 0xFFFF: These values are reserved to mark the end of a cluster chain.
         // When you encounter any value in this range in the FAT (File Allocation Table), it
         // signifies that the current cluster is the last cluster of the file.
         // This means there are no more clusters to read for this file.
-        if (entry == 0xFF8 || entry == 0xFFF)
+        if (entry >= 0xFFF8)
         {
-            // end of file
             res = -EIO;
             goto out;
         }
 
         if (entry == FAT16_FAT_BAD_SECTOR)
         {
-            warningf("Bad sector found in FAT table\n");
             res = -EIO;
             goto out;
         }
 
-        if (entry == 0xFF0 || entry == 0xFF6)
+        if (entry >= 0xFFF0 && entry <= 0xFFF6)
         {
-            warningf("Reserved sector found in FAT table\n");
             res = -EIO;
             goto out;
         }
 
         if (entry == FAT16_UNUSED)
         {
-            warningf("Corrupted sector found in FAT table\n");
             res = -EIO;
             goto out;
         }
@@ -526,45 +532,42 @@ out:
     return res;
 }
 
-static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream *stream, int start_cluster, int offset, int total, void *out)
+static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream *stream, int cluster, int offset, int total, void *out)
 {
-    ASSERT(disk->sector_size > 0, "Invalid sector size");
-    dbgprintf("Reading from cluster %d, offset %d, total %d\n", start_cluster, offset, total);
     int res = 0;
-    struct fat_private *fs_private = disk->fs_private;
-    int size_of_cluster = fs_private->header.primary_header.sectors_per_cluster * disk->sector_size;
-    int cluster_to_use = fat16_get_cluster_for_offset(disk, start_cluster, offset);
+    struct fat_private *private = disk->fs_private;
+    int size_of_cluster_bytes = private->header.primary_header.sectors_per_cluster * disk->sector_size;
+    int cluster_to_use = fat16_get_cluster_for_offset(disk, cluster, offset);
     if (cluster_to_use < 0)
     {
-        warningf("Failed to get cluster for offset\n");
-        ASSERT(false, "Failed to get cluster for offset");
         res = cluster_to_use;
         goto out;
     }
 
-    int offset_in_cluster = offset % size_of_cluster;
-    int start_sector = fat16_cluster_to_sector(fs_private, cluster_to_use);
-    int start_position = (start_sector * disk->sector_size) + offset_in_cluster;
-    int total_bytes_read = total > size_of_cluster ? size_of_cluster : total;
+    int offset_from_cluster = offset % size_of_cluster_bytes;
 
-    res = disk_stream_seek(stream, start_position);
+    int starting_sector = fat16_cluster_to_sector(private, cluster_to_use);
+    int starting_pos = (starting_sector * disk->sector_size) + offset_from_cluster;
+    int total_to_read = total > size_of_cluster_bytes ? size_of_cluster_bytes : total;
+    // int total_to_read = total > (size_of_cluster_bytes - offset_from_cluster) ? (size_of_cluster_bytes - offset_from_cluster) : total;
+
+    res = disk_stream_seek(stream, starting_pos);
     if (res != ALL_OK)
     {
-        warningf("Failed to seek to start position\n");
         goto out;
     }
 
-    res = disk_stream_read(stream, out, total_bytes_read);
+    res = disk_stream_read(stream, out, total_to_read);
     if (res != ALL_OK)
     {
-        warningf("Failed to read from stream\n");
         goto out;
     }
 
-    total -= total_bytes_read;
+    total -= total_to_read;
     if (total > 0)
     {
-        res = fat16_read_internal_from_stream(disk, stream, cluster_to_use, offset + total_bytes_read, total, (char *)out + total_bytes_read);
+        // We still have more to read
+        res = fat16_read_internal_from_stream(disk, stream, cluster, offset + total_to_read, total, (char *)out + total_to_read);
     }
 
 out:

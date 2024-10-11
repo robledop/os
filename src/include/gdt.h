@@ -1,7 +1,7 @@
 #ifndef GDT_H
 #define GDT_H
 
-#include <stdint.h>
+#include "types.h"
 
 struct gdt_entry
 {
@@ -19,8 +19,8 @@ struct gdt_ptr
     uint32_t base;
 } __attribute__((packed));
 
-void init_gdt();
-void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t granularity);
+void gdt_init();
+void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t granularity);
 
 // External assembly functions
 extern void gdt_flush(uint32_t);

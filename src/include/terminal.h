@@ -1,8 +1,7 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include "types.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"

@@ -1,8 +1,8 @@
 #ifndef FILE_H
 #define FILE_H
 #include "path_parser.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include "types.h"
+// #include <stdbool.h>
 
 /////////////////////
 typedef unsigned int FS_ITEM_TYPE;

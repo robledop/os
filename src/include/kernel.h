@@ -2,7 +2,7 @@
 #define KERNEL_H
 #include "multiboot.h"
 
-#include <stdint.h>
+#include "types.h"
 
 void kernel_main(multiboot_info_t *mbd, unsigned int magic);
 void panic(const char *msg);

@@ -5,13 +5,14 @@
 #include "kernel.h"
 #include "string.h"
 #include "serial.h"
+#include "assert.h"
 
 struct heap kernel_heap;
 struct heap_table kernel_heap_table;
 
 // https://wiki.osdev.org/Memory_Map_(x86)
 
-void kheap_init()
+void kernel_heap_init()
 {
     int total_table_entries = HEAP_SIZE_BYTES / HEAP_BLOCK_SIZE;
     kernel_heap_table.entries = (HEAP_BLOCK_TABLE_ENTRY *)HEAP_TABLE_ADDRESS;
@@ -37,6 +38,7 @@ void *kzalloc(size_t size)
     if (!ptr)
     {
         warningf("Failed to allocate memory\n");
+        ASSERT(false, "Failed to allocate memory");
         return NULL;
     }
     memset(ptr, 0x00, size);

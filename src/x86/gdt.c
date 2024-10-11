@@ -6,13 +6,8 @@
 struct gdt_entry gdt_entries[6];
 struct gdt_ptr gdt_ptr;
 
-void init_gdt()
+void gdt_init()
 {
-
-    // uintptr_t kernel_stack_address = 0;
-    // asm volatile("mov %%esp, %0"
-    //              : "=r"(kernel_stack_address));
-
     gdt_ptr.limit = (sizeof(struct gdt_entry) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;
 
@@ -42,7 +37,7 @@ void init_gdt()
 }
 
 // Set up a GDT entry
-void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
+void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
 {
     gdt_entries[num].base_low = (base & 0xFFFF);
     gdt_entries[num].base_middle = (base >> 16) & 0xFF;

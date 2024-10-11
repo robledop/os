@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "string.h"
 #include <stdarg.h>
-#include <stdint.h>
+#include "types.h"
 #include "assert.h"
 
 #define VIDEO_MEMORY 0xB8000
@@ -160,7 +160,7 @@ void ksprintf(const char *str, int max)
     }
 }
 
-// TODO: There seems to be a bug that prevents more than 3 arguments from being printed
+// BUG: There seems to be a bug that prevents more than 3 arguments from being printed
 void kprintf(char *fmt, ...)
 {
     ASSERT(forecolor != 0x00, "Foreground color is black");

@@ -19,6 +19,8 @@
 #include <tss.h>
 #include <syscall.h>
 #include <ssp.h>
+#include <pci.h>
+#include "my_fat.h"
 
 #include "my_fat.h"
 
@@ -66,21 +68,22 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     display_grub_info(mbd, magic);
 
-    init_gdt();
+    gdt_init();
 
     idt_init();
-    kheap_init();
+    kernel_heap_init();
     paging_init();
 
     disable_interrupts();
 
-    kprintf(KCYN "Kernel is starting\n");
-    terminal_clear();
+    // kprintf(KCYN "Kernel is starting\n");
+
+    pci_scan();
 
     fs_init();
     disk_init();
 
-    // test();
+    // my_fat_init();
 
     register_syscalls();
 

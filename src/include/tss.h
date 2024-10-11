@@ -1,7 +1,7 @@
 #ifndef TSS_H
 #define TSS_H
 
-#include <stdint.h>
+#include "types.h"
 
 struct tss_entry
 {
@@ -35,7 +35,7 @@ struct tss_entry
 
 } __attribute__((packed));
 
-void write_tss(int32_t num, uint16_t ss0, uint32_t esp0);
+void write_tss(int num, uint16_t ss0, uint32_t esp0);
 void set_kernel_stack(uint32_t stack);
 
 #endif

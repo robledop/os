@@ -1,8 +1,6 @@
 #ifndef PAGING_H
 #define PAGING_H
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "types.h"
 
 // https://wiki.osdev.org/Paging
 

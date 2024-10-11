@@ -280,7 +280,7 @@ static int process_load_binary(const char *file_name, struct process *process) {
     struct file_stat stat;
     res = fstat(fd, &stat);
     if (res != ALL_OK) {
-        ASSERT(false, "Failed to get file stat");
+        warningf("Failed to get file stat\n");
         res = -EIO;
         goto out;
     }
@@ -293,7 +293,7 @@ static int process_load_binary(const char *file_name, struct process *process) {
     }
 
     if (fread(program, stat.size, 1, fd) != 1) {
-        ASSERT(false, "Failed to read file");
+        warningf("Failed to read file\n");
         res = -EIO;
         goto out;
     }
@@ -435,8 +435,8 @@ int process_load(const char *file_name, struct process **process) {
     int res          = 0;
     int process_slot = process_get_free_slot();
     if (process_slot < 0) {
-        ASSERT(false, "Failed to get free process slot");
         warningf("Failed to get free process slot\n");
+        ASSERT(false, "Failed to get free process slot");
         res = -EINSTKN;
         goto out;
     }
@@ -473,7 +473,6 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
     res = process_load_data(file_name, proc);
     if (res < 0) {
         warningf("Failed to load data for process\n");
-        ASSERT(false, "Failed to load data for process");
         goto out;
     }
 

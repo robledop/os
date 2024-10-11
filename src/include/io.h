@@ -1,7 +1,7 @@
 #ifndef IO_H
 #define IO_H
 
-#include <stdint.h>
+#include "types.h"
 
 uint8_t inb(uint16_t p);
 uint16_t inw(uint16_t p);

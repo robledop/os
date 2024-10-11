@@ -1,7 +1,7 @@
 #ifndef IDT_H
 #define IDT_H
 
-#include <stdint.h>
+#include "types.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 
