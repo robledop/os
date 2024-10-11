@@ -13,7 +13,7 @@
 
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 0x02
-#define FAT16_FAT_BAD_SECTOR 0xFF7
+#define FAT16_FAT_BAD_SECTOR 0xFFF7
 #define FAT16_UNUSED 0x00
 
 // For internal use

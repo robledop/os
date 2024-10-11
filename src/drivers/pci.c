@@ -133,8 +133,12 @@ struct pci_class_name classnames[] = {
     {0x11, 0x10, "Communication Synchronizer"},
     {0x11, 0x20, "Signal Processing Management"},
     {0x11, 0x80, "Other Signal Processing Controller"},
-};
 
+    {0x12, 0x00, "Processing Accelerator"},
+    {0x13, 0x00, "Non-Essential Instrumentation"},
+    {0x40, 0x00, "Co-Processor"},
+    {0xFF, 0x00, "Vendor Specific"},
+};
 
 uint16_t pci_config_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
 {
@@ -158,26 +162,14 @@ uint16_t pci_config_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t o
 
 const char *pci_find_name(uint8_t class, uint8_t subclass)
 {
-    switch (class)
+    for (size_t i = 0; i < sizeof(classnames) / sizeof(struct pci_class_name); i++)
     {
-    case 0x12:
-        return "Processing Accelerator";
-    case 0x13:
-        return "Non-Essential Instrumentation";
-    case 0x40:
-        return "Co-Processor";
-    case 0xFF:
-        return "Vendor Specific";
-    default:
-        for (size_t i = 0; i < sizeof(classnames) / sizeof(struct pci_class_name); i++)
+        if (classnames[i].class == class && classnames[i].subclass == subclass)
         {
-            if (classnames[i].class == class && classnames[i].subclass == subclass)
-            {
-                return classnames[i].name;
-            }
+            return classnames[i].name;
         }
-        return "Unknown PCI Device";
     }
+    return "Unknown PCI Device";
 }
 
 void load_driver(struct pci_t pci, uint8_t bus, uint8_t device, uint8_t function)

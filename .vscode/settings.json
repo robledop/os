@@ -24,7 +24,8 @@
         "file.h": "c",
         "stdbool.h": "c",
         "fat16.h": "c",
-        "pci.h": "c"
+        "pci.h": "c",
+        "my_fat.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

@@ -22,8 +22,6 @@
 #include <pci.h>
 #include "my_fat.h"
 
-#include "my_fat.h"
-
 // Divide by zero error
 extern void cause_problem();
 void paging_demo();
@@ -66,7 +64,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     terminal_clear();
 
-    display_grub_info(mbd, magic);
+    // display_grub_info(mbd, magic);
 
     gdt_init();
 
@@ -76,14 +74,14 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     disable_interrupts();
 
-    // kprintf(KCYN "Kernel is starting\n");
+    kprintf(KCYN "Kernel is starting\n");
 
-    pci_scan();
+    // pci_scan();
 
-    fs_init();
+    // fs_init();
     disk_init();
 
-    // my_fat_init();
+    my_fat16_init();
 
     register_syscalls();
 
