@@ -56,8 +56,6 @@ FLAGS = -g \
 	-Wextra \
 	-std=gnu23 \
 	-pedantic \
-	-fstack-protector \
-	-fsanitize=undefined \
 	-Wall
 
 	# -pedantic-errors \
@@ -122,12 +120,12 @@ grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
 
 qemu: all
-	# qemu-system-i386 -boot d -hda ./bin/disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on
+	# qemu-system-i386 -boot d -hda ./bin/disk.img -m 128 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 qemu_grub: grub 
 	# qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 apps:
 	cd ./user && $(MAKE) all

@@ -59,29 +59,33 @@ void kernel_page()
 
 void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 {
-    __stack_chk_guard = STACK_CHK_GUARD;
-    init_serial();
-
+    disable_interrupts();
+    uint32_t stack_ptr = 0;
+    asm("mov %%esp, %0" : "=r"(stack_ptr));
     terminal_clear();
+    kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
 
-    // display_grub_info(mbd, magic);
-
-    gdt_init();
-
-    idt_init();
+    gdt_init(stack_ptr);
     kernel_heap_init();
     paging_init();
 
+    __stack_chk_guard = STACK_CHK_GUARD;
+    init_serial();
+
+    idt_init();
+
+    display_grub_info(mbd, magic);
+
     disable_interrupts();
 
-    kprintf(KCYN "Kernel is starting\n");
+    // kprintf(KCYN "Kernel is starting\n");
 
     // pci_scan();
 
-    // fs_init();
+    fs_init();
     disk_init();
 
-    my_fat16_init();
+    // my_fat16_init();
 
     register_syscalls();
 
@@ -94,15 +98,15 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     dbgprintf("Loading shell\n");
     struct process *process = NULL;
-    int res = process_load_switch("sh         ", &process);
+    int res = process_load_switch("0:/sh", &process);
     if (res < 0)
     {
         panic("Failed to load shell");
     }
 
-    // enable_interrupts();
-
     task_run_first_task();
+
+    enable_interrupts();
 
     panic("Kernel finished");
 }
@@ -201,10 +205,7 @@ void display_grub_info(multiboot_info_t *mbd, unsigned int magic)
         panic("invalid memory map given by GRUB bootloader");
     }
 
-    kprintf("Bootloader name: %s\n", mbd->boot_loader_name);
-    kprintf("Memory map addr: %x\n", mbd->mmap_addr);
-    kprintf("Memory map length: %x\n", mbd->mmap_length);
-    kprintf("Framebuffer address: %x\n", mbd->framebuffer_addr);
+    kprintf("Bootloader: %s\n", mbd->boot_loader_name);
 
     /* Loop through the memory map and display the values */
     unsigned int i;
@@ -215,16 +216,19 @@ void display_grub_info(multiboot_info_t *mbd, unsigned int magic)
             (multiboot_memory_map_t *)(mbd->mmap_addr + i);
 
         uint32_t type = mmmt->type;
-        kprintf("Start Addr: %x | Length: %x | Size: %x ",
-                mmmt->addr, mmmt->len, mmmt->size);
-        kprintf("| Type %d\n", type);
+        // kprintf("Start Addr: %x | Length: %x | Size: %x ",
+        //         mmmt->addr, mmmt->len, mmmt->size);
+        // kprintf("| Type %d\n", type);
 
-        dbgprintf("Start Addr: %x | Length: %x | Size: %x | Type: %x\n",
-                  mmmt->addr, mmmt->len, mmmt->size, type);
+        // dbgprintf("Start Addr: %x | Length: %x | Size: %x | Type: %x\n",
+        //           mmmt->addr, mmmt->len, mmmt->size, type);
 
         if (type == MULTIBOOT_MEMORY_AVAILABLE)
         {
-            kprintf("Available memory: %d KiB\n", mmmt->len / 1024);
+            if (mmmt->len > 0x100000)
+            {
+                kprintf("Available memory: %d MiB\n", mmmt->len / 1024 / 1024);
+            }
             /*
              * Do something with this memory block!
              * BE WARNED that some of memory shown as availiable is actually

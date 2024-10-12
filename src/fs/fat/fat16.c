@@ -480,7 +480,6 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
         goto out;
     }
     dbgprintf("FAT entry for cluster %d: %x\n", cluster, result);
-    kprintf("FAT entry for cluster %d: %x\n", cluster, result);
     ASSERT(result != 0, "Invalid FAT entry");
 
     warningf("res: %d\n", res);

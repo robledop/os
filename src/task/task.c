@@ -114,7 +114,8 @@ out:
 
 int task_switch(struct task *task)
 {
-    dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
+    // dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
+    // kprintf("Switching to task %x from process %d\n", task, task->process->pid);
 
     current_task = task;
     paging_switch_directory(task->page_directory);

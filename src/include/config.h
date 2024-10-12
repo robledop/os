@@ -24,7 +24,7 @@
 #define PROGRAM_VIRTUAL_ADDRESS 0x400000
 
 // Must be alligned to 4096 bytes page size
-#define USER_PROGRAM_STACK_SIZE 1024 * 16
+#define USER_PROGRAM_STACK_SIZE 1024 * 16 
 
 #define USER_DATA_SEGMENT 0x23
 #define USER_CODE_SEGMENT 0x1B
@@ -37,14 +37,12 @@
 #define MAX_SYSCALLS 1024
 #define KEYBOARD_BUFFER_SIZE 1024
 
-#ifdef GRUB
-// #define KERNEL_STACK_ADDRESS 0x22c000
-// #define KERNEL_STACK_ADDRESS 0x7c00
-#define KERNEL_STACK_ADDRESS 0x900000
-#else
-#define KERNEL_STACK_ADDRESS 0x900000
-#endif
-
-// #define __myos_libc 1
+// #ifdef GRUB
+// // #define KERNEL_STACK_ADDRESS 0x22c000
+// // #define KERNEL_STACK_ADDRESS 0x7c00
+// #define KERNEL_STACK_ADDRESS 0x900000
+// #else
+// #define KERNEL_STACK_ADDRESS 0x600000
+// #endif
 
 #endif

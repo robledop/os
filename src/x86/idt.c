@@ -55,9 +55,10 @@ static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void isr80h_wrapper();
 
-void double_fault_handler()
+
+void no_interrupt_handler(int interrupt)
 {
-    panic("Double fault");
+    kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
 }
 
 void interrupt_handler(int interrupt, struct interrupt_frame *frame)
@@ -100,7 +101,7 @@ void idt_exception_handler(int interrupt)
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0"
                      : "=r"(faulting_address));
-        kprintf("Page fault at 0x%x\n", faulting_address);
+        kprintf("Page fault at %x\n", faulting_address);
     }
 
     // General protection fault error code
@@ -109,7 +110,7 @@ void idt_exception_handler(int interrupt)
         uint32_t error_code;
         asm volatile("mov %%cr2, %0"
                      : "=r"(error_code));
-        kprintf("General protection fault error code: 0x%x\n", error_code);
+        kprintf("General protection fault error code: %x\n", error_code);
     }
 
     process_terminate(task_current()->process);
@@ -136,15 +137,18 @@ void idt_init()
         idt_set(i, interrupt_pointer_table[i]);
     }
 
-    idt_set(0x80, isr80h_wrapper);
+    for (int i = 0; i < TOTAL_INTERRUPTS; i++)
+    {
+        idt_register_interrupt_callback(i, no_interrupt_handler);
+    }
 
     for (int i = 0; i < 0x20; i++)
     {
         idt_register_interrupt_callback(i, idt_exception_handler);
     }
-    idt_set(8, double_fault_handler);
 
     idt_register_interrupt_callback(0x20, idt_clock);
+    idt_set(0x80, isr80h_wrapper);
 
     idt_load(&idtr_descriptor);
 }

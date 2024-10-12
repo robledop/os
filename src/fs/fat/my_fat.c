@@ -135,9 +135,9 @@ void fat_read_file(FAT16_DirEntry dir_entry, uint8_t *output)
 {
     uint16_t current_cluster = dir_entry.first_cluster; // Start at the first cluster of the file
     uint32_t bytes_remaining = dir_entry.file_size;     // Total file size to read
-    uint8_t buffer[bpb.bytes_per_sector];               // Buffer for reading one sector at a time
-    uint32_t output_offset = 0;                         // Offset in the output buffer
-    // uint8_t* buffer = kmalloc(bpb.bytes_per_sector);
+    // uint8_t buffer[bpb.bytes_per_sector];               // Buffer for reading one sector at a time
+    uint32_t output_offset = 0; // Offset in the output buffer
+    uint8_t *buffer = kmalloc(bpb.bytes_per_sector);
 
     while (current_cluster < FAT16_EOC && bytes_remaining > 0)
     {
@@ -170,6 +170,8 @@ void fat_read_file(FAT16_DirEntry dir_entry, uint8_t *output)
             panic("Bad cluster found\n");
         }
     }
+
+    kfree(buffer);
 }
 
 FAT16_DirEntry *fat_find_item(char *path)
@@ -183,11 +185,13 @@ FAT16_DirEntry *fat_find_item(char *path)
         next_dir = NULL;
         for (int i = 0; i < bpb.root_entry_count; i++)
         {
-            char *name = current_part[i].name;
             result = current_part[i];
+            char name[12];
+
+            fat_get_relative_filename(&result, name, 12);
             if (istrncmp(name, token, 11) == 0)
             {
-                next_dir = fat_load_directory_entries(&current_part[i]);
+                next_dir = fat_load_directory_entries(&result);
                 break;
             }
         }

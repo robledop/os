@@ -11,7 +11,7 @@ void write_tss(int num, uint16_t ss0, uint32_t esp0)
     uint32_t limit = base + sizeof(struct tss_entry);
 
     // Add TSS descriptor to the GDT
-    gdt_set_gate(num, base, limit, 0x89, 0x40);
+    gdt_set_gate(num, base, limit, 0xE9, 0x40);
     // 0x89: Present, ring 0, type 9 (available 32-bit TSS)
     // 0x40: Granularity
 

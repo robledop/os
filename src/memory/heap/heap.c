@@ -226,6 +226,7 @@ int heap_address_to_block(struct heap *heap, void *address)
 
 void *heap_malloc(struct heap *heap, size_t size)
 {
+    // kprintf("Allocating %d bytes\n", size);
     size_t aligned_size = heap_align_value_to_upper(size);
     uint32_t blocks_needed = aligned_size / HEAP_BLOCK_SIZE;
 

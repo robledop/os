@@ -38,6 +38,7 @@ _start:
   out 0x21, al
   ; finished
 
+  mov esp, stack_top
   call kernel_main
 
  null_loop:
@@ -57,4 +58,12 @@ cause_problem:
     mov eax, 0
     div eax
 
-  times 512-($ - $$) db 0
+
+section .bss
+    align 16
+    stack_bottom:
+    ; resb 16384 ; 16 KiB
+    resb 1048576 ; 1 MiB
+    stack_top:
+
+;   times 512-($ - $$) db 0

@@ -14,7 +14,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/os/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86 -d ${workspaceRoot}/src/grub -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src/boot",
+            "miDebuggerArgs": "-d ${workspaceRoot}/user/sh/src -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/os/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86 -d ${workspaceRoot}/src/grub -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src/boot",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",
@@ -52,8 +52,8 @@
                     "description": "Break on exception handler."
                 },
                 // {
-                //     "text": "break kernel_main",
-                //     "description": "Break on kernel_main."
+                //     "text": "break start.asm:10",
+                //     "description": "Break _start"
                 // },
                 {
                     "text": "break panic",
@@ -75,7 +75,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86",
+            "miDebuggerArgs": "-d ${workspaceRoot}/src/task -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",

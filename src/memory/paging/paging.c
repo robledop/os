@@ -44,6 +44,7 @@ struct page_directory *paging_create_directory(uint8_t flags)
 // Switch page directory
 void paging_switch_directory(struct page_directory *chunk)
 {
+    // kprintf("Switching page directory to %x\n", chunk->directory_entry);
     ASSERT(chunk->directory_entry != 0, "Page directory is null");
     paging_load_directory(chunk->directory_entry);
     current_directory = chunk->directory_entry;

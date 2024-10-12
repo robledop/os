@@ -53,8 +53,8 @@ step2:
 
   sti ; Enables interrupts
 
-  mov ax, 0x0003 ; VGA text mode, 720x400 pixels, 9x16 font, 80x25 characters
-  int 0x10
+;   mov ax, 0x0003 ; VGA text mode, 720x400 pixels, 9x16 font, 80x25 characters
+;   int 0x10
   ;mov ax, 0x1112 ; replace 9x16 font with 9x8 font, so now it's 80x50 characters
   ;mov bl, 0x00
   ;int 0x10
@@ -163,6 +163,7 @@ ata_lba_read:
   loop .next_sector
 
   ret ; ata_lba_read
+
 
   ; pad the end with 510 bytes
   times 510-($ - $$) db 0

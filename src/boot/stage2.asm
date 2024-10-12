@@ -7,3 +7,4 @@ _start:
 null_loop:
     hlt
     jmp null_loop
+

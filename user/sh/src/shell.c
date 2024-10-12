@@ -20,13 +20,13 @@ int main(int argc, char **argv)
             continue;
         }
 
-        if (strncmp(buffer, "ls", 3) == 0 || strncmp(buffer, "dir", 5) == 0)
-        {
-            struct file_directory directory;
-            opendir(&directory, "0:/test");
-            printf("Entries in directory: %d\n", directory.entry_count);
-            continue;
-        }
+        // if (strncmp(buffer, "ls", 3) == 0 || strncmp(buffer, "dir", 5) == 0)
+        // {
+        //     struct file_directory directory;
+        //     opendir(&directory, "0:/test");
+        //     printf("Entries in directory: %d\n", directory.entry_count);
+        //     continue;
+        // }
 
         int res = os_system_run(buffer);
         if (res < 0)

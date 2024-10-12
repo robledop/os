@@ -25,6 +25,6 @@ int os_close(int fd);
 int os_stat(int fd, struct file_stat *stat);
 int os_read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 void os_clear_screen();
-struct file_directory os_open_dir(const char *path);
+// struct file_directory os_open_dir(const char *path);
 
 #endif

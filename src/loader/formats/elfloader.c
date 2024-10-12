@@ -184,40 +184,40 @@ int elf_load(const char *filename, struct elf_file **file_out)
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     int fd = 0;
 
-    FAT16_DirEntry *file = fat_find_item((char*)filename);
-    if(file == NULL)
+    // FAT16_DirEntry *file = fat_find_item((char*)filename);
+    // if(file == NULL)
+    // {
+    //     warningf("Failed to find file %s\n", filename);
+    //     return -EIO;
+    // }
+    // elf_file->elf_memory = kzalloc(file->file_size);
+    // fat_read_file(*file, elf_file->elf_memory);
+    // int res = 0;
+
+    int res = fopen(filename, "r");
+    if (res <= 0)
     {
-        warningf("Failed to find file %s\n", filename);
-        return -EIO;
+        warningf("Failed to open file %s\n", filename);
+        res = -EIO;
+        goto out;
     }
-    elf_file->elf_memory = kzalloc(file->file_size);
-    fat_read_file(*file, elf_file->elf_memory);
-    int res = 0;
 
-    // int res = fopen(filename, "r");
-    // if (res <= 0)
-    // {
-    //     warningf("Failed to open file %s\n", filename);
-    //     res = -EIO;
-    //     goto out;
-    // }
+    fd = res;
+    struct file_stat stat;
+    res = fstat(fd, &stat);
+    if (res < 0)
+    {
+        warningf("Failed to get file stat for %s\n", filename);
+        goto out;
+    }
 
-    // fd = res;
-    // struct file_stat stat;
-    // res = fstat(fd, &stat);
-    // if (res < 0)
-    // {
-    //     warningf("Failed to get file stat for %s\n", filename);
-    //     goto out;
-    // }
-
-    // elf_file->elf_memory = kzalloc(stat.size);
-    // res = fread(elf_file->elf_memory, stat.size, 1, fd);
-    // if (res < 0)
-    // {
-    //     warningf("Failed to read file %s\n", filename);
-    //     goto out;
-    // }
+    elf_file->elf_memory = kzalloc(stat.size);
+    res = fread(elf_file->elf_memory, stat.size, 1, fd);
+    if (res < 0)
+    {
+        warningf("Failed to read file %s\n", filename);
+        goto out;
+    }
 
     res = elf_process_loaded(elf_file);
     if (res < 0)
@@ -225,14 +225,14 @@ int elf_load(const char *filename, struct elf_file **file_out)
         warningf("Failed to process loaded ELF file %s\n", filename);
         goto out;
     }
-    // elf_file->in_memory_size = stat.size;
-    elf_file->in_memory_size = file->file_size;
+    elf_file->in_memory_size = stat.size;
+    // elf_file->in_memory_size = file->file_size;
 
     *file_out = elf_file;
 
 out:
-    // fclose(fd);
-    kfree(file);
+    fclose(fd);
+    // kfree(file);
     return res;
 }
 

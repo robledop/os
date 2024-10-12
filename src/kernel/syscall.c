@@ -30,34 +30,34 @@ void register_syscalls()
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_CLEAR_SCREEN, sys_clear_screen);
-    register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
+    // register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
 }
 
-void *sys_open_dir(struct interrupt_frame *frame)
-{
-    void *path_ptr = task_get_stack_item(task_current(), 0);
-    char path[MAX_PATH_LENGTH];
+// void *sys_open_dir(struct interrupt_frame *frame)
+// {
+//     void *path_ptr = task_get_stack_item(task_current(), 0);
+//     char path[MAX_PATH_LENGTH];
 
-    copy_string_from_task(task_current(), path_ptr, path, sizeof(path));
+//     copy_string_from_task(task_current(), path_ptr, path, sizeof(path));
 
-    struct file_directory *directory = task_virtual_to_physical_address(
-        task_current(),
-        task_get_stack_item(task_current(), 1));
+//     struct file_directory *directory = task_virtual_to_physical_address(
+//         task_current(),
+//         task_get_stack_item(task_current(), 1));
 
-    void *result = process_malloc(task_current()->process, sizeof(struct file_directory));
+//     void *result = process_malloc(task_current()->process, sizeof(struct file_directory));
 
-    struct file_directory dir = fs_open_dir((const char *)path);
+//     struct file_directory dir = fs_open_dir((const char *)path);
 
-    memcpy(result, &dir, sizeof(struct file_directory));
+//     memcpy(result, &dir, sizeof(struct file_directory));
 
-    directory = result;
+//     directory = result;
 
-    if (directory)
-    {
-    }
+//     if (directory)
+//     {
+//     }
 
-    return NULL;
-}
+//     return NULL;
+// }
 
 void *sys_get_program_arguments(struct interrupt_frame *frame)
 {

@@ -19,7 +19,8 @@ struct gdt_ptr
     uint32_t base;
 } __attribute__((packed));
 
-void gdt_init();
+void gdt_init(uint32_t stack_ptr);
+
 void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t granularity);
 
 // External assembly functions

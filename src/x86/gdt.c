@@ -6,7 +6,7 @@
 struct gdt_entry gdt_entries[6];
 struct gdt_ptr gdt_ptr;
 
-void gdt_init()
+void gdt_init(uint32_t stack_ptr)
 {
     gdt_ptr.limit = (sizeof(struct gdt_entry) * 6) - 1;
     gdt_ptr.base = (uint32_t)&gdt_entries;
@@ -27,7 +27,7 @@ void gdt_init()
     gdt_set_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
     // TSS segment
-    write_tss(5, 0x10, KERNEL_STACK_ADDRESS);
+    write_tss(5, 0x10, stack_ptr);
 
     // Load the new GDT
     gdt_flush((uint32_t)&gdt_ptr);
