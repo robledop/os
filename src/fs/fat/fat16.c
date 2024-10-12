@@ -82,7 +82,7 @@ struct fat_directory_entry
     uint16_t cluster_high;
     uint16_t modification_time;
     uint16_t modification_date;
-    uint16_t cluster_low;
+    uint16_t first_cluster;
     uint32_t size;
 } __attribute__((packed));
 
@@ -410,11 +410,11 @@ struct fat_directory_entry *fat16_clone_fat_directory_entry(struct fat_directory
     return new_entry;
 }
 
-static uint32_t fat16_get_first_cluster(struct fat_directory_entry *entry)
-{
-    // return entry->cluster_low | (entry->cluster_high << 16);
-    return entry->cluster_low;
-}
+// static uint32_t fat16_get_first_cluster(struct fat_directory_entry *entry)
+// {
+//     // return entry->cluster_low | (entry->cluster_high << 16);
+//     return entry->first_cluster;
+// }
 
 static int fat16_cluster_to_sector(struct fat_private *fat_private, int cluster)
 {
@@ -436,33 +436,44 @@ static uint32_t fat16_get_first_sector(struct fat_private *fat_private)
 
 static int fat16_get_fat_entry(struct disk *disk, int cluster)
 {
-    // ASSERT(false, "This seems to never be called when we are not using GRUB");
-    kprintf("Getting FAT entry for cluster %d\n", cluster);
-    // ASSERT(disk->sector_size > 0, "Invalid sector size");
     int res = -1;
     struct fat_private *fs_private = disk->fs_private;
-    struct disk_stream *stream = fs_private->fat_read_stream;
-    if (!stream)
-    {
-        warningf("Invalid FAT stream\n");
-        res = -EIO;
-        goto out;
-    }
+    // struct disk_stream *stream = fs_private->fat_read_stream;
+    // if (!stream)
+    // {
+    //     warningf("Invalid FAT stream\n");
+    //     res = -EIO;
+    //     goto out;
+    // }
 
-    warningf("res: %d\n", res);
+    // warningf("res: %d\n", res);
+
+    uint32_t fat_offset = cluster * 2;
+    uint32_t fat_sector = fs_private->header.primary_header.reserved_sectors + (fat_offset / fs_private->header.primary_header.bytes_per_sector);
+    uint32_t fat_entry_offset = fat_offset % fs_private->header.primary_header.bytes_per_sector;
 
     uint32_t fat_table_position = fat16_get_first_sector(fs_private) * disk->sector_size;
-    res = disk_stream_seek(stream, fat_table_position * (cluster * FAT16_FAT_ENTRY_SIZE));
-    if (res < 0)
-    {
-        warningf("Failed to seek to FAT table position\n");
-        goto out;
-    }
+    uint32_t test = fat_table_position * (cluster * FAT16_FAT_ENTRY_SIZE);
 
-    warningf("res: %d\n", res);
+    // ASSERT(fat_entry_offset == test, "Invalid FAT entry offset");
+
+    // res = disk_stream_seek(stream, fat_entry_offset);
+    // res = disk_stream_seek(stream, fat_table_position * (cluster * FAT16_FAT_ENTRY_SIZE));
+    // if (res < 0)
+    // {
+    //     warningf("Failed to seek to FAT table position\n");
+    //     goto out;
+    // }
+
+    // warningf("res: %d\n", res);
 
     uint16_t result = 0;
-    res = disk_stream_read(stream, &result, sizeof(result));
+
+    uint8_t buffer[fs_private->header.primary_header.bytes_per_sector];
+
+    res = disk_read_sector(fat_sector, buffer);
+    result = *(uint16_t *)&buffer[fat_entry_offset];
+    // res = disk_stream_read(stream, &result, sizeof(result));
     if (res < 0)
     {
         warningf("Failed to read FAT table\n");
@@ -493,6 +504,7 @@ static int fat16_get_cluster_for_offset(struct disk *disk, int start_cluster, in
 
     for (int i = 0; i < clusters_ahead; i++)
     {
+        // DEBUG: cluster_to_use could be wrong and it ends up making this function return 0
         int entry = fat16_get_fat_entry(disk, cluster_to_use);
 
         // - 0xFFF8 to 0xFFFF: These values are reserved to mark the end of a cluster chain.
@@ -532,10 +544,11 @@ out:
     return res;
 }
 
-static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream *stream, int cluster, int offset, int total, void *out)
+static int fat16_read_internal(struct disk *disk, int cluster, int offset, int total, void *out)
 {
     int res = 0;
     struct fat_private *private = disk->fs_private;
+    struct disk_stream *stream = private->cluster_read_stream;
     int size_of_cluster_bytes = private->header.primary_header.sectors_per_cluster * disk->sector_size;
     int cluster_to_use = fat16_get_cluster_for_offset(disk, cluster, offset);
     if (cluster_to_use < 0)
@@ -549,7 +562,6 @@ static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream
     int starting_sector = fat16_cluster_to_sector(private, cluster_to_use);
     int starting_pos = (starting_sector * disk->sector_size) + offset_from_cluster;
     int total_to_read = total > size_of_cluster_bytes ? size_of_cluster_bytes : total;
-    // int total_to_read = total > (size_of_cluster_bytes - offset_from_cluster) ? (size_of_cluster_bytes - offset_from_cluster) : total;
 
     res = disk_stream_seek(stream, starting_pos);
     if (res != ALL_OK)
@@ -567,21 +579,21 @@ static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream
     if (total > 0)
     {
         // We still have more to read
-        res = fat16_read_internal_from_stream(disk, stream, cluster, offset + total_to_read, total, (char *)out + total_to_read);
+        res = fat16_read_internal(disk, cluster, offset + total_to_read, total, (char *)out + total_to_read);
     }
 
 out:
     return res;
 }
 
-static int fat16_read_internal(struct disk *disk, int start_cluster, int offset, int total, void *out)
-{
-    dbgprintf("Reading from cluster %d, offset %d, total %d\n", start_cluster, offset, total);
-    struct fat_private *fs_private = disk->fs_private;
-    struct disk_stream *stream = fs_private->cluster_read_stream;
+// static int fat16_read_internal(struct disk *disk, int first_cluster, int offset, int total, void *out)
+// {
+//     dbgprintf("Reading from cluster %d, offset %d, total %d\n", first_cluster, offset, total);
+//     struct fat_private *fs_private = disk->fs_private;
+//     struct disk_stream *stream = fs_private->cluster_read_stream;
 
-    return fat16_read_internal_from_stream(disk, stream, start_cluster, offset, total, out);
-}
+//     return fat16_read_internal_from_stream(disk, stream, first_cluster, offset, total, out);
+// }
 
 void fat16_free_directory(struct fat_directory *directory)
 {
@@ -635,7 +647,7 @@ struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_dir
         goto out;
     }
 
-    int cluster = fat16_get_first_cluster(entry);
+    int cluster = entry->first_cluster;
     int cluster_sector = fat16_cluster_to_sector(fat_private, cluster);
     int total_items = fat16_get_total_items_for_directory(disk, cluster_sector);
     directory->entry_count = total_items;
@@ -789,7 +801,7 @@ int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmem
 
     for (uint32_t i = 0; i < nmemb; i++)
     {
-        res = fat16_read_internal(disk, fat16_get_first_cluster(entry), offset, size, out);
+        res = fat16_read_internal(disk, entry->first_cluster, offset, size, out);
         if (ISERR(res))
         {
             warningf("Failed to read from file\n");

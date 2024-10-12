@@ -27,7 +27,7 @@ void disk_init()
 
     dbgprintf("Detected sector size: %d\n", disk.sector_size);
 
-    // disk.fs = fs_resolve(&disk);
+    disk.fs = fs_resolve(&disk);
 }
 
 struct disk *disk_get(int index)
@@ -52,7 +52,7 @@ int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffe
     return ata_read_sector(lba, total, buffer);
 }
 
-int disk_read(uint32_t sector, uint8_t *buffer)
+int disk_read_sector(uint32_t sector, uint8_t *buffer)
 {
     dbgprintf("Reading from disk %d\n", sector);
     return disk_read_block(&disk, sector, 1, buffer);

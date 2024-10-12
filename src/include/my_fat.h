@@ -43,7 +43,8 @@ typedef struct
 
 typedef struct
 {
-    char name[11];      // File name
+    char name[8];      // File name
+    char ext[3];      // File name
     uint8_t attributes; // File attributes
     uint8_t reserved;   // Reserved byte
     // Millisecond stamp at file creation time. This field actually
@@ -63,5 +64,7 @@ typedef struct
 } __attribute__((packed)) FAT16_DirEntry;
 
 int my_fat16_init();
+FAT16_DirEntry *fat_find_item(char *path);
+void fat_read_file(FAT16_DirEntry dirEntry, uint8_t *output);
 
 #endif

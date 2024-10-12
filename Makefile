@@ -106,7 +106,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -c $< -o $@
 
 grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
-	grub-file --is-x86-multiboot ./rootfs/boot/myos.kernel
+	grub-file --is-x86-multiboot ./rootfs/boot/myos.bin
 	rm -rf ./disk.img
 	dd if=/dev/zero of=./disk.img bs=512 count=65536
 	mkfs.vfat -c -F 16 ./disk.img
@@ -119,7 +119,7 @@ grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o 
-	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.kernel ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
 
 qemu: all
 	# qemu-system-i386 -boot d -hda ./bin/disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
@@ -136,4 +136,4 @@ apps_clean:
 	cd ./user && $(MAKE) clean
 
 clean: apps_clean
-	rm -rf ./bin ./build ./mnt ./disk.img ./disk.vdi ./rootfs/boot/myos.kernel
+	rm -rf ./bin ./build ./mnt ./disk.img ./disk.vdi ./rootfs/boot/myos.bin

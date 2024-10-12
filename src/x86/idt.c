@@ -55,6 +55,11 @@ static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void isr80h_wrapper();
 
+void double_fault_handler()
+{
+    panic("Double fault");
+}
+
 void interrupt_handler(int interrupt, struct interrupt_frame *frame)
 {
     kernel_page();
@@ -89,6 +94,24 @@ void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
 void idt_exception_handler(int interrupt)
 {
     kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
+
+    if (interrupt == 14)
+    {
+        uint32_t faulting_address;
+        asm volatile("mov %%cr2, %0"
+                     : "=r"(faulting_address));
+        kprintf("Page fault at 0x%x\n", faulting_address);
+    }
+
+    // General protection fault error code
+    if (interrupt == 13)
+    {
+        uint32_t error_code;
+        asm volatile("mov %%cr2, %0"
+                     : "=r"(error_code));
+        kprintf("General protection fault error code: 0x%x\n", error_code);
+    }
+
     process_terminate(task_current()->process);
     kprintf("\nThe process with id %d has been terminated.", task_current()->process->pid);
     task_next();
@@ -119,6 +142,7 @@ void idt_init()
     {
         idt_register_interrupt_callback(i, idt_exception_handler);
     }
+    idt_set(8, double_fault_handler);
 
     idt_register_interrupt_callback(0x20, idt_clock);
 

@@ -5,7 +5,7 @@
             "name": "GDB and GRUB",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/rootfs/boot/myos.kernel",
+            "program": "${workspaceRoot}/rootfs/boot/myos.bin",
             "cwd": "${workspaceRoot}",
             "args": [],
             // "sourceFileMap": {
@@ -28,8 +28,8 @@
                     "ignoreFailures": false
                 },
                 {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/boot/myos.kernel 0x200000",
-                    "description": "Add myos.kernel symbols"
+                    "text": "add-symbol-file ${workspaceRoot}/rootfs/boot/myos.bin 0x200000",
+                    "description": "Add myos.bin symbols"
                 },
                 // {
                 //     "text": "add-symbol-file ${workspaceRoot}/rootfs/echo 0x400000",

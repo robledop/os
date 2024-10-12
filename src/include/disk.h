@@ -21,6 +21,6 @@ struct disk
 void disk_init();
 struct disk *disk_get(int index);
 int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffer);
-int disk_read(uint32_t lba, uint8_t *buffer);
+int disk_read_sector(uint32_t lba, uint8_t *buffer);
 
 #endif

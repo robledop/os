@@ -94,7 +94,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     dbgprintf("Loading shell\n");
     struct process *process = NULL;
-    int res = process_load_switch("0:/sh", &process);
+    int res = process_load_switch("sh         ", &process);
     if (res < 0)
     {
         panic("Failed to load shell");
