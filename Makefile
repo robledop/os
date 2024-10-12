@@ -56,6 +56,8 @@ FLAGS = -g \
 	-Wextra \
 	-std=gnu23 \
 	-pedantic \
+	-fstack-protector \
+	-fsanitize=undefined \
 	-Wall
 
 	# -pedantic-errors \

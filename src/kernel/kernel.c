@@ -59,38 +59,29 @@ void kernel_page()
 
 void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 {
+    __stack_chk_guard = STACK_CHK_GUARD;
     disable_interrupts();
+    init_serial();
     uint32_t stack_ptr = 0;
     asm("mov %%esp, %0" : "=r"(stack_ptr));
     terminal_clear();
     kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
-
     gdt_init(stack_ptr);
     kernel_heap_init();
     paging_init();
-
-    __stack_chk_guard = STACK_CHK_GUARD;
-    init_serial();
-
     idt_init();
-
     display_grub_info(mbd, magic);
 
-    disable_interrupts();
-
     // kprintf(KCYN "Kernel is starting\n");
-
-    // pci_scan();
-
+    pci_scan();
     fs_init();
     disk_init();
 
     // my_fat16_init();
 
     register_syscalls();
-
     keyboard_init();
-    kprintf("Kernel is running\n");
+    // kprintf("Kernel is running\n");
 
     ///////////////////
     // opendir_test();
