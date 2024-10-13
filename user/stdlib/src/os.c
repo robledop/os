@@ -69,6 +69,12 @@ void os_terminal_readline(char *out, int max, bool output_while_typing)
             break;
         }
 
+        if(key == '\b' && i <= 0)
+        {
+            i = -1;
+            continue;
+        }
+
         if (output_while_typing)
         {
             os_putchar(key);
