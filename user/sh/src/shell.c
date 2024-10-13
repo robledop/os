@@ -21,9 +21,15 @@ int main(int argc, char **argv)
         char buffer[1024];
         os_terminal_readline(buffer, sizeof(buffer), true);
 
-        if (strncmp(buffer, "cls", 3) == 0 || strncmp(buffer, "clear", 5) == 0)
+        if (istrncmp(buffer, "cls", 3) == 0 || istrncmp(buffer, "clear", 5) == 0)
         {
             clear_screen();
+            continue;
+        }
+
+        if (istrncmp(buffer, "dir", 3) == 0)
+        {
+            os_system_run("ls", current_directory);
             continue;
         }
 
