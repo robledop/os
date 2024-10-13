@@ -86,15 +86,22 @@ void os_terminal_readline(char *out, int max, bool output_while_typing)
     out[i] = 0x00;
 }
 
-int os_system_run(const char *command)
+int os_system_run(const char *command, const char *current_directory)
 {
     char buffer[1024];
     strncpy(buffer, command, sizeof(buffer));
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
     if (root_command_argument == NULL)
     {
-       return -1;
+        return -1;
     }
+
+    if (root_command_argument->current_directory == NULL)
+    {
+        root_command_argument->current_directory = os_malloc(MAX_PATH_LENGTH);
+    }
+
+    strncpy(root_command_argument->current_directory, current_directory, MAX_PATH_LENGTH);
 
     return os_system(root_command_argument);
 }

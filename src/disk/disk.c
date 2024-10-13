@@ -26,6 +26,7 @@ void disk_init()
     }
 
     dbgprintf("Detected sector size: %d\n", disk.sector_size);
+    // kprintf("Detected sector size: %d\n", disk.sector_size);
 
     disk.fs = fs_resolve(&disk);
 }
@@ -42,7 +43,7 @@ struct disk *disk_get(int index)
 
 int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffer)
 {
-    dbgprintf("Reading block from disk %d, lba: %d, total: %d\n", idisk->id, lba, total);
+    warningf("Reading block from disk %d, lba: %d, total: %d\n", idisk->id, lba, total);
     if (idisk != &disk)
     {
         warningf("Invalid disk\n");

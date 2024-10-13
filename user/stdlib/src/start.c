@@ -1,4 +1,5 @@
 #include "os.h"
+#include "stdio.h"
 
 extern int main(int argc, char **argv);
 

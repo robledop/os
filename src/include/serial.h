@@ -15,6 +15,7 @@
 
 #ifdef DEBUG_WARNINGS
 #define warningf(a, ...) serial_printf("WARNING: file: %s, line: %d: \n" a, __FILE__, __LINE__, ##__VA_ARGS__)
+// #define warningf(a, ...) kprintf("file: %s, line: %d: " a, __FILE__, __LINE__, ##__VA_ARGS__)
 #else
 #define warningf(a, ...)
 #endif

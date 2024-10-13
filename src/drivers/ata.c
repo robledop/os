@@ -7,35 +7,37 @@
 
 int ata_get_sector_size()
 {
-    // Identify the drive and get the sector size
-    outb(0x1F6, 0xA0); // Select drive
-    outb(0x1F7, 0xEC); // Send IDENTIFY command
+    return 512;
+    // // Identify the drive and get the sector size
+    // outb(0x1F6, 0xA0); // Select drive
+    // outb(0x1F7, 0xEC); // Send IDENTIFY command
 
-    // Wait for the drive to signal that it is ready
-    while ((inb(0x1F7) & 0x08) == 0)
-    {
-    }
+    // // Wait for the drive to signal that it is ready
+    // while ((inb(0x1F7) & 0x08) == 0)
+    // {
+    // }
 
-    unsigned short identify_data[256];
-    for (int i = 0; i < 256; i++)
-    {
-        identify_data[i] = inw(0x1F0);
-    }
+    // unsigned short identify_data[256];
+    // for (int i = 0; i < 256; i++)
+    // {
+    //     identify_data[i] = inw(0x1F0);
+    // }
 
-    // Extract bits from word 106
-    unsigned short word_106 = identify_data[106];
-    int multiple_logical_sectors = (word_106 & (1 << 13)) >> 13;
-    int exponent_N = (word_106 >> 4) & 0xFF;
+    // // Extract bits from word 106
+    // unsigned short word_106 = identify_data[106];
+    // int multiple_logical_sectors = (word_106 & (1 << 13)) >> 13;
+    // uint32_t exponent_N = (word_106 >> 4) & 0xFF;
+    // kprintf("Multiple logical sectors: %d, N: %d\n", multiple_logical_sectors, exponent_N);
 
-    if (multiple_logical_sectors)
-    {
-        int logical_sectors_per_physical = 1 << exponent_N;
-        return logical_sectors_per_physical * 512; // Assuming 512-byte logical sectors
-    }
-    else
-    {
-        return 512; // Logical and physical sector sizes are the same
-    }
+    // if (multiple_logical_sectors)
+    // {
+    //     uint32_t logical_sectors_per_physical = 1 << exponent_N;
+    //     return logical_sectors_per_physical * 512; // Assuming 512-byte logical sectors
+    // }
+    // else
+    // {
+    //     return 512; // Logical and physical sector sizes are the same
+    // }
 }
 
 // https://wiki.osdev.org/ATA_read/write_sectors

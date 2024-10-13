@@ -18,6 +18,8 @@ enum SysCalls
     SYSCALL_READ,
     SYSCALL_CLEAR_SCREEN,
     SYSCALL_OPEN_DIR,
+    SYSCALL_SET_CURRENT_DIRECTORY,
+    SYSCALL_GET_CURRENT_DIRECTORY,
 };
 
 void register_syscalls();
@@ -38,5 +40,7 @@ void *sys_stat(struct interrupt_frame *frame);
 void *sys_read(struct interrupt_frame *frame);
 void *sys_clear_screen(struct interrupt_frame *frame);
 void *sys_open_dir(struct interrupt_frame *frame);
+void *sys_set_current_directory(struct interrupt_frame *frame);
+void *sys_get_current_directory(struct interrupt_frame *frame);
 
 #endif

@@ -32,21 +32,21 @@
                     "description": "Add myos.bin symbols"
                 },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/echo 0x400000",
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/echo 0x400000",
                 //     "description": "Add echo symbols"
                 // },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/sh 0x400000",
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/sh 0x400000",
                 //     "description": "Add sh symbols"
                 // },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/ls 0x400000",
-                    "description": "Add ls symbols"
-                },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/cat 0x400000",
-                //     "description": "Add cat symbols"
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/ls 0x400000",
+                //     "description": "Add ls symbols"
                 // },
+                {
+                    "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/cat 0x400000",
+                    "description": "Add cat symbols"
+                },
                 {
                     "text": "break idt_exception_handler",
                     "description": "Break on exception handler."
@@ -97,19 +97,19 @@
                     "description": "Add stage2full.o symbols"
                 },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/echo 0x400000",
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/echo 0x400000",
                 //     "description": "Add echo symbols"
                 // },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/sh 0x400000",
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/sh 0x400000",
                 //     "description": "Add sh symbols"
                 // },
                 {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/ls 0x400000",
+                    "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/ls 0x400000",
                     "description": "Add ls symbols"
                 },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/cat 0x400000",
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/cat 0x400000",
                 //     "description": "Add cat symbols"
                 // },
                 // {

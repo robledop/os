@@ -192,3 +192,25 @@ os_open_dir:
     add esp, 8
     pop ebp
     ret
+
+; int os_set_current_directory(const char* path)
+global os_set_current_directory:function
+os_set_current_directory:
+    push ebp
+    mov ebp, esp
+    push dword [ebp + 8]  ; path
+    mov eax, 15           ; sys_set_current_directory command
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret
+
+; char* os_get_current_directory()
+global os_get_current_directory:function
+os_get_current_directory:
+    push ebp
+    mov ebp, esp
+    mov eax, 16           ; sys_get_current_directory command
+    int 0x80
+    pop ebp
+    ret

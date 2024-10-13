@@ -75,10 +75,10 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     kernel_heap_init();
     paging_init();
     idt_init();
-    display_grub_info(mbd, magic);
+    // display_grub_info(mbd, magic);
 
     // kprintf(KCYN "Kernel is starting\n");
-    pci_scan();
+    // pci_scan();
     fs_init();
     disk_init();
 
@@ -94,10 +94,16 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     dbgprintf("Loading shell\n");
     struct process *process = NULL;
-    int res = process_load_switch("0:/sh", &process);
+    int res = process_load_switch("0:/bin/sh", &process);
     if (res < 0)
     {
         panic("Failed to load shell");
+    }
+
+    res = process_set_current_directory(process, "0:/");
+    if (res < 0)
+    {
+        panic("Failed to set current directory");
     }
 
     task_run_first_task();

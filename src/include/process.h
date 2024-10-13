@@ -14,6 +14,7 @@ struct command_argument
 {
     char argument[512];
     struct command_argument *next;
+    char* current_directory;
 };
 
 struct process_allocation
@@ -53,6 +54,7 @@ struct process
     } keyboard;
 
     struct process_arguments arguments;
+    char* current_directory;
 };
 
 int process_load_switch(const char *file_name, struct process **process);
@@ -66,5 +68,6 @@ void process_free(struct process *process, void *ptr);
 void process_get_arguments(struct process *process, int *argc, char ***argv);
 int process_inject_arguments(struct process *process, struct command_argument *root_argument);
 int process_terminate(struct process *process);
+int process_set_current_directory(struct process *process, const char *directory);
 
 #endif

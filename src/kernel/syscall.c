@@ -31,6 +31,22 @@ void register_syscalls()
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_CLEAR_SCREEN, sys_clear_screen);
     register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
+    register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
+    register_syscall(SYSCALL_GET_CURRENT_DIRECTORY, sys_get_current_directory);
+}
+
+void *sys_set_current_directory(struct interrupt_frame *frame)
+{
+    void *path_ptr = task_get_stack_item(task_current(), 0);
+    char path[MAX_PATH_LENGTH];
+
+    copy_string_from_task(task_current(), path_ptr, path, sizeof(path));
+    return (void *)process_set_current_directory(task_current()->process, path);
+}
+
+void *sys_get_current_directory(struct interrupt_frame *frame)
+{
+    return (void *)process_current()->current_directory;
 }
 
 void *sys_open_dir(struct interrupt_frame *frame)
@@ -188,8 +204,8 @@ void *sys_invoke_system(struct interrupt_frame *frame)
     const char *program_name = root_command_argument->argument;
 
     char path[MAX_PATH_LENGTH];
-    strncpy(path, "0:/", sizeof(path));
-    strncpy(path + 3, program_name, sizeof(path) - 3);
+    strncpy(path, "0:/bin/", sizeof(path));
+    strncpy(path + 7, program_name, sizeof(path) - 3);
 
     struct process *process = NULL;
     int res = process_load_switch(path, &process);

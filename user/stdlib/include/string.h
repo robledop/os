@@ -22,5 +22,7 @@ void reverse(char s[]);
 char *itoa(int i);
 char *strtok(char *str, const char *delimiters);
 bool starts_with(const char *pre, const char *str);
+char *strcat(char *dest, const char *src);
+bool str_ends_with(const char *str, const char *suffix);
 
 #endif

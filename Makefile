@@ -1,4 +1,5 @@
 $(shell mkdir -p ./bin)
+$(shell mkdir -p ./rootfs/bin)
 SRC_DIRS := $(shell find ./src -type d ! -path './src/include' ! -path './src/boot')
 BUILD_DIRS := $(patsubst ./src/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))

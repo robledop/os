@@ -87,10 +87,8 @@ int fstat(int fd, struct file_stat *stat)
 
 int fopen(const char *name, const char *mode)
 {
-    char *path = normalize_path(name);
-    int res = os_open(path, mode);
-    free(path);
-    return res;
+    // char *path = normalize_path(name);
+    return os_open(name, mode);
 }
 
 int fclose(int fd)
@@ -334,6 +332,16 @@ int readdir(struct file_directory *directory, struct directory_entry *entry_out,
     *entry_out = directory_entry;
 
     return 0;
+}
+
+char *get_current_directory()
+{
+    return os_get_current_directory();
+}
+
+int set_current_directory(const char *path)
+{
+    return os_set_current_directory(path);
 }
 
 // struct directory_entry get_directory_entry(void *fat_directory_entries, int index)

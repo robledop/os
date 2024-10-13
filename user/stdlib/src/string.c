@@ -1,5 +1,6 @@
 #include "string.h"
 #include "stdlib.h"
+#include "types.h"
 
 /*
  * Functions from Kerninghan/Ritchie - The C Programming Language
@@ -323,4 +324,39 @@ char *strtok(char *str, const char *delim)
     // No more delimiters; return the last token
     static_str = NULL;
     return token;
+}
+
+char *strcat(char *dest, const char *src)
+{
+    char *d = dest;
+    while (*d != '\0')
+    {
+        d++;
+    }
+    while (*src != '\0')
+    {
+        *d = *src;
+        d++;
+        src++;
+    }
+    *d = '\0';
+    return dest;
+}
+
+bool str_ends_with(const char *str, const char *suffix)
+{
+    if (!str || !suffix)
+    {
+        return false;
+    }
+
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
+
+    if (suffix_len > str_len)
+    {
+        return false;
+    }
+
+    return strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
 }
