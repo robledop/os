@@ -55,7 +55,6 @@ static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void isr80h_wrapper();
 
-
 void no_interrupt_handler(int interrupt)
 {
     kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
@@ -94,23 +93,24 @@ void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
 
 void idt_exception_handler(int interrupt)
 {
-    kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
 
     if (interrupt == 14)
     {
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0"
                      : "=r"(faulting_address));
-        kprintf("Page fault at %x\n", faulting_address);
+        kprintf(KRED "\nPage fault at %x" KWHT, faulting_address);
     }
-
-    // General protection fault error code
-    if (interrupt == 13)
+    else if (interrupt == 13)
     {
         uint32_t error_code;
         asm volatile("mov %%cr2, %0"
                      : "=r"(error_code));
-        kprintf("General protection fault error code: %x\n", error_code);
+        kprintf(KRED "\nGeneral protection fault error code: %x" KWHT, error_code);
+    }
+    else
+    {
+        kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
     }
 
     process_terminate(task_current()->process);

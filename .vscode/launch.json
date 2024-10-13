@@ -14,7 +14,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ${workspaceRoot}/user/sh/src -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/os/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86 -d ${workspaceRoot}/src/grub -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src/boot",
+            "miDebuggerArgs": "-d ${workspaceRoot}/user/ls/src -d ${workspaceRoot}/user/sh/src -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/os/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86 -d ${workspaceRoot}/src/grub -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src/boot",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",
@@ -35,14 +35,14 @@
                 //     "text": "add-symbol-file ${workspaceRoot}/rootfs/echo 0x400000",
                 //     "description": "Add echo symbols"
                 // },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/sh 0x400000",
-                    "description": "Add sh symbols"
-                },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/ls 0x400000",
-                //     "description": "Add ls symbols"
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/sh 0x400000",
+                //     "description": "Add sh symbols"
                 // },
+                {
+                    "text": "add-symbol-file ${workspaceRoot}/rootfs/ls 0x400000",
+                    "description": "Add ls symbols"
+                },
                 // {
                 //     "text": "add-symbol-file ${workspaceRoot}/rootfs/cat 0x400000",
                 //     "description": "Add cat symbols"
@@ -75,7 +75,7 @@
             "targetArchitecture": "x86",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ${workspaceRoot}/src/task -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86",
+            "miDebuggerArgs": "-d ${workspaceRoot}/user/ls/src -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86",
             "customLaunchSetupCommands": [
                 {
                     "text": "target remote localhost:1234",
@@ -100,14 +100,14 @@
                 //     "text": "add-symbol-file ${workspaceRoot}/rootfs/echo 0x400000",
                 //     "description": "Add echo symbols"
                 // },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/sh 0x400000",
-                    "description": "Add sh symbols"
-                },
                 // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/ls 0x400000",
-                //     "description": "Add ls symbols"
+                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/sh 0x400000",
+                //     "description": "Add sh symbols"
                 // },
+                {
+                    "text": "add-symbol-file ${workspaceRoot}/rootfs/ls 0x400000",
+                    "description": "Add ls symbols"
+                },
                 // {
                 //     "text": "add-symbol-file ${workspaceRoot}/rootfs/cat 0x400000",
                 //     "description": "Add cat symbols"

@@ -92,5 +92,6 @@ int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 int fstat(int fd, struct file_stat *stat);
 void clear_screen();
 int opendir(struct file_directory* directory, const char *path);
+int readdir(struct file_directory* directory, struct directory_entry* entry, int index);
 
 #endif

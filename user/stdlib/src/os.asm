@@ -181,14 +181,14 @@ os_clear_screen:
 
 
 ; int os_open_dir(struct file_directory* directory, const char* path)
-; global os_open_dir:function
-; os_open_dir:
-;     push ebp
-;     mov ebp, esp
-;     push dword [ebp + 8]  ; directory
-;     push dword [ebp + 12] ; path
-;     mov eax, 14           ; sys_open_dir command
-;     int 0x80
-;     add esp, 8
-;     pop ebp
-;     ret
+global os_open_dir:function
+os_open_dir:
+    push ebp
+    mov ebp, esp
+    push dword [ebp + 8]  ; directory
+    push dword [ebp + 12] ; path
+    mov eax, 14           ; sys_open_dir command
+    int 0x80
+    add esp, 8
+    pop ebp
+    ret

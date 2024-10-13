@@ -35,7 +35,7 @@ _start:
     ; the PICs are mapped to the same interrupt vectors as the CPU exceptions. To avoid conflicts, we
     ; need to remap the PICs to different interrupt vectors.
 
-    ; Remap the master PIC
+    ; ; Remap the master PIC
     mov al, 00010001b
     out 0x20, al
 

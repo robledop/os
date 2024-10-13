@@ -126,8 +126,8 @@ int fat16_read(struct disk *disk, void *private_data, uint32_t size, uint32_t nm
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE whence);
 int fat16_stat(struct disk *disk, void *private, struct file_stat *stat);
 int fat16_close(void *private);
-struct file_directory get_fs_root_directory(struct disk *disk);
-struct file_directory get_subdirectory(struct disk *disk, const char *path);
+// struct file_directory get_fs_root_directory(struct disk *disk);
+// struct file_directory get_subdirectory(struct disk *disk, const char *path);
 
 struct file_system *fat16_fs;
 
@@ -708,7 +708,6 @@ struct fat_item *fat16_find_item_in_directory(struct disk *disk, struct fat_dire
         }
     }
 
-    ASSERT(istrncmp(name, "0:/test", 7) != 0, "Test directory not found");
 
     return f_item;
 }
@@ -910,8 +909,6 @@ struct directory_entry get_directory_entry(void *fat_directory_entries, int inde
 
     struct directory_entry directory_entry =
         {
-            // .name = (char *)entry->name,
-            // .ext = (char *)entry->ext,
             .attributes = entry->attributes,
             .size = entry->size,
             .access_date = entry->access_date,
@@ -942,7 +939,7 @@ struct directory_entry get_directory_entry(void *fat_directory_entries, int inde
     return directory_entry;
 }
 
-struct file_directory get_fs_root_directory(struct disk *disk)
+int get_fs_root_directory(struct disk *disk, struct file_directory *directory)
 {
     struct fat_private *fat_private = disk->fs_private;
     struct file_directory root_directory =
@@ -952,10 +949,11 @@ struct file_directory get_fs_root_directory(struct disk *disk)
             .entries = fat_private->root_directory.entries,
             .get_entry = get_directory_entry,
         };
-    return root_directory;
+    *directory = root_directory;
+    return 0;
 }
 
-struct file_directory get_subdirectory(struct disk *disk, const char *path)
+int get_subdirectory(struct disk *disk, const char *path, struct file_directory *directory)
 {
     // path comes a fully qualified path
     // e.g. 0:/subdirectory/subsubdirectory/file.txt
@@ -986,8 +984,12 @@ struct file_directory get_subdirectory(struct disk *disk, const char *path)
 
     kfree(path_copy);
 
-    ASSERT(current_item != 0, "Failed to find subdirectory");
-    ASSERT(current_item->type == FAT_ITEM_TYPE_DIRECTORY, "Failed to find subdirectory");
+    if(current_item == NULL) {
+        return -ENOENT;
+    }
+
+    // ASSERT(current_item != 0, "Failed to find subdirectory");
+    // ASSERT(current_item->type == FAT_ITEM_TYPE_DIRECTORY, "Failed to find subdirectory");
 
     struct file_directory subdirectory =
         {
@@ -997,7 +999,10 @@ struct file_directory get_subdirectory(struct disk *disk, const char *path)
             .get_entry = get_directory_entry,
         };
 
-    return subdirectory;
+    memcpy(directory, &subdirectory, sizeof(struct file_directory));
+    memcpy(directory->entries, subdirectory.entries, subdirectory.entry_count * sizeof(struct fat_directory_entry));
+
+    return 0;
 }
 
 ////////////////////

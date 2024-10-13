@@ -11,7 +11,6 @@
 #include "assert.h"
 #include "terminal.h"
 
-
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
 
@@ -294,11 +293,15 @@ int fclose(int fd)
     return res;
 }
 
-struct file_directory fs_open_dir(const char *name)
+int fs_open_dir(const char *name, struct file_directory *directory)
 {
     struct path_root *root_path = pathparser_parse(name, NULL);
 
-    ASSERT(root_path != 0, "Failed to parse path");
+    if (root_path == NULL)
+    {
+        warningf("Failed to parse path\n");
+        return -EBADPATH;
+    }
 
     struct disk *disk = disk_get(root_path->drive_number);
 
@@ -308,14 +311,12 @@ struct file_directory fs_open_dir(const char *name)
     if (root_path->first == NULL)
     {
         ASSERT(disk->fs->get_root_directory != 0, "File system does not support getting root directory");
-        return disk->fs->get_root_directory(disk);
+        return disk->fs->get_root_directory(disk, directory);
     }
 
     ASSERT(disk->fs->get_subdirectory != 0, "File system does not support getting sub directory");
     ASSERT(name != NULL, "Name is null");
     ASSERT(disk != NULL, "Disk is null");
 
-    struct file_directory dir = disk->fs->get_subdirectory(disk, name);
-
-    return dir;
+    return disk->fs->get_subdirectory(disk, name, directory);
 }

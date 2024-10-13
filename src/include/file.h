@@ -20,7 +20,6 @@ struct fs_item
 };
 ////////////////////
 
-
 typedef unsigned int FILE_SEEK_MODE;
 enum
 {
@@ -59,9 +58,11 @@ typedef int (*FS_STAT_FUNCTION)(struct disk *disk, void *private, struct file_st
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 
 /////////////////////////////
+struct directory_entry;
+struct file_directory;
 
-typedef struct file_directory (*FS_GET_ROOT_DIRECTORY_FUNCTION)(struct disk *disk);
-typedef struct file_directory (*FS_GET_SUB_DIRECTORY_FUNCTION)(struct disk *disk, const char *path);
+typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(struct disk *disk, struct file_directory *directory);
+typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(struct disk *disk, const char *path, struct file_directory *directory);
 typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
 struct directory_entry
@@ -128,6 +129,6 @@ int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
 void fs_insert_file_system(struct file_system *fs);
 struct file_system *fs_resolve(struct disk *disk);
-struct file_directory fs_open_dir(const char *name);
+int fs_open_dir(const char *name, struct file_directory *directory);
 
 #endif

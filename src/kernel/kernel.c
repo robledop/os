@@ -20,6 +20,7 @@
 #include <syscall.h>
 #include <ssp.h>
 #include <pci.h>
+#include <io.h>
 #include "my_fat.h"
 
 // Divide by zero error
@@ -41,8 +42,8 @@ extern struct page_directory *kernel_page_directory;
 
 __attribute__((noreturn)) void panic(const char *msg)
 {
-    kprintf(KRED "KERNEL PANIC: " KWHT);
-    kprintf(KRED "%s\n", msg);
+    kprintf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
+
     while (1)
     {
         asm volatile("hlt");
@@ -61,11 +62,15 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 {
     __stack_chk_guard = STACK_CHK_GUARD;
     disable_interrupts();
+
     init_serial();
     uint32_t stack_ptr = 0;
     asm("mov %%esp, %0" : "=r"(stack_ptr));
     terminal_clear();
     kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
+    char *cpu = cpu_string();
+    kprintf(KCYN "CPU: %s\n", cpu);
+    cpu_print_info();
     gdt_init(stack_ptr);
     kernel_heap_init();
     paging_init();
@@ -104,44 +109,45 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
 void opendir_test()
 {
-    struct file_directory directory = fs_open_dir("0:/");
 
-    char *name = kmalloc(MAX_PATH_LENGTH);
-    strncpy(name, directory.name, MAX_PATH_LENGTH);
-    kprintf("Directory: %s\n", name);
-    kfree(name);
-    kprintf("Entries in directory: %d\n", directory.entry_count);
-    for (int i = 0; i < directory.entry_count; i++)
-    {
-        struct directory_entry entry = directory.get_entry(directory.entries, i);
-        if (entry.is_long_name)
-        {
-            continue;
-        }
-        if (strlen(entry.ext) > 0)
-        {
-            kprintf("%s.%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
-                    entry.name,
-                    entry.ext,
-                    entry.is_directory,
-                    entry.is_long_name,
-                    entry.is_read_only,
-                    entry.is_hidden,
-                    entry.is_system,
-                    entry.is_volume_label);
-        }
-        else
-        {
-            kprintf("%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
-                    entry.name,
-                    entry.is_directory,
-                    entry.is_long_name,
-                    entry.is_read_only,
-                    entry.is_hidden,
-                    entry.is_system,
-                    entry.is_volume_label);
-        }
-    }
+    // struct file_directory directory = fs_open_dir("0:/");
+
+    // char *name = kmalloc(MAX_PATH_LENGTH);
+    // strncpy(name, directory.name, MAX_PATH_LENGTH);
+    // kprintf("Directory: %s\n", name);
+    // kfree(name);
+    // kprintf("Entries in directory: %d\n", directory.entry_count);
+    // for (int i = 0; i < directory.entry_count; i++)
+    // {
+    //     struct directory_entry entry = directory.get_entry(directory.entries, i);
+    //     if (entry.is_long_name)
+    //     {
+    //         continue;
+    //     }
+    //     if (strlen(entry.ext) > 0)
+    //     {
+    //         kprintf("%s.%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
+    //                 entry.name,
+    //                 entry.ext,
+    //                 entry.is_directory,
+    //                 entry.is_long_name,
+    //                 entry.is_read_only,
+    //                 entry.is_hidden,
+    //                 entry.is_system,
+    //                 entry.is_volume_label);
+    //     }
+    //     else
+    //     {
+    //         kprintf("%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
+    //                 entry.name,
+    //                 entry.is_directory,
+    //                 entry.is_long_name,
+    //                 entry.is_read_only,
+    //                 entry.is_hidden,
+    //                 entry.is_system,
+    //                 entry.is_volume_label);
+    //     }
+    // }
 }
 
 void multitasking_demo()
