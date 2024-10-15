@@ -264,6 +264,7 @@ void process_free(struct process *process, void *ptr)
     kfree(ptr);
 }
 
+// Allocate memory to be used by the process
 void *process_malloc(struct process *process, size_t size)
 {
     void *ptr = kzalloc(size);

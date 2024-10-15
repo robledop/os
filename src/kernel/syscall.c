@@ -59,6 +59,8 @@ void *sys_open_dir(struct interrupt_frame *frame)
     struct file_directory *directory = task_virtual_to_physical_address(
         task_current(),
         task_get_stack_item(task_current(), 1));
+
+    // TODO: Use process_malloc to allocate memory for the directory entries
     return (void *)fs_open_dir((const char *)path, directory);
 }
 

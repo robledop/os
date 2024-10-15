@@ -89,7 +89,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
 	i686-elf-ld -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
-	./pad.sh ./bin/kernel.bin 512
+	./scripts/pad.sh ./bin/kernel.bin 512
 
 ./bin/boot.bin: ./src/boot/boot.asm 
 	$(shell mkdir -p ./build/boot)
@@ -99,7 +99,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	i686-elf-ld -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
 	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
 
-	./pad.sh ./bin/stage2.bin 512
+	./scripts/pad.sh ./bin/stage2.bin 512
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -123,11 +123,18 @@ grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o 
 	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
 
+iso: grub
+	rm -rf ./myos.iso
+	grub-mkrescue -o ./myos.iso ./rootfs
+
 qemu: all
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 qemu_grub: grub 
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
+
+qemu_iso: iso 
+	qemu-system-i386 -boot d -cdrom ./myos.iso -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 apps:
 	cd ./user && $(MAKE) all
@@ -136,4 +143,5 @@ apps_clean:
 	cd ./user && $(MAKE) clean
 
 clean: apps_clean
-	rm -rf ./bin ./build ./mnt ./disk.img ./disk.vdi ./rootfs/boot/myos.bin
+	rm -rf ./bin ./build ./mnt ./disk.img ./disk1.vdi ./rootfs/boot/myos.bin ./myos.iso ./serial.log ./qemu.log ./bochslog.txt
+

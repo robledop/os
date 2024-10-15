@@ -142,7 +142,7 @@ struct file_system *fat16_init()
     fat16_fs->close = fat16_close,
 
     fat16_fs->get_root_directory = get_fs_root_directory,
-    fat16_fs->get_subdirectory = get_subdirectory,
+    fat16_fs->get_subdirectory = fat16_get_subdirectory,
 
     strncpy(fat16_fs->name, "FAT16", 20);
     dbgprintf("File system name %s\n", fat16_fs->name);
@@ -482,7 +482,6 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     dbgprintf("FAT entry for cluster %d: %x\n", cluster, result);
     ASSERT(result != 0, "Invalid FAT entry");
 
-
     res = result;
 
 out:
@@ -705,7 +704,6 @@ struct fat_item *fat16_find_item_in_directory(struct disk *disk, struct fat_dire
             return fat16_new_fat_item_for_directory_entry(disk, &directory->entries[i]);
         }
     }
-
 
     return f_item;
 }
@@ -951,7 +949,7 @@ int get_fs_root_directory(struct disk *disk, struct file_directory *directory)
     return 0;
 }
 
-int get_subdirectory(struct disk *disk, const char *path, struct file_directory *directory)
+int fat16_get_subdirectory(struct disk *disk, const char *path, struct file_directory *directory)
 {
     // path comes a fully qualified path
     // e.g. 0:/subdirectory/subsubdirectory/file.txt
@@ -982,12 +980,10 @@ int get_subdirectory(struct disk *disk, const char *path, struct file_directory 
 
     kfree(path_copy);
 
-    if(current_item == NULL) {
+    if (current_item == NULL)
+    {
         return -ENOENT;
     }
-
-    // ASSERT(current_item != 0, "Failed to find subdirectory");
-    // ASSERT(current_item->type == FAT_ITEM_TYPE_DIRECTORY, "Failed to find subdirectory");
 
     struct file_directory subdirectory =
         {

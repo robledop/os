@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "GDB and GRUB",
+            "name": "GRUB",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/rootfs/boot/myos.bin",
@@ -63,7 +63,7 @@
             "preLaunchTask": "Launch QEMU with GRUB"
         },
         {
-            "name": "GDB",
+            "name": "No GRUB",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/bin/disk.img",

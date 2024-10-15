@@ -2,6 +2,6 @@
 
 My hobby operating system
 
-![Screenshot](screenshot1.png)
+![Screenshot](docs/img/screenshot1.png)
 
-![Screenshot](screenshot2.png)
+![Screenshot](docs/img/screenshot2.png)
