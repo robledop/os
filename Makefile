@@ -95,7 +95,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	$(shell mkdir -p ./build/boot)
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
 	nasm -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
-	i686-elf-gcc $(STAGE2_FLAGS) -c ./src/boot/stage2.c -o ./build/boot/stage2.o
+	i686-elf-gcc $(STAGE2_FLAGS) -I./src/include -c ./src/boot/stage2.c -o ./build/boot/stage2.o
 	i686-elf-ld -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
 	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
 
