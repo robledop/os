@@ -243,8 +243,8 @@ int task_init(struct task *task, struct process *process)
         break;
     }
 
-    task->registers.ss = USER_DATA_SEGMENT;
-    task->registers.cs = USER_CODE_SEGMENT;
+    task->registers.ss = USER_DATA_SELECTOR;
+    task->registers.cs = USER_CODE_SELECTOR;
     task->registers.esp = PROGRAM_VIRTUAL_STACK_ADDRESS_START;
 
     task->process = process;

@@ -1,3 +1,4 @@
+#include "config.h"
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;
 typedef unsigned int uint32_t;
@@ -21,16 +22,16 @@ void load_kernel()
     // So we start reading from sector 2
 
     // reads 256 sectors starting from sector 2 to 257
-    ata_read_sector(2, 256, (void *)0x100000);
+    ata_read_sector(2, 256, (void *)KERNEL_LOAD_ADDRESS);
 
     // Split the command in two because the ATA PIO mode only allows 256 sectors to be read at a time
     // I may need to do more reads if the kernel grows
 
     // reads 254 sectors starting from sector 258 to 512
-    ata_read_sector(258, 254, (void *)(0x100000 + 512 * 256));
+    ata_read_sector(258, 254, (void *)(KERNEL_LOAD_ADDRESS + 512 * 256));
 
     // Starts running kernel.asm
-    void (*kernel_asm)() = (void (*)())0x100000;
+    void (*kernel_asm)() = (void (*)())KERNEL_LOAD_ADDRESS;
     kernel_asm();
 }
 

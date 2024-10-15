@@ -942,7 +942,7 @@ int get_fs_root_directory(struct disk *disk, struct file_directory *directory)
     struct fat_private *fat_private = disk->fs_private;
     struct file_directory root_directory =
         {
-            .name = "root",
+            .name = "0:/",
             .entry_count = fat_private->root_directory.entry_count,
             .entries = fat_private->root_directory.entries,
             .get_entry = get_directory_entry,

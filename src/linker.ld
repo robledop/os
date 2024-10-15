@@ -2,7 +2,7 @@ ENTRY(_start)
 OUTPUT_FORMAT(binary)
 SECTIONS
 {
-  . = 1M;
+  . = 0x200000; /* If changing this, you must also change config.h  */
   .text : ALIGN(4096)
   {
     *(.text)

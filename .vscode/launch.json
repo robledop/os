@@ -89,7 +89,7 @@
                     "ignoreFailures": false
                 },
                 {
-                    "text": "add-symbol-file ${workspaceRoot}/build/kernelfull.o 0x100000",
+                    "text": "add-symbol-file ${workspaceRoot}/build/kernelfull.o 0x200000",
                     "description": "Add kernelfull.o symbols"
                 },
                 {

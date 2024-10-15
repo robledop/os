@@ -77,7 +77,7 @@ void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
 {
     struct idt_desc *desc = &idt_descriptors[interrupt];
     desc->offset_1 = (uint32_t)handler & 0x0000FFFF;
-    desc->selector = CODE_SELECTOR;
+    desc->selector = KERNEL_CODE_SELECTOR;
     desc->zero = 0;
 
     // This value configures various attributes of the interrupt descriptor, such as the type,
