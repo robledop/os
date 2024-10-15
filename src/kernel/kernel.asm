@@ -5,7 +5,6 @@
   global cause_problem
   global kernel_registers
 
-  extern kernel_main
   CODE_SEG equ 0x08
   DATA_SEG equ 0x10
 
@@ -39,6 +38,7 @@ _start:
   ; finished
 
   mov esp, stack_top
+  extern kernel_main
   call kernel_main
 
  null_loop:

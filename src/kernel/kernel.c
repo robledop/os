@@ -27,7 +27,6 @@
 extern void cause_problem();
 void paging_demo();
 void multitasking_demo();
-void opendir_test();
 void display_grub_info(multiboot_info_t *mbd, unsigned int magic);
 
 #if UINT32_MAX == UINTPTR_MAX
@@ -75,9 +74,8 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     kernel_heap_init();
     paging_init();
     idt_init();
-    // display_grub_info(mbd, magic);
+    display_grub_info(mbd, magic);
 
-    // kprintf(KCYN "Kernel is starting\n");
     // pci_scan();
     fs_init();
     disk_init();
@@ -86,11 +84,6 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     register_syscalls();
     keyboard_init();
-    // kprintf("Kernel is running\n");
-
-    ///////////////////
-    // opendir_test();
-    ///////////////////
 
     dbgprintf("Loading shell\n");
     struct process *process = NULL;
@@ -111,49 +104,6 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     enable_interrupts();
 
     panic("Kernel finished");
-}
-
-void opendir_test()
-{
-
-    // struct file_directory directory = fs_open_dir("0:/");
-
-    // char *name = kmalloc(MAX_PATH_LENGTH);
-    // strncpy(name, directory.name, MAX_PATH_LENGTH);
-    // kprintf("Directory: %s\n", name);
-    // kfree(name);
-    // kprintf("Entries in directory: %d\n", directory.entry_count);
-    // for (int i = 0; i < directory.entry_count; i++)
-    // {
-    //     struct directory_entry entry = directory.get_entry(directory.entries, i);
-    //     if (entry.is_long_name)
-    //     {
-    //         continue;
-    //     }
-    //     if (strlen(entry.ext) > 0)
-    //     {
-    //         kprintf("%s.%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
-    //                 entry.name,
-    //                 entry.ext,
-    //                 entry.is_directory,
-    //                 entry.is_long_name,
-    //                 entry.is_read_only,
-    //                 entry.is_hidden,
-    //                 entry.is_system,
-    //                 entry.is_volume_label);
-    //     }
-    //     else
-    //     {
-    //         kprintf("%s - dir: %d, ro: %d, h: %d, s: %d, v: %d\n",
-    //                 entry.name,
-    //                 entry.is_directory,
-    //                 entry.is_long_name,
-    //                 entry.is_read_only,
-    //                 entry.is_hidden,
-    //                 entry.is_system,
-    //                 entry.is_volume_label);
-    //     }
-    // }
 }
 
 void multitasking_demo()
