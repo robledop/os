@@ -46,40 +46,6 @@ void putchar_color(char c, unsigned char forecolor, unsigned char backcolor)
     os_putchar_color(c, forecolor, backcolor);
 }
 
-// HACK: This function is a workaround for the fact that the OS does not support relative paths yet
-// WARNING: The return value must be freed by the caller
-char *normalize_path(const char *path)
-{
-    if (starts_with("0:/", path))
-    {
-        char *new_path = (char *)malloc(MAX_PATH_LENGTH);
-        strncpy(new_path, path, MAX_PATH_LENGTH);
-        return new_path;
-    }
-    else if (starts_with("/", path))
-    {
-        char *new_path = (char *)malloc(MAX_PATH_LENGTH);
-        if (new_path == NULL)
-        {
-            return NULL;
-        }
-        strncpy(new_path, "0:", MAX_PATH_LENGTH);
-        strncpy(new_path + 2, path, MAX_PATH_LENGTH - 2);
-
-        return new_path;
-    }
-
-    char *new_path = (char *)malloc(MAX_PATH_LENGTH);
-    if (new_path == NULL)
-    {
-        return NULL;
-    }
-    strncpy(new_path, "0:/", MAX_PATH_LENGTH);
-    strncpy(new_path + 3, path, MAX_PATH_LENGTH - 3);
-
-    return new_path;
-}
-
 int fstat(int fd, struct file_stat *stat)
 {
     return os_stat(fd, stat);
@@ -87,7 +53,6 @@ int fstat(int fd, struct file_stat *stat)
 
 int fopen(const char *name, const char *mode)
 {
-    // char *path = normalize_path(name);
     return os_open(name, mode);
 }
 
@@ -334,50 +299,14 @@ int readdir(struct file_directory *directory, struct directory_entry *entry_out,
     return 0;
 }
 
+// Get the current directory for the current process
 char *get_current_directory()
 {
     return os_get_current_directory();
 }
 
+// Set the current directory for the current process
 int set_current_directory(const char *path)
 {
     return os_set_current_directory(path);
 }
-
-// struct directory_entry get_directory_entry(void *fat_directory_entries, int index)
-// {
-//     // struct fat_directory_entry *entry = (struct fat_directory_entry *)entries[index];
-//     struct fat_directory_entry *entries = (struct fat_directory_entry *)fat_directory_entries;
-//     struct fat_directory_entry *entry = entries + index;
-
-//     struct directory_entry directory_entry =
-//         {
-//             .attributes = entry->attributes,
-//             .size = entry->size,
-//             .access_date = entry->access_date,
-//             .creation_date = entry->creation_date,
-//             .creation_time = entry->creation_time,
-//             .creation_time_tenths = entry->creation_time_tenths,
-//             .modification_date = entry->modification_date,
-//             .modification_time = entry->modification_time,
-//             .is_archive = entry->attributes & FAT_FILE_ARCHIVE,
-//             .is_device = entry->attributes & FAT_FILE_DEVICE,
-//             .is_directory = entry->attributes & FAT_FILE_SUBDIRECTORY,
-//             .is_hidden = entry->attributes & FAT_FILE_HIDDEN,
-//             .is_long_name = entry->attributes == FAT_FILE_LONG_NAME,
-//             .is_read_only = entry->attributes & FAT_FILE_READ_ONLY,
-//             .is_system = entry->attributes & FAT_FILE_SYSTEM,
-//             .is_volume_label = entry->attributes & FAT_FILE_VOLUME_LABEL,
-//         };
-
-//     // TODO: Check for a memory leak here
-//     char *name = trim(substring((char *)entry->name, 0, 7));
-//     char *ext = trim(substring((char *)entry->ext, 0, 2));
-
-//     directory_entry.name = name;
-//     directory_entry.ext = ext;
-
-//     // kfree(name);
-//     // kfree(ext);
-//     return directory_entry;
-// }

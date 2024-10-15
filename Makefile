@@ -74,6 +74,7 @@ endif
 
 
 all: ./bin/boot.bin ./bin/kernel.bin apps
+	rm -rf ./bin/disk.img
 	dd if=/dev/zero of=./bin/disk.img bs=512 count=65536
 	mkfs.vfat -R 512 -c -F 16 -S 512 ./bin/disk.img
 	dd if=./bin/boot.bin of=./bin/disk.img bs=512 count=1 seek=0 conv=notrunc
@@ -94,7 +95,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	$(shell mkdir -p ./build/boot)
 	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
 	nasm -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
-	i686-elf-gcc -g $(STAGE2_FLAGS) -c ./src/boot/stage2.c -o ./build/boot/stage2.o
+	i686-elf-gcc $(STAGE2_FLAGS) -c ./src/boot/stage2.c -o ./build/boot/stage2.o
 	i686-elf-ld -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
 	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
 
@@ -123,11 +124,9 @@ grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
 
 qemu: all
-	# qemu-system-i386 -boot d -hda ./bin/disk.img -m 128 -serial stdio -display gtk,zoom-to-fit=on
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 qemu_grub: grub 
-	# qemu-system-i386 -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 apps:

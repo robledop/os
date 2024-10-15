@@ -6,6 +6,10 @@
 #include "types.h"
 
 bool directory_exists(const char *path);
+void shell_terminal_readline(char *out, int max, bool output_while_typing);
+
+char *command_history[256];
+uint8_t history_index = 0;
 
 int main(int argc, char **argv)
 {
@@ -19,7 +23,10 @@ int main(int argc, char **argv)
         printf(KGRN "%s> " KWHT, current_directory);
 
         char buffer[1024];
-        os_terminal_readline(buffer, sizeof(buffer), true);
+        shell_terminal_readline(buffer, sizeof(buffer), true);
+
+        command_history[history_index] = buffer;
+        history_index++;
 
         if (istrncmp(buffer, "cls", 3) == 0 || istrncmp(buffer, "clear", 5) == 0)
         {
@@ -130,4 +137,47 @@ bool directory_exists(const char *path)
 
     free(directory);
     return true;
+}
+
+void shell_terminal_readline(char *out, int max, bool output_while_typing)
+{
+    uint8_t current_history_index = history_index;
+    if(current_history_index){}
+    int i = 0;
+    for (; i < max - 1; i++)
+    {
+        int key = os_getkey_blocking();
+
+        // Up arrow
+        if (key == 30)
+        {
+            printf("Up arrow?\n");
+        }
+
+        if (key == '\n' || key == '\r')
+        {
+            break;
+        }
+
+        if (key == '\b' && i <= 0)
+        {
+            i = -1;
+            continue;
+        }
+
+        if (output_while_typing)
+        {
+            os_putchar(key);
+        }
+
+        if (key == '\b' && i > 0)
+        {
+            i -= 2;
+            continue;
+        }
+
+        out[i] = key;
+    }
+
+    out[i] = 0x00;
 }

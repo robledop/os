@@ -46,8 +46,7 @@ int main(int argc, char **argv)
         return res;
     }
 
-    char buffer[stat.size + 1];
-
+    char* buffer = malloc(stat.size + 1);
     res = fread((void *)buffer, stat.size, 1, fd);
     if (res < 0)
     {

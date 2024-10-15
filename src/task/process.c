@@ -513,7 +513,7 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
 {
     int res = 0;
     struct task *task = 0;
-    struct process *proc;
+    struct process *proc = NULL;
     void *program_stack_pointer = 0;
 
     dbgprintf("Loading process %s to slot %d\n", file_name, slot);
