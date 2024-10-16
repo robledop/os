@@ -93,7 +93,6 @@ void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
 
 void idt_exception_handler(int interrupt)
 {
-
     if (interrupt == 14)
     {
         uint32_t faulting_address;
@@ -121,6 +120,7 @@ void idt_exception_handler(int interrupt)
 void idt_clock(int interrupt)
 {
     outb(0x20, 0x20);
+
     // Uncomment to enable multitasking
     // task_next();
 }

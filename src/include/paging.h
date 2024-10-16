@@ -32,12 +32,15 @@
 // occur, and the OS should handle it.
 #define PAGING_DIRECTORY_ENTRY_IS_PRESENT 0b00000001
 
+// Clear all flags to unmap the page 
+#define PAGING_DIRECTORY_ENTRY_UNMAPPED 0x00
+
 #define PAGING_ENTRIES_PER_TABLE 1024
 #define PAGING_ENTRIES_PER_DIRECTORY 1024
 #define PAGING_PAGE_SIZE 4096
 
-// https://wiki.osdev.org/Paging#Page_Directory
-struct page_directory
+    // https://wiki.osdev.org/Paging#Page_Directory
+    struct page_directory
 {
     // https://wiki.osdev.org/Paging#Page_Table
     uint32_t *directory_entry;

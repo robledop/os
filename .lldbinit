@@ -1,0 +1,3 @@
+target create /home/robledo/source/os/rootfs/bin/sh
+target symbols add /home/robledo/source/os/rootfs/bin/sh --address 0x400000
+

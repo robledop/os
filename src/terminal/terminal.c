@@ -8,7 +8,7 @@
 #include "assert.h"
 
 #define VIDEO_MEMORY 0xB8000
-#define BYTES_PER_CHAR 2
+#define BYTES_PER_CHAR 2 // 1 byte for character, 1 byte for attribute (color)
 #define SCREEN_SIZE (VGA_WIDTH * VGA_HEIGHT * BYTES_PER_CHAR)
 #define ROW_SIZE (VGA_WIDTH * BYTES_PER_CHAR)
 #define DEFAULT_ATTRIBUTE 0x07 // Light grey on black background

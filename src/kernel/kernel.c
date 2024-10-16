@@ -85,6 +85,15 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     register_syscalls();
     keyboard_init();
 
+    start_shell();
+
+    enable_interrupts();
+
+    panic("Kernel finished");
+}
+
+void start_shell()
+{
     dbgprintf("Loading shell\n");
     struct process *process = NULL;
     int res = process_load_switch("0:/bin/sh", &process);
@@ -100,10 +109,6 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     }
 
     task_run_first_task();
-
-    enable_interrupts();
-
-    panic("Kernel finished");
 }
 
 void multitasking_demo()

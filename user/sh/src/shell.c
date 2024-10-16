@@ -13,7 +13,7 @@ uint8_t history_index = 0;
 
 int main(int argc, char **argv)
 {
-    printf(KWHT "User mode shell started\n");
+    printf(KWHT "\nUser mode shell started\n");
 
     for (int i = 0; i < 256; i++)
     {
@@ -43,6 +43,11 @@ int main(int argc, char **argv)
         {
             os_system_run("ls", current_directory);
             continue;
+        }
+
+        if (istrncmp(buffer, "exit", 3) == 0)
+        {
+            os_exit();
         }
 
         if (strncmp(buffer, "cd", 2) == 0)

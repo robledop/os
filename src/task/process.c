@@ -129,9 +129,7 @@ void process_switch_to_any()
         }
     }
 
-    // TODO: Restart a shell process
-
-    panic("No processes to switch to.\n");
+    start_shell();
 }
 
 static void process_unlink(struct process *process)
@@ -242,8 +240,12 @@ void process_free(struct process *process, void *ptr)
         return;
     }
 
-    int res = paging_map_to(process->task->page_directory, allocation->ptr, allocation->ptr,
-                            paging_align_address((char *)allocation->ptr + allocation->size), 0x00);
+    int res = paging_map_to(process->task->page_directory,
+                            allocation->ptr,
+                            allocation->ptr,
+                            paging_align_address((char *)allocation->ptr + allocation->size),
+                            PAGING_DIRECTORY_ENTRY_UNMAPPED);
+
     if (res < 0)
     {
         ASSERT(false, "Failed to unmap memory");
@@ -281,9 +283,11 @@ void *process_malloc(struct process *process, size_t size)
         goto out_error;
     }
 
-    int res = paging_map_to(process->task->page_directory, ptr, ptr, paging_align_address((char *)ptr + size),
-                            PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-                                PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    int res = paging_map_to(process->task->page_directory,
+                            ptr,
+                            ptr,
+                            paging_align_address((char *)ptr + size),
+                            PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     if (res < 0)
     {
         ASSERT(false, "Failed to map memory for process");
@@ -398,10 +402,11 @@ static int process_load_data(const char *file_name, struct process *process)
 static int process_map_binary(struct process *process)
 {
     int res = 0;
-    paging_map_to(process->task->page_directory, (void *)PROGRAM_VIRTUAL_ADDRESS, process->pointer,
+    paging_map_to(process->task->page_directory,
+                  (void *)PROGRAM_VIRTUAL_ADDRESS,
+                  process->pointer,
                   paging_align_address((char *)process->pointer + process->size),
-                  PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-                      PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+                  PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
     return res;
 }
@@ -424,9 +429,11 @@ static int process_map_elf(struct process *process)
             flags |= PAGING_DIRECTORY_ENTRY_IS_WRITABLE;
         }
 
-        res = paging_map_to(process->task->page_directory, paging_align_to_lower_page((void *)phdr->p_vaddr),
+        res = paging_map_to(process->task->page_directory,
+                            paging_align_to_lower_page((void *)phdr->p_vaddr),
                             paging_align_to_lower_page(phdr_phys_address),
-                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz), flags);
+                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz),
+                            flags);
         if (ISERR(res))
         {
             ASSERT(false, "Failed to map ELF file");
@@ -457,9 +464,9 @@ int process_map_memory(struct process *process)
 
     res = paging_map_to(process->task->page_directory,
                         (char *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
-                        process->stack, paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
-                        PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-                            PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+                        process->stack,
+                        paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
+                        PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
 out:
     return res;
