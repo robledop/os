@@ -7,12 +7,14 @@
 #include <kernel_heap.h>
 #include <keyboard.h>
 #include <paging.h>
+#include <pci.h>
 #include <process.h>
 #include <serial.h>
 #include <string.h>
 #include <syscall.h>
 #include <task.h>
 #include <terminal.h>
+#include "console.h"
 
 // Divide by zero error
 extern void cause_problem();
@@ -64,7 +66,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
     idt_init();
     display_grub_info(mbd, magic);
 
-    // pci_scan();
+    pci_scan();
     fs_init();
     disk_init();
 
@@ -73,14 +75,15 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
     register_syscalls();
     keyboard_init();
 
-    start_shell();
+    initialize_consoles();
 
     enable_interrupts();
+
 
     panic("Kernel finished");
 }
 
-void start_shell() {
+void start_shell(const int console) {
     dbgprintf("Loading shell\n");
     struct process *process = nullptr;
     int res                 = process_load_switch("0:/bin/sh", &process);
@@ -92,6 +95,9 @@ void start_shell() {
     if (res < 0) {
         panic("Failed to set current directory");
     }
+
+    process->console = console;
+
 
     task_run_first_task();
 }
@@ -170,4 +176,17 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic) {
         }
     }
 #endif
+}
+
+void system_reboot() {
+    uint8_t good = 0x02;
+    while (good & 0x02)
+        good = inb(0x64);
+    outb(0x64, 0xFE);
+}
+
+void system_shutdown() {
+    outw(0x604, 0x2000);
+
+    asm volatile("hlt");
 }

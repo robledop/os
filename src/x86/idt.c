@@ -122,7 +122,7 @@ void idt_clock(int interrupt)
     outb(0x20, 0x20);
 
     // Uncomment to enable multitasking
-    // task_next();
+    task_next();
 }
 
 void idt_init()

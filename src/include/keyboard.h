@@ -17,8 +17,8 @@ struct keyboard
 
 void keyboard_init();
 void keyboard_backspace(struct process *process);
-void keyboard_push(char c);
-char keyboard_pop();
+void keyboard_push(const uchar c);
+uchar keyboard_pop();
 int keyboard_register(struct keyboard *kbd);
 
 #endif

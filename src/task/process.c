@@ -129,7 +129,7 @@ void process_switch_to_any()
         }
     }
 
-    start_shell();
+    // start_shell();
 }
 
 static void process_unlink(struct process *process)

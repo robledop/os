@@ -85,7 +85,7 @@ struct file_stat
     unsigned int size;
 };
 
-int putchar(int c);
+int putchar(unsigned char c);
 int printf(const char *format, ...);
 int fopen(const char *name, const char *mode);
 int fclose(int fd);

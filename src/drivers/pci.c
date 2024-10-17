@@ -1,12 +1,10 @@
 #include "pci.h"
-#include "types.h"
 #include "io.h"
 #include "terminal.h"
 
 // https://wiki.osdev.org/PCI
 
-struct pci_driver
-{
+struct pci_driver {
     bool used;
     uint8_t class;
     uint8_t subclass;
@@ -15,8 +13,7 @@ struct pci_driver
 
 struct pci_driver pci_drivers[255];
 
-struct pci_class_name
-{
+struct pci_class_name {
     uint8_t class;
     uint8_t subclass;
     const char *name;
@@ -95,7 +92,7 @@ struct pci_class_name classnames[] = {
     {0x0B, 0x00, "386 Processor"},
     {0x0B, 0x01, "486 Processor"},
     {0x0B, 0x02, "Pentium Processor"},
-    {0x0B, 0x03, "Pentioum Pro Processor"},
+    {0x0B, 0x03, "Pentium Pro Processor"},
     {0x0B, 0x10, "Alpha Processor"},
     {0x0B, 0x20, "PowerPC Processor"},
     {0x0B, 0x30, "MIPS Processor"},
@@ -140,17 +137,14 @@ struct pci_class_name classnames[] = {
     {0xFF, 0x00, "Vendor Specific"},
 };
 
-uint16_t pci_config_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset)
-{
-    uint32_t address;
-    uint32_t lbus = (uint32_t)bus;
-    uint32_t lslot = (uint32_t)slot;
-    uint32_t lfunc = (uint32_t)func;
-    uint16_t tmp = 0;
+uint16_t pci_config_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
+    const uint32_t lbus  = bus;
+    const uint32_t lslot = slot;
+    const uint32_t lfunc = func;
+    uint16_t tmp         = 0;
 
     // Create configuration address as per Figure 1
-    address = (uint32_t)((lbus << 16) | (lslot << 11) |
-                         (lfunc << 8) | (offset & 0xFC) | ((uint32_t)0x80000000));
+    const uint32_t address = lbus << 16 | lslot << 11 | lfunc << 8 | (offset & 0xFC) | 0x80000000;
 
     // Write out the address
     outl(0xCF8, address);
@@ -160,30 +154,25 @@ uint16_t pci_config_read_word(uint8_t bus, uint8_t slot, uint8_t func, uint8_t o
     return tmp;
 }
 
-const char *pci_find_name(uint8_t class, uint8_t subclass)
-{
-    for (size_t i = 0; i < sizeof(classnames) / sizeof(struct pci_class_name); i++)
-    {
-        if (classnames[i].class == class && classnames[i].subclass == subclass)
-        {
+const char *pci_find_name(uint8_t class, uint8_t subclass) {
+    for (size_t i = 0; i < sizeof(classnames) / sizeof(struct pci_class_name); i++) {
+        if (classnames[i].class == class && classnames[i].subclass == subclass) {
             return classnames[i].name;
         }
     }
     return "Unknown PCI Device";
 }
 
-void load_driver(struct pci_t pci, uint8_t bus, uint8_t device, uint8_t function)
-{
-    for (uint16_t i = 0; i < 255; i++)
-    {
-        if (pci_drivers[i].used && pci_drivers[i].class == pci.class && pci_drivers[i].subclass == pci.subclass)
-        {
-            kprintf("%x.%x.%d: Loading the driver for %s\n", bus, device, function, pci_find_name(pci.class, pci.subclass));
+void load_driver(struct pci_t pci, uint8_t bus, uint8_t device, uint8_t function) {
+    for (uint16_t i = 0; i < 255; i++) {
+        if (pci_drivers[i].used && pci_drivers[i].class == pci.class && pci_drivers[i].subclass == pci.subclass) {
+            kprintf("bus: %x, dev: %x, func: %x: Loading the driver for %s\n", bus, device, function,
+                    pci_find_name(pci.class, pci.subclass));
             pci_drivers[i].pci_function(pci, bus, device, function);
             return;
         }
     }
-    kprintf("%x.%x.%d: No driver for %s\n", bus, device, function, pci_find_name(pci.class, pci.subclass));
+    kprintf("bus: %x, dev: %x, func: %x: No driver for %s\n", bus, device, function, pci_find_name(pci.class, pci.subclass));
 }
 
 // uint16_t pci_check_vendor(uint8_t bus, uint8_t slot)
@@ -214,12 +203,10 @@ void load_driver(struct pci_t pci, uint8_t bus, uint8_t device, uint8_t function
 //     }
 // }
 
-struct pci_t get_pci_data(uint8_t bus, uint8_t num, uint8_t function)
-{
+struct pci_t get_pci_data(uint8_t bus, uint8_t num, uint8_t function) {
     struct pci_t pci_data;
     uint16_t *p = (uint16_t *)&pci_data;
-    for (uint8_t i = 0; i < 32; i++)
-    {
+    for (uint8_t i = 0; i < 32; i++) {
         p[i] = pci_config_read_word(bus, num, function, i * 2);
     }
     return pci_data;
@@ -261,28 +248,21 @@ struct pci_t get_pci_data(uint8_t bus, uint8_t num, uint8_t function)
 //     }
 // }
 
-void pci_scan()
-{
+void pci_scan() {
     kprintf("Scanning PCI devices...\n");
 
     struct pci_t c_pci;
-    for (uint16_t i = 0; i < 256; i++)
-    {
+    for (uint16_t i = 0; i < 256; i++) {
         c_pci = get_pci_data(i, 0, 0);
-        if (c_pci.vendorID != 0xFFFF)
-        {
-            for (uint8_t j = 0; j < 32; j++)
-            {
+        if (c_pci.vendorID != 0xFFFF) {
+            for (uint8_t j = 0; j < 32; j++) {
                 c_pci = get_pci_data(i, j, 0);
-                if (c_pci.vendorID != 0xFFFF)
-                {
+                if (c_pci.vendorID != 0xFFFF) {
                     load_driver(c_pci, i, j, 0);
 
-                    for (uint8_t k = 1; k < 8; k++)
-                    {
+                    for (uint8_t k = 1; k < 8; k++) {
                         struct pci_t pci = get_pci_data(i, j, k);
-                        if (pci.vendorID != 0xFFFF)
-                        {
+                        if (pci.vendorID != 0xFFFF) {
                             load_driver(pci, i, j, k);
                         }
                     }

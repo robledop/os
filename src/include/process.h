@@ -1,43 +1,38 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-#include "types.h"
 #include <stdbool.h>
 #include "config.h"
 #include "task.h"
+#include "types.h"
 
 #define PROCESS_FILE_TYPE_ELF 0
 #define PROCESS_FILE_TYPE_BINARY 1
 typedef unsigned char PROCESS_FILE_TYPE;
 
-struct command_argument
-{
+struct command_argument {
     char argument[512];
     struct command_argument *next;
-    char* current_directory;
+    char *current_directory;
 };
 
-struct process_allocation
-{
+struct process_allocation {
     void *ptr;
     size_t size;
 };
 
-struct process_arguments
-{
+struct process_arguments {
     int argc;
     char **argv;
 };
 
-struct process
-{
+struct process {
     uint16_t pid;
     char file_name[MAX_PATH_LENGTH];
     struct task *task;
     struct process_allocation allocations[MAX_PROGRAM_ALLOCATIONS];
     PROCESS_FILE_TYPE file_type;
-    union
-    {
+    union {
         void *pointer;
         struct elf_file *elf_file;
     };
@@ -45,16 +40,16 @@ struct process
     void *stack;
     uint32_t size;
 
-    struct keyboard_buffer
-    {
-        char buffer[KEYBOARD_BUFFER_SIZE];
+    struct keyboard_buffer {
+        uchar buffer[KEYBOARD_BUFFER_SIZE];
         int tail;
         int head;
 
     } keyboard;
 
     struct process_arguments arguments;
-    char* current_directory;
+    char *current_directory;
+    uint8_t console;
 };
 
 int process_load_switch(const char *file_name, struct process **process);

@@ -2,11 +2,14 @@
 #include <stdarg.h>
 #include "assert.h"
 #include "config.h"
+#include "console.h"
 #include "io.h"
 #include "memory.h"
 #include "string.h"
 
-#define VIDEO_MEMORY 0xB8000
+extern int active_console;
+extern Console consoles[NUM_CONSOLES];
+
 #define BYTES_PER_CHAR 2 // 1 byte for character, 1 byte for attribute (color)
 #define SCREEN_SIZE (VGA_WIDTH * VGA_HEIGHT * BYTES_PER_CHAR)
 #define ROW_SIZE (VGA_WIDTH * BYTES_PER_CHAR)
@@ -40,8 +43,38 @@ static void write_character(const uchar c, const uchar fcolor, const uchar bcolo
     ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
     ASSERT(fcolor != 0x00, "Foreground color is black");
 
+    // Left arrow key
+    if (c == 228) {
+        cursor_x -= 2;
+        update_cursor(cursor_y, cursor_x);
+        return;
+    }
+
+    // Right arrow key
+    if (c == 229) {
+        // cursor_x += 1;
+        update_cursor(cursor_y, cursor_x);
+        return;
+    }
+
+    // CTRL + F1
+    if (c == 232) {
+        // Switch to terminal 1
+        return;
+    }
+
+    // CTRL + F2
+    if (c == 233) {
+        // Switch to terminal 2
+        return;
+    }
+
+    // const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
+    // volatile uint16_t *where = (volatile uint16_t *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
+    // *where                   = c | (attrib << 8);
+
     const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
-    volatile uint16_t *where = (volatile uint16_t *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
+    volatile uint16_t *where = (volatile uint16_t *)consoles[active_console].framebuffer + (y * VGA_WIDTH + x);
     *where                   = c | (attrib << 8);
 }
 
@@ -55,7 +88,8 @@ uint16_t get_cursor_position(void) {
 }
 
 void scroll_screen() {
-    auto const video_memory = (uchar *)VIDEO_MEMORY;
+    // auto const video_memory = (uchar *)VIDEO_MEMORY;
+    auto const video_memory = (uchar *)consoles[active_console].framebuffer;
 
     // Move all rows up by one
     memmove(video_memory, video_memory + ROW_SIZE, SCREEN_SIZE - ROW_SIZE);

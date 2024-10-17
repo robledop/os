@@ -1,87 +1,73 @@
 #include "os.h"
 #include "string.h"
 
-struct command_argument *os_parse_command(const char *command, int max)
-{
-    struct command_argument *head = NULL;
+struct command_argument *os_parse_command(const char *command, int max) {
+    struct command_argument *head = nullptr;
     char scommand[1025];
-    if (max >= (int)sizeof(scommand))
-    {
-        return NULL;
+    if (max >= (int)sizeof(scommand)) {
+        return nullptr;
     }
 
     strncpy(scommand, command, sizeof(scommand));
-    char *token = strtok(scommand, " ");
+    const char *token = strtok(scommand, " ");
 
-    if (token == NULL)
-    {
+    if (token == NULL) {
         return head;
     }
 
     head = os_malloc(sizeof(struct command_argument));
-    if (head == NULL)
-    {
-        return NULL;
+    if (head == NULL) {
+        return nullptr;
     }
 
     strncpy(head->argument, token, sizeof(head->argument));
-    head->next = NULL;
+    head->next = nullptr;
 
     struct command_argument *current = head;
-    token = strtok(NULL, " ");
+    token                            = strtok(nullptr, " ");
 
-    while (token != NULL)
-    {
+    while (token != NULL) {
         struct command_argument *next = os_malloc(sizeof(struct command_argument));
-        if (next == NULL)
-        {
+        if (next == NULL) {
             break;
         }
 
         strncpy(next->argument, token, sizeof(next->argument));
-        next->next = NULL;
+        next->next    = nullptr;
         current->next = next;
-        current = next;
-        token = strtok(NULL, " ");
+        current       = next;
+        token         = strtok(nullptr, " ");
     }
 
     return head;
 }
 
-int os_getkey_blocking()
-{
+unsigned char os_getkey_blocking() {
     int key = 0;
-    while ((key = os_getkey()) == 0)
-    {
+    while ((key = os_getkey()) == 0) {
     }
 
     return key;
 }
 
-void os_terminal_readline(char *out, int max, bool output_while_typing)
-{
+void os_terminal_readline(unsigned char *out, int max, bool output_while_typing) {
     int i = 0;
-    for (; i < max - 1; i++)
-    {
-        int key = os_getkey_blocking();
-        if (key == '\n' || key == '\r')
-        {
+    for (; i < max - 1; i++) {
+        const unsigned char key = os_getkey_blocking();
+        if (key == '\n' || key == '\r') {
             break;
         }
 
-        if(key == '\b' && i <= 0)
-        {
+        if (key == '\b' && i <= 0) {
             i = -1;
             continue;
         }
 
-        if (output_while_typing)
-        {
+        if (output_while_typing) {
             os_putchar(key);
         }
 
-        if (key == '\b' && i > 0)
-        {
+        if (key == '\b' && i > 0) {
             i -= 2;
             continue;
         }
@@ -92,18 +78,15 @@ void os_terminal_readline(char *out, int max, bool output_while_typing)
     out[i] = 0x00;
 }
 
-int os_system_run(const char *command, const char *current_directory)
-{
+int os_system_run(const char *command, const char *current_directory) {
     char buffer[1024];
     strncpy(buffer, command, sizeof(buffer));
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
-    if (root_command_argument == NULL)
-    {
+    if (root_command_argument == NULL) {
         return -1;
     }
 
-    if (root_command_argument->current_directory == NULL)
-    {
+    if (root_command_argument->current_directory == NULL) {
         root_command_argument->current_directory = os_malloc(MAX_PATH_LENGTH);
     }
 

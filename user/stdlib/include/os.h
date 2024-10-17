@@ -1,19 +1,19 @@
 #ifndef OS_H
 #define OS_H
 
-#include "types.h"
 #include "stdio.h"
+#include "types.h"
 
 #define MAX_PATH_LENGTH 1024
 
 struct command_argument *os_parse_command(const char *command, int max);
-void os_terminal_readline(char *out, int max, bool output_while_typing);
-int os_getkey_blocking();
+void os_terminal_readline(unsigned char *out, int max, bool output_while_typing);
+unsigned char os_getkey_blocking();
 void os_print(const char *str);
-int os_getkey();
+unsigned char os_getkey();
 void *os_malloc(size_t size);
 void os_free(void *ptr);
-void os_putchar(char c);
+void os_putchar(unsigned char c);
 void os_putchar_color(char c, unsigned char forecolor, unsigned char backcolor);
 void os_process_get_arguments(struct process_arguments *args);
 int os_system(struct command_argument *args);

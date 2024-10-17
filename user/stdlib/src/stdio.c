@@ -66,9 +66,9 @@ int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd)
     return os_read(ptr, size, nmemb, fd);
 }
 
-int putchar(int c)
+int putchar(const unsigned char c)
 {
-    os_putchar((char)c);
+    os_putchar(c);
     return 0;
 }
 
