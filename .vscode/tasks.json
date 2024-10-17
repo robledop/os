@@ -1,15 +1,15 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Launch QEMU with GRUB",
-            "type": "shell",
-            "command": "make clean && make qemu_grub"
-        },
-        {
-            "label": "Launch QEMU without GRUB",
-            "type": "shell",
-            "command": "make clean && make qemu"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Launch QEMU with GRUB",
+      "type": "shell",
+      "command": "make clean && make qemu_grub"
+    },
+    {
+      "label": "Launch QEMU without GRUB",
+      "type": "shell",
+      "command": "make clean && make qemu"
+    }
+  ]
 }

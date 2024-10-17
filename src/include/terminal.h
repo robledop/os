@@ -14,8 +14,8 @@
 
 void print(const char *str);
 void terminal_clear();
-void terminal_write_char(char c, uint8_t forecolor, uint8_t backcolor);
-void kprintf(char *fmt, ...);
+void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor);
+void kprintf(const char *fmt, ...);
 
 void ksprintf(const char *str, int max);
 

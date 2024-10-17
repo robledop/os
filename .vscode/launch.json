@@ -1,131 +1,131 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "GRUB",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/rootfs/boot/myos.bin",
+      "cwd": "${workspaceRoot}",
+      "args": [],
+      // "sourceFileMap": {
+      //     "${workspaceRoot}": "${workspaceRoot}"
+      // },
+      "targetArchitecture": "x86",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerArgs": "-d ${workspaceRoot}/user/ls/src -d ${workspaceRoot}/user/sh/src -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/os/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86 -d ${workspaceRoot}/src/grub -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src/boot",
+      "customLaunchSetupCommands": [
         {
-            "name": "GRUB",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/rootfs/boot/myos.bin",
-            "cwd": "${workspaceRoot}",
-            "args": [],
-            // "sourceFileMap": {
-            //     "${workspaceRoot}": "${workspaceRoot}"
-            // },
-            "targetArchitecture": "x86",
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ${workspaceRoot}/user/ls/src -d ${workspaceRoot}/user/sh/src -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/os/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86 -d ${workspaceRoot}/src/grub -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src/boot",
-            "customLaunchSetupCommands": [
-                {
-                    "text": "target remote localhost:1234",
-                    "description": "Connect to QEMU remote debugger"
-                }
-            ],
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": false
-                },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/boot/myos.bin 0x200000",
-                    "description": "Add myos.bin symbols"
-                },
-                // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/echo 0x400000",
-                //     "description": "Add echo symbols"
-                // },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/sh 0x400000",
-                    "description": "Add sh symbols"
-                },
-                // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/ls 0x400000",
-                //     "description": "Add ls symbols"
-                // },
-                // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/cat 0x400000",
-                //     "description": "Add cat symbols"
-                // },
-                {
-                    "text": "break idt_exception_handler",
-                    "description": "Break on exception handler."
-                },
-                // {
-                //     "text": "break start.asm:10",
-                //     "description": "Break _start"
-                // },
-                {
-                    "text": "break panic",
-                    "description": "Break on panic."
-                }
-            ],
-            "preLaunchTask": "Launch QEMU with GRUB"
+          "text": "target remote localhost:1234",
+          "description": "Connect to QEMU remote debugger"
+        }
+      ],
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": false
         },
         {
-            "name": "No GRUB",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/bin/disk.img",
-            "cwd": "${workspaceRoot}",
-            "args": [],
-            // "sourceFileMap": {
-            //     "${workspaceRoot}": "${workspaceRoot}"
-            // },
-            "targetArchitecture": "x86",
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "miDebuggerArgs": "-d ${workspaceRoot}/user/ls/src -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86",
-            "customLaunchSetupCommands": [
-                {
-                    "text": "target remote localhost:1234",
-                    "description": "Connect to QEMU remote debugger"
-                }
-            ],
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": false
-                },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/build/kernelfull.o 0x200000",
-                    "description": "Add kernelfull.o symbols"
-                },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/build/stage2full.o 0x1000",
-                    "description": "Add stage2full.o symbols"
-                },
-                // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/echo 0x400000",
-                //     "description": "Add echo symbols"
-                // },
-                // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/sh 0x400000",
-                //     "description": "Add sh symbols"
-                // },
-                {
-                    "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/ls 0x400000",
-                    "description": "Add ls symbols"
-                },
-                // {
-                //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/cat 0x400000",
-                //     "description": "Add cat symbols"
-                // },
-                // {
-                //     "text": "break idt_exception_handler",
-                //     "description": "Break on exception handler."
-                // },
-                // {
-                //     "text": "break kernel_main",
-                //     "description": "Break on kernel_main."
-                // },
-                {
-                    "text": "break panic",
-                    "description": "Break on panic."
-                }
-            ],
-            "preLaunchTask": "Launch QEMU without GRUB"
+          "text": "add-symbol-file ${workspaceRoot}/rootfs/boot/myos.bin 0x200000",
+          "description": "Add myos.bin symbols"
+        },
+        // {
+        //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/echo 0x400000",
+        //     "description": "Add echo symbols"
+        // },
+        {
+          "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/sh 0x400000",
+          "description": "Add sh symbols"
+        },
+        // {
+        //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/ls 0x400000",
+        //     "description": "Add ls symbols"
+        // },
+        // {
+        //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/cat 0x400000",
+        //     "description": "Add cat symbols"
+        // },
+        {
+          "text": "break idt_exception_handler",
+          "description": "Break on exception handler."
+        },
+        // {
+        //     "text": "break start.asm:10",
+        //     "description": "Break _start"
+        // },
+        {
+          "text": "break panic",
+          "description": "Break on panic."
         }
-    ]
+      ],
+      "preLaunchTask": "Launch QEMU with GRUB"
+    },
+    {
+      "name": "No GRUB",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/bin/disk.img",
+      "cwd": "${workspaceRoot}",
+      "args": [],
+      // "sourceFileMap": {
+      //     "${workspaceRoot}": "${workspaceRoot}"
+      // },
+      "targetArchitecture": "x86",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "miDebuggerArgs": "-d ${workspaceRoot}/user/ls/src -d ${workspaceRoot}/src/task -d ${workspaceRoot}/src -d ${workspaceRoot}/src/kernel -d ${workspaceRoot}/src/memory/paging -d ${workspaceRoot}/src/disk -d ${workspaceRoot}/src/fs/fat -d ${workspaceRoot}/src/idt -d ${workspaceRoot}/src/include -d ${workspaceRoot}/user/stdlib/src -d ${workspaceRoot}/src/x86",
+      "customLaunchSetupCommands": [
+        {
+          "text": "target remote localhost:1234",
+          "description": "Connect to QEMU remote debugger"
+        }
+      ],
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": false
+        },
+        {
+          "text": "add-symbol-file ${workspaceRoot}/build/kernelfull.o 0x200000",
+          "description": "Add kernelfull.o symbols"
+        },
+        {
+          "text": "add-symbol-file ${workspaceRoot}/build/stage2full.o 0x1000",
+          "description": "Add stage2full.o symbols"
+        },
+        // {
+        //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/echo 0x400000",
+        //     "description": "Add echo symbols"
+        // },
+        // {
+        //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/sh 0x400000",
+        //     "description": "Add sh symbols"
+        // },
+        {
+          "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/ls 0x400000",
+          "description": "Add ls symbols"
+        },
+        // {
+        //     "text": "add-symbol-file ${workspaceRoot}/rootfs/bin/cat 0x400000",
+        //     "description": "Add cat symbols"
+        // },
+        // {
+        //     "text": "break idt_exception_handler",
+        //     "description": "Break on exception handler."
+        // },
+        // {
+        //     "text": "break kernel_main",
+        //     "description": "Break on kernel_main."
+        // },
+        {
+          "text": "break panic",
+          "description": "Break on panic."
+        }
+      ],
+      "preLaunchTask": "Launch QEMU without GRUB"
+    }
+  ]
 }

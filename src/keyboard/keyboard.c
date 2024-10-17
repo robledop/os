@@ -6,8 +6,8 @@
 #include "terminal.h"
 #include "assert.h"
 
-static struct keyboard *keyboard_list_head = NULL;
-static struct keyboard *keyboard_list_tail = NULL;
+static struct keyboard *keyboard_list_head = nullptr;
+static struct keyboard *keyboard_list_tail = nullptr;
 
 void keyboard_init()
 {
@@ -37,7 +37,7 @@ int keyboard_register(struct keyboard *kbd)
     return kbd->init();
 }
 
-static int keyboard_get_tail_index(struct process *process) { return process->keyboard.tail % KEYBOARD_BUFFER_SIZE; }
+static int keyboard_get_tail_index(const struct process *process) { return process->keyboard.tail % KEYBOARD_BUFFER_SIZE; }
 
 void keyboard_backspace(struct process *process)
 {

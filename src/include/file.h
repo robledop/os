@@ -2,9 +2,7 @@
 #define FILE_H
 #include "path_parser.h"
 #include "types.h"
-// #include <stdbool.h>
 
-/////////////////////
 typedef unsigned int FS_ITEM_TYPE;
 #define FS_ITEM_TYPE_DIRECTORY 0
 #define FS_ITEM_TYPE_FILE 1
@@ -18,7 +16,6 @@ struct fs_item
     };
     FS_ITEM_TYPE type;
 };
-////////////////////
 
 typedef unsigned int FILE_SEEK_MODE;
 enum
@@ -50,18 +47,17 @@ struct file_stat
 };
 
 struct disk;
-typedef void *(*FS_OPEN_FUNCTION)(struct disk *disk, struct path_part *path, FILE_MODE mode);
-typedef int (*FS_READ_FUNCTION)(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out);
+typedef void *(*FS_OPEN_FUNCTION)(struct disk *disk, const struct path_part *path, const FILE_MODE mode);
+typedef int (*FS_READ_FUNCTION)(struct disk *disk, const void *private, uint32_t size, uint32_t nmemb, char *out);
 typedef int (*FS_SEEK_FUNCTION)(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
 typedef int (*FS_CLOSE_FUNCTION)(void *private);
 typedef int (*FS_STAT_FUNCTION)(struct disk *disk, void *private, struct file_stat *stat);
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 
-/////////////////////////////
 struct directory_entry;
 struct file_directory;
 
-typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(struct disk *disk, struct file_directory *directory);
+typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct file_directory *directory);
 typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(struct disk *disk, const char *path, struct file_directory *directory);
 typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
@@ -94,7 +90,6 @@ struct file_directory
     void *entries;
     DIRECTORY_GET_ENTRY get_entry;
 };
-////////////////////////////
 
 struct file_system
 {
@@ -116,7 +111,7 @@ struct file_descriptor
 {
     int index;
     struct file_system *fs;
-    // Private data for internal file descriptor use
+    // File descriptor private data
     void *fs_data;
     struct disk *disk;
 };
@@ -127,7 +122,7 @@ int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 int fseek(int fd, int offset, FILE_SEEK_MODE whence);
 int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
-void fs_insert_file_system(struct file_system *fs);
+void fs_insert_file_system(struct file_system *filesystem);
 struct file_system *fs_resolve(struct disk *disk);
 int fs_open_dir(const char *name, struct file_directory *directory);
 

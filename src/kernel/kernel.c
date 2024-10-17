@@ -1,33 +1,24 @@
-#include <kernel.h>
 #include <disk.h>
-#include <config.h>
 #include <file.h>
 #include <gdt.h>
 #include <idt.h>
 #include <io.h>
-#include <keyboard.h>
+#include <kernel.h>
 #include <kernel_heap.h>
-#include <memory.h>
+#include <keyboard.h>
 #include <paging.h>
 #include <process.h>
 #include <serial.h>
-#include <status.h>
-#include <stream.h>
 #include <string.h>
+#include <syscall.h>
 #include <task.h>
 #include <terminal.h>
-#include <tss.h>
-#include <syscall.h>
-#include <ssp.h>
-#include <pci.h>
-#include <io.h>
-#include "my_fat.h"
 
 // Divide by zero error
 extern void cause_problem();
 void paging_demo();
 void multitasking_demo();
-void display_grub_info(multiboot_info_t *mbd, unsigned int magic);
+void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
 
 #if UINT32_MAX == UINTPTR_MAX
 #define STACK_CHK_GUARD 0xe2dee396
@@ -35,36 +26,33 @@ void display_grub_info(multiboot_info_t *mbd, unsigned int magic);
 #define STACK_CHK_GUARD 0x595e9fbd94fda766
 #endif
 
-uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
+uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
 
 extern struct page_directory *kernel_page_directory;
 
-__attribute__((noreturn)) void panic(const char *msg)
-{
+__attribute__((noreturn)) void panic(const char *msg) {
     kprintf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
 
-    while (1)
-    {
+    while (1) {
         asm volatile("hlt");
     }
 
     __builtin_unreachable();
 }
 
-void kernel_page()
-{
+void kernel_page() {
     kernel_registers();
     paging_switch_directory(kernel_page_directory);
 }
 
-void kernel_main(multiboot_info_t *mbd, unsigned int magic)
-{
-    __stack_chk_guard = STACK_CHK_GUARD;
+void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
+    __stack_chk_guard  = STACK_CHK_GUARD;
+    uint32_t stack_ptr = 0;
+    asm("mov %%esp, %0" : "=r"(stack_ptr));
+
     disable_interrupts();
 
     init_serial();
-    uint32_t stack_ptr = 0;
-    asm("mov %%esp, %0" : "=r"(stack_ptr));
     terminal_clear();
     kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
     char *cpu = cpu_string();
@@ -92,42 +80,37 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     panic("Kernel finished");
 }
 
-void start_shell()
-{
+void start_shell() {
     dbgprintf("Loading shell\n");
-    struct process *process = NULL;
-    int res = process_load_switch("0:/bin/sh", &process);
-    if (res < 0)
-    {
+    struct process *process = nullptr;
+    int res                 = process_load_switch("0:/bin/sh", &process);
+    if (res < 0) {
         panic("Failed to load shell");
     }
 
     res = process_set_current_directory(process, "0:/");
-    if (res < 0)
-    {
+    if (res < 0) {
         panic("Failed to set current directory");
     }
 
     task_run_first_task();
 }
 
-void multitasking_demo()
-{
-    struct process *process = NULL;
+void multitasking_demo() {
+    struct process *process = nullptr;
     process_load_switch("0:/cblank.elf", &process);
     struct command_argument argument;
     strncpy(argument.argument, "Program 0", sizeof(argument.argument));
-    argument.next = NULL;
+    argument.next = nullptr;
     process_inject_arguments(process, &argument);
 
     process_load_switch("0:/cblank.elf", &process);
     strncpy(argument.argument, "Program 1", sizeof(argument.argument));
-    argument.next = NULL;
+    argument.next = nullptr;
     process_inject_arguments(process, &argument);
 }
 
-void paging_demo()
-{
+void paging_demo() {
     char *ptr1 = kzalloc(4096);
 
     ptr1[0] = 'C';
@@ -149,31 +132,24 @@ void paging_demo()
     dbgprintf("ptr2: %s\n", ptr2);
 }
 
-void display_grub_info(multiboot_info_t *mbd, unsigned int magic)
-{
+void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic) {
 #ifdef GRUB
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
-    {
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
         panic("invalid magic number!");
     }
 
     /* Check bit 6 to see if we have a valid memory map */
-    if (!(mbd->flags >> 6 & 0x1))
-    {
+    if (!(mbd->flags >> 6 & 0x1)) {
         panic("invalid memory map given by GRUB bootloader");
     }
 
     kprintf("Bootloader: %s\n", mbd->boot_loader_name);
 
     /* Loop through the memory map and display the values */
-    unsigned int i;
-    for (i = 0; i < mbd->mmap_length;
-         i += sizeof(multiboot_memory_map_t))
-    {
-        multiboot_memory_map_t *mmmt =
-            (multiboot_memory_map_t *)(mbd->mmap_addr + i);
+    for (unsigned int i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
+        const multiboot_memory_map_t *mmmt = (multiboot_memory_map_t *)(mbd->mmap_addr + i);
 
-        uint32_t type = mmmt->type;
+        const uint32_t type = mmmt->type;
         // kprintf("Start Addr: %x | Length: %x | Size: %x ",
         //         mmmt->addr, mmmt->len, mmmt->size);
         // kprintf("| Type %d\n", type);
@@ -181,15 +157,13 @@ void display_grub_info(multiboot_info_t *mbd, unsigned int magic)
         // dbgprintf("Start Addr: %x | Length: %x | Size: %x | Type: %x\n",
         //           mmmt->addr, mmmt->len, mmmt->size, type);
 
-        if (type == MULTIBOOT_MEMORY_AVAILABLE)
-        {
-            if (mmmt->len > 0x100000)
-            {
+        if (type == MULTIBOOT_MEMORY_AVAILABLE) {
+            if (mmmt->len > 0x100000) {
                 kprintf("Available memory: %d MiB\n", mmmt->len / 1024 / 1024);
             }
             /*
              * Do something with this memory block!
-             * BE WARNED that some of memory shown as availiable is actually
+             * BE WARNED that some of the memory shown as available is actually
              * actively being used by the kernel! You'll need to take that
              * into account before writing to memory!
              */

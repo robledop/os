@@ -80,13 +80,13 @@ int printf(const char *fmt, ...)
     va_list args;
 
     int x_offset = 0;
-    char str[MAX_FMT_STR];
     int num = 0;
 
     va_start(args, fmt);
 
     while (*fmt != '\0')
     {
+        char str[MAX_FMT_STR];
         switch (*fmt)
         {
         case '%':
@@ -111,13 +111,13 @@ int printf(const char *fmt, ...)
                 break;
 
             case 's':
-                char *str_arg = va_arg(args, char *);
+                const char *str_arg = va_arg(args, char *);
                 os_print(str_arg);
                 x_offset += strlen(str_arg);
                 break;
 
             case 'c':
-                char char_arg = (char)va_arg(args, int);
+                const char char_arg = (char)va_arg(args, int);
                 putchar_color(char_arg, forecolor, backcolor);
                 x_offset++;
                 break;

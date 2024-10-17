@@ -1,11 +1,10 @@
 #include "terminal.h"
+#include <stdarg.h>
+#include "assert.h"
 #include "config.h"
 #include "io.h"
 #include "memory.h"
 #include "string.h"
-#include <stdarg.h>
-#include "types.h"
-#include "assert.h"
 
 #define VIDEO_MEMORY 0xB8000
 #define BYTES_PER_CHAR 2 // 1 byte for character, 1 byte for attribute (color)
@@ -19,8 +18,7 @@ uint8_t backcolor = 0x00; // Default cyan
 static int cursor_y;
 static int cursor_x;
 
-void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
-{
+void enable_cursor(const uint8_t cursor_start, const uint8_t cursor_end) {
     outb(0x3D4, 0x0A);
     outb(0x3D5, (inb(0x3D5) & 0xC0) | cursor_start);
 
@@ -28,30 +26,26 @@ void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
     outb(0x3D5, (inb(0x3D5) & 0xE0) | cursor_end);
 }
 
-void update_cursor(int row, int col)
-{
-    unsigned short position = (row * VGA_WIDTH) + col;
+void update_cursor(const int row, const int col) {
+    const uint16_t position = (row * VGA_WIDTH) + col;
 
     outb(0x3D4, 0x0F);
-    outb(0x3D5, (unsigned char)(position & 0xFF));
+    outb(0x3D5, (position & 0xFF));
     outb(0x3D4, 0x0E);
-    outb(0x3D5, (unsigned char)((position >> 8) & 0xFF));
+    outb(0x3D5, (position >> 8) & 0xFF);
 }
 
-void write_character(unsigned char c, unsigned char fcolor, unsigned char bcolor, int x, int y)
-{
+static void write_character(const uchar c, const uchar fcolor, const uchar bcolor, const int x, const int y) {
     ASSERT(x < VGA_WIDTH, "X is out of bounds");
     ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
     ASSERT(fcolor != 0x00, "Foreground color is black");
 
-    unsigned short int attrib = (bcolor << 4) | (fcolor & 0x0F);
-    volatile unsigned short int *where;
-    where = (volatile unsigned short int *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
-    *where = c | (attrib << 8);
+    const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
+    volatile uint16_t *where = (volatile uint16_t *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
+    *where                   = c | (attrib << 8);
 }
 
-uint16_t get_cursor_position(void)
-{
+uint16_t get_cursor_position(void) {
     uint16_t pos = 0;
     outb(0x3D4, 0x0F);
     pos |= inb(0x3D5);
@@ -60,44 +54,34 @@ uint16_t get_cursor_position(void)
     return pos;
 }
 
-void scroll_screen()
-{
-    unsigned char *video_memory = (unsigned char *)VIDEO_MEMORY;
+void scroll_screen() {
+    auto const video_memory = (uchar *)VIDEO_MEMORY;
 
     // Move all rows up by one
-    memmove(
-        video_memory,
-        video_memory + ROW_SIZE,
-        SCREEN_SIZE - ROW_SIZE);
+    memmove(video_memory, video_memory + ROW_SIZE, SCREEN_SIZE - ROW_SIZE);
 
     // Clear the last line (fill with spaces and default attribute)
-    for (size_t i = SCREEN_SIZE - ROW_SIZE; i < SCREEN_SIZE; i += BYTES_PER_CHAR)
-    {
-        video_memory[i] = ' ';
+    for (size_t i = SCREEN_SIZE - ROW_SIZE; i < SCREEN_SIZE; i += BYTES_PER_CHAR) {
+        video_memory[i]     = ' ';
         video_memory[i + 1] = DEFAULT_ATTRIBUTE;
     }
 
-    if (cursor_y > 0)
-    {
+    if (cursor_y > 0) {
         cursor_y--;
     }
     update_cursor(cursor_y, cursor_x);
 }
 
-void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
-{
+void terminal_write_char(const char c, const uint8_t fcolor, const uint8_t bcolor) {
     forecolor = fcolor;
     backcolor = bcolor;
 
-    switch (c)
-    {
+    switch (c) {
     case 0x08: // Backspace
-        if (cursor_x > 0)
-        {
+        if (cursor_x > 0) {
             cursor_x--;
             write_character(' ', forecolor, backcolor, cursor_x, cursor_y);
-            if (cursor_x == 0 && cursor_y > 0)
-            {
+            if (cursor_x == 0 && cursor_y > 0) {
                 cursor_x = VGA_WIDTH - 1;
                 cursor_y--;
             }
@@ -110,8 +94,7 @@ void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
         break;
     case '\t': // Tab
         cursor_x += 4;
-        if (cursor_x >= VGA_WIDTH)
-        {
+        if (cursor_x >= VGA_WIDTH) {
             cursor_x = 0;
             cursor_y++;
         }
@@ -119,16 +102,14 @@ void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
     default:
         write_character(c, forecolor, backcolor, cursor_x, cursor_y);
         cursor_x++;
-        if (cursor_x >= VGA_WIDTH)
-        {
+        if (cursor_x >= VGA_WIDTH) {
             cursor_x = 0;
             cursor_y++;
         }
     }
 
     // Scroll if needed
-    if (cursor_y >= VGA_HEIGHT)
-    {
+    if (cursor_y >= VGA_HEIGHT) {
         scroll_screen();
         cursor_y = VGA_HEIGHT - 1;
     }
@@ -136,51 +117,42 @@ void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor)
     update_cursor(cursor_y, cursor_x);
 }
 
-void print(const char *str)
-{
-    if (forecolor == 0x00 && backcolor == 0x00)
-    {
+void print(const char *str) {
+    if (forecolor == 0x00 && backcolor == 0x00) {
         forecolor = 0x0F;
         backcolor = 0x00;
     }
 
-    size_t len = strlen(str);
-    for (size_t i = 0; i < len; i++)
-    {
+    const size_t len = strlen(str);
+    for (size_t i = 0; i < len; i++) {
         terminal_write_char(str[i], forecolor, backcolor);
     }
 }
 
-void ksprintf(const char *str, int max)
-{
-    size_t len = strnlen(str, max);
-    for (size_t i = 0; i < len; i++)
-    {
+void ksprintf(const char *str, int max) {
+    const size_t len = strnlen(str, max);
+    for (size_t i = 0; i < len; i++) {
         terminal_write_char(str[i], forecolor, backcolor);
     }
 }
 
 // BUG: There seems to be a bug that prevents more than 3 arguments from being printed
-void kprintf(char *fmt, ...)
-{
+void kprintf(const char *fmt, ...) {
     ASSERT(forecolor != 0x00, "Foreground color is black");
 
     va_list args;
 
-    int x_offset = 0;
-    char str[MAX_FMT_STR];
-    int num = 0;
+    size_t x_offset = 0;
+    int num         = 0;
 
     va_start(args, fmt);
 
-    while (*fmt != '\0')
-    {
-        switch (*fmt)
-        {
+    while (*fmt != '\0') {
+        char str[MAX_FMT_STR];
+        switch (*fmt) {
         case '%':
             memset(str, 0, MAX_FMT_STR);
-            switch (*(fmt + 1))
-            {
+            switch (*(fmt + 1)) {
             case 'd':
                 num = va_arg(args, int);
                 itoa(num, str);
@@ -197,13 +169,13 @@ void kprintf(char *fmt, ...)
                 break;
 
             case 's':
-                char *str_arg = va_arg(args, char *);
+                const char *str_arg = va_arg(args, char *);
                 print(str_arg);
                 x_offset += strlen(str_arg);
                 break;
 
             case 'c':
-                char char_arg = (char)va_arg(args, int);
+                const char char_arg = (char)va_arg(args, int);
                 terminal_write_char(char_arg, forecolor, backcolor);
                 x_offset++;
                 break;
@@ -216,30 +188,24 @@ void kprintf(char *fmt, ...)
         case '\033':
             // Handle ANSI escape sequences
             fmt++;
-            if (*fmt != '[')
-            {
+            if (*fmt != '[') {
                 break;
             }
             fmt++;
             int param1 = 0;
-            while (*fmt >= '0' && *fmt <= '9')
-            {
+            while (*fmt >= '0' && *fmt <= '9') {
                 param1 = param1 * 10 + (*fmt - '0');
                 fmt++;
             }
-            if (*fmt == ';')
-            {
+            if (*fmt == ';') {
                 fmt++;
                 int param2 = 0;
-                while (*fmt >= '0' && *fmt <= '9')
-                {
+                while (*fmt >= '0' && *fmt <= '9') {
                     param2 = param2 * 10 + (*fmt - '0');
                     fmt++;
                 }
-                if (*fmt == 'm')
-                {
-                    switch (param1)
-                    {
+                if (*fmt == 'm') {
+                    switch (param1) {
                     case 30:
                         forecolor = 0x00;
                         break; // Black
@@ -267,8 +233,7 @@ void kprintf(char *fmt, ...)
                     default:
                         break;
                     }
-                    switch (param2)
-                    {
+                    switch (param2) {
                     case 40:
                         backcolor = 0x00;
                         break; // Black
@@ -299,11 +264,8 @@ void kprintf(char *fmt, ...)
                     // Apply the colors to the next characters
                     terminal_write_char(' ', forecolor, backcolor);
                 }
-            }
-            else if (*fmt == 'm')
-            {
-                switch (param1)
-                {
+            } else if (*fmt == 'm') {
+                switch (param1) {
                 case 30:
                     forecolor = 0x00;
                     break; // Black
@@ -343,14 +305,11 @@ void kprintf(char *fmt, ...)
     va_end(args);
 }
 
-void terminal_clear()
-{
+void terminal_clear() {
     cursor_x = 0;
     cursor_y = 0;
-    for (int y = 0; y < VGA_HEIGHT; y++)
-    {
-        for (int x = 0; x < VGA_WIDTH; x++)
-        {
+    for (int y = 0; y < VGA_HEIGHT; y++) {
+        for (int x = 0; x < VGA_WIDTH; x++) {
             write_character(' ', forecolor, backcolor, x, y);
         }
     }

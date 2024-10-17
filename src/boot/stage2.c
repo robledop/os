@@ -1,4 +1,5 @@
 #include "config.h"
+
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;
 typedef unsigned int uint32_t;
@@ -8,8 +9,7 @@ uint16_t inw(uint16_t p);
 void outb(uint16_t portid, uint8_t value);
 int ata_read_sector(int lba, int total, void *buffer);
 
-void load_kernel()
-{
+void load_kernel() {
     // This will read from sector 2 up to 512
     // They need to be marked as reserved in the boot sector (boot.asm)
     // and the kernel needs to be small enough to fit there
@@ -31,32 +31,28 @@ void load_kernel()
     ata_read_sector(258, 254, (void *)(KERNEL_LOAD_ADDRESS + 512 * 256));
 
     // Starts running kernel.asm
-    void (*kernel_asm)() = (void (*)())KERNEL_LOAD_ADDRESS;
+    auto const kernel_asm = (void (*)())KERNEL_LOAD_ADDRESS;
     kernel_asm();
 }
 
-int ata_read_sector(int lba, int total, void *buffer)
-{
+int ata_read_sector(const int lba, const int total, void *buffer) {
     outb(0x1F6, (lba >> 24) | 0xE0);
     outb(0x1F2, total);
-    outb(0x1F3, (unsigned char)(lba & 0xFF));
-    outb(0x1F4, (unsigned char)(lba >> 8));
-    outb(0x1F5, (unsigned char)(lba >> 16));
+    outb(0x1F3, (lba & 0xFF));
+    outb(0x1F4, (lba >> 8));
+    outb(0x1F5, (lba >> 16));
     outb(0x1F7, 0x20);
 
-    unsigned short *ptr = (unsigned short *)buffer;
-    for (int b = 0; b < total; b++)
-    {
-        char status = inb(0x1F7);
+    auto ptr = (unsigned short *)buffer;
+    for (int b = 0; b < total; b++) {
+        uint8_t status = inb(0x1F7);
 
-        while ((status & 0x08) == 0)
-        {
+        while ((status & 0x08) == 0) {
             status = inb(0x1F7);
         }
 
         // Read data
-        for (int i = 0; i < 256; i++)
-        {
+        for (int i = 0; i < 256; i++) {
             *ptr = inw(0x1F0);
             ptr++;
         }
@@ -65,21 +61,16 @@ int ata_read_sector(int lba, int total, void *buffer)
     return 0;
 }
 
-uint8_t inb(uint16_t p)
-{
+uint8_t inb(uint16_t p) {
     uint8_t r;
     asm volatile("inb %%dx, %%al" : "=a"(r) : "d"(p));
     return r;
 }
 
-uint16_t inw(uint16_t p)
-{
+uint16_t inw(uint16_t p) {
     uint16_t r;
     asm volatile("inw %%dx, %%ax" : "=a"(r) : "d"(p));
     return r;
 }
 
-void outb(uint16_t portid, uint8_t value)
-{
-    asm volatile("outb %%al, %%dx" ::"d"(portid), "a"(value));
-}
+void outb(uint16_t portid, uint8_t value) { asm volatile("outb %%al, %%dx" ::"d"(portid), "a"(value)); }

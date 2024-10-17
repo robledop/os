@@ -31,17 +31,17 @@ void disk_init()
     disk.fs = fs_resolve(&disk);
 }
 
-struct disk *disk_get(int index)
+struct disk *disk_get(const int index)
 {
     if (index != 0)
     {
-        return 0;
+        return nullptr;
     }
 
     return &disk;
 }
 
-int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffer)
+int disk_read_block(const struct disk *idisk, const unsigned int lba, const int total, void *buffer)
 {
     dbgprintf("Reading block from disk %d, lba: %d, total: %d\n", idisk->id, lba, total);
     if (idisk != &disk)
@@ -53,7 +53,7 @@ int disk_read_block(struct disk *idisk, unsigned int lba, int total, void *buffe
     return ata_read_sector(lba, total, buffer);
 }
 
-int disk_read_sector(uint32_t sector, uint8_t *buffer)
+int disk_read_sector(const uint32_t sector, uint8_t *buffer)
 {
     dbgprintf("Reading from disk %d\n", sector);
     return disk_read_block(&disk, sector, 1, buffer);
