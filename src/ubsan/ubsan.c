@@ -19,7 +19,7 @@
 
 #include "types.h"
 #include "kernel.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 #define SCRAM_UNDEFINED_BEHAVIOR 3
 struct scram_undefined_behavior
 {

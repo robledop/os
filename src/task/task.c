@@ -7,59 +7,51 @@
 #include "serial.h"
 #include "status.h"
 #include "string.h"
-#include "terminal.h"
 
-struct task *current_task = 0;
-struct task *task_tail = 0;
-struct task *task_head = 0;
+struct task *current_task = nullptr;
+struct task *task_tail    = nullptr;
+struct task *task_head    = nullptr;
 int task_init(struct task *task, struct process *process);
 
-struct task *task_current()
-{
+struct task *task_current() {
     return current_task;
 }
 
-struct task *task_get_next()
-{
-    if (!current_task && !task_head)
-    {
+struct task *task_get_next() {
+    if (!current_task && !task_head) {
         panic("No current task");
     }
 
-    if (!current_task->next)
-    {
-        // kprintf(KWHT "Wrapping around to the first task\n");
+    if (!current_task) {
+        return task_head;
+    }
+
+    if (!current_task->next) {
         return task_head;
     }
 
     return current_task->next;
 }
 
-static void task_list_remove(struct task *task)
-{
-    if (task->prev)
-    {
+static void task_list_remove(struct task *task) {
+    if (task->prev) {
         task->prev->next = task->next;
     }
 
-    if (task == task_head)
-    {
+    if (task == task_head) {
         task_head = task->next;
     }
 
-    if (task == task_tail)
-    {
+    if (task == task_tail) {
         task_tail = task->prev;
     }
 
-    if (task == current_task)
-    {
+    if (task == current_task) {
         current_task = task_get_next();
     }
 }
 
-int task_free(struct task *task)
-{
+int task_free(struct task *task) {
     paging_free_directory(task->page_directory);
     task_list_remove(task);
 
@@ -68,43 +60,36 @@ int task_free(struct task *task)
     return ALL_OK;
 }
 
-struct task *task_create(struct process *process)
-{
+struct task *task_create(struct process *process) {
     dbgprintf("Creating task for process %x\n", process);
 
     int res = 0;
 
     struct task *task = (struct task *)kmalloc(sizeof(struct task));
-    if (!task)
-    {
+    if (!task) {
         dbgprintf("Failed to allocate memory for task\n");
         res = -ENOMEM;
         goto out;
     }
 
     res = task_init(task, process);
-    if (res != ALL_OK)
-    {
+    if (res != ALL_OK) {
         dbgprintf("Failed to initialize task\n");
         goto out;
     }
 
-    if (!task_head)
-    {
-        task_head = task;
-        task_tail = task;
+    if (!task_head) {
+        task_head    = task;
+        task_tail    = task;
         current_task = task;
-    }
-    else
-    {
+    } else {
         task_tail->next = task;
-        task->prev = task_tail;
-        task_tail = task;
+        task->prev      = task_tail;
+        task_tail       = task;
     }
 
 out:
-    if (ISERR(res))
-    {
+    if (ISERR(res)) {
         task_free(task);
         return ERROR(res);
     }
@@ -112,8 +97,7 @@ out:
     return task;
 }
 
-int task_switch(struct task *task)
-{
+int task_switch(struct task *task) {
     // dbgprintf("Switching to task %x from process %d\n", task, task->process->pid);
     // kprintf("Switching to task %x from process %d\n", task, task->process->pid);
 
@@ -122,8 +106,7 @@ int task_switch(struct task *task)
     return ALL_OK;
 }
 
-void task_save_state(struct task *task, struct interrupt_frame *frame)
-{
+void task_save_state(struct task *task, struct interrupt_frame *frame) {
     task->registers.edi = frame->edi;
     task->registers.esi = frame->esi;
     task->registers.ebp = frame->ebp;
@@ -132,25 +115,22 @@ void task_save_state(struct task *task, struct interrupt_frame *frame)
     task->registers.ecx = frame->ecx;
     task->registers.eax = frame->eax;
 
-    task->registers.ip = frame->ip;
-    task->registers.cs = frame->cs;
+    task->registers.ip    = frame->ip;
+    task->registers.cs    = frame->cs;
     task->registers.flags = frame->flags;
-    task->registers.esp = frame->esp;
-    task->registers.ss = frame->ss;
+    task->registers.esp   = frame->esp;
+    task->registers.ss    = frame->ss;
 }
 
-int copy_string_from_task(struct task *task, void *virtual, void *physical, int max)
-{
-    if (max >= PAGING_PAGE_SIZE)
-    {
+int copy_string_from_task(struct task *task, void *virtual, void *physical, int max) {
+    if (max >= PAGING_PAGE_SIZE) {
         dbgprintf("String too long\n");
         return -EINVARG;
     }
 
-    int res = 0;
+    int res   = 0;
     char *tmp = kzalloc(max);
-    if (!tmp)
-    {
+    if (!tmp) {
         dbgprintf("Failed to allocate memory for string\n");
         res = -ENOMEM;
         goto out;
@@ -164,8 +144,7 @@ int copy_string_from_task(struct task *task, void *virtual, void *physical, int 
     strncpy(tmp, virtual, max);
     kernel_page();
     res = paging_set(task->page_directory, tmp, old_entry);
-    if (res < 0)
-    {
+    if (res < 0) {
         dbgprintf("Failed to set page\n");
         res = -EIO;
         goto out_free;
@@ -179,37 +158,31 @@ out:
     return res;
 }
 
-void task_current_save_state(struct interrupt_frame *frame)
-{
+void task_current_save_state(struct interrupt_frame *frame) {
     struct task *task = task_current();
-    if (!task)
-    {
+    if (!task) {
         panic("No current task");
     }
 
     task_save_state(task, frame);
 }
 
-int task_page()
-{
+int task_page() {
     user_registers();
     task_switch(current_task);
 
     return ALL_OK;
 }
 
-int task_page_task(struct task *task)
-{
+int task_page_task(struct task *task) {
     user_registers();
     paging_switch_directory(task->page_directory);
 
     return ALL_OK;
 }
 
-void task_run_first_task()
-{
-    if (!current_task)
-    {
+void task_run_first_task() {
+    if (!current_task) {
         panic("No tasks to run");
     }
 
@@ -219,19 +192,16 @@ void task_run_first_task()
     task_return(&task_head->registers);
 }
 
-int task_init(struct task *task, struct process *process)
-{
+int task_init(struct task *task, struct process *process) {
     memset(task, 0, sizeof(struct task));
     task->page_directory =
         paging_create_directory(PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
-    if (!task->page_directory)
-    {
+    if (!task->page_directory) {
         dbgprintf("Failed to create page directory for task %x\n", &task);
         return -ENOMEM;
     }
 
-    switch (process->file_type)
-    {
+    switch (process->file_type) {
     case PROCESS_FILE_TYPE_BINARY:
         task->registers.ip = PROGRAM_VIRTUAL_ADDRESS;
         break;
@@ -243,8 +213,8 @@ int task_init(struct task *task, struct process *process)
         break;
     }
 
-    task->registers.ss = USER_DATA_SELECTOR;
-    task->registers.cs = USER_CODE_SELECTOR;
+    task->registers.ss  = USER_DATA_SELECTOR;
+    task->registers.cs  = USER_CODE_SELECTOR;
     task->registers.esp = PROGRAM_VIRTUAL_STACK_ADDRESS_START;
 
     task->process = process;
@@ -256,9 +226,8 @@ int task_init(struct task *task, struct process *process)
     return ALL_OK;
 }
 
-void *task_get_stack_item(struct task *task, int index)
-{
-    void *result = 0;
+void *task_get_stack_item(struct task *task, int index) {
+    void *result            = 0;
     uint32_t *stack_pointer = (uint32_t *)task->registers.esp;
     task_page_task(task);
 
@@ -269,16 +238,13 @@ void *task_get_stack_item(struct task *task, int index)
     return result;
 }
 
-void *task_virtual_to_physical_address(struct task *task, void *virtual_address)
-{
+void *task_virtual_to_physical_address(struct task *task, void *virtual_address) {
     return paging_get_physical_address(task->page_directory, virtual_address);
 }
 
-void task_next()
-{
+void task_next() {
     struct task *next = task_get_next();
-    if (!next)
-    {
+    if (!next) {
         panic("No next task");
     }
 

@@ -2,7 +2,7 @@
 #define SERIAL_H
 
 #include "types.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 
 #define DEBUG_SERIAL
 #define DEBUG_WARNINGS

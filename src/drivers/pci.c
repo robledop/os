@@ -1,6 +1,6 @@
 #include "pci.h"
 #include "io.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 
 // https://wiki.osdev.org/PCI
 

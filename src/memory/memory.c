@@ -1,6 +1,6 @@
 #include "memory.h"
 #include "serial.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 
 void *memset(void *ptr, int value, size_t size)
 {

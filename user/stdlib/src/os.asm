@@ -1,6 +1,5 @@
 [BITS 32]
 
-; TODO: Is section .asm really needed?
 section .asm
 
 ; void os_exit();

@@ -1,6 +1,6 @@
 #include "io.h"
 #include <cpuid.h>
-#include "terminal.h"
+#include "vga_buffer.h"
 
 // Vendor strings from CPUs.
 #define CPUID_VENDOR_AMD "AuthenticAMD"

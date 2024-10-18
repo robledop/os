@@ -110,14 +110,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 .PHONY: grub
 grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	grub-file --is-x86-multiboot ./rootfs/boot/myos.bin
-	rm -rf ./disk.img
-	dd if=/dev/zero of=./disk.img bs=512 count=65536
-	mkfs.vfat -c -F 16 ./disk.img
-	# dd if=./bin/boot.bin of=./disk.img bs=512 count=1 seek=0 conv=notrunc
-	sudo mount -t vfat ./disk.img /mnt/d
-	sudo grub-install --root-directory=/mnt/d --force --no-floppy --modules="normal part_msdos multiboot" /dev/loop4
-	sudo cp -r ./rootfs/. /mnt/d/
-	sudo umount -q /mnt/d
+	./scripts/create-grub-image.sh
 	# VBoxManage convertdd ./disk.img ./disk.vdi
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))

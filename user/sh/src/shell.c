@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 
     while (1) {
         char current_directory[MAX_PATH_LENGTH];
-        char *current_dir = get_current_directory();
+        const char *current_dir = get_current_directory();
         strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
         printf(KGRN "%s> " KWHT, current_directory);
 
@@ -36,7 +36,11 @@ int main(int argc, char **argv) {
         }
 
         if (istrncmp((char *)buffer, "dir", 3) == 0) {
-            os_system_run("ls", current_directory);
+            const int pid = os_create_process("ls", current_directory);
+            if (pid < 0) {
+                printf("\nError: %d", pid);
+                return pid;
+            }
             continue;
         }
 
@@ -61,7 +65,7 @@ int main(int argc, char **argv) {
                 if (str_ends_with(new_dir, "/")) {
                     set_current_directory((char *)buffer + 3);
                 } else {
-                    char *new_path = strcat(new_dir, "/");
+                    const char *new_path = strcat(new_dir, "/");
                     set_current_directory(new_path);
                 }
             } else if (strncmp(new_dir, "/", 1) == 0) {
@@ -73,7 +77,7 @@ int main(int argc, char **argv) {
 
                 set_current_directory(strcat(root, new_dir));
             } else if (strncmp(new_dir, "..", 2) == 0) {
-                int len = strlen(current_directory);
+                const int len = strlen(current_directory);
                 if (len == 3) {
                     printf("\n");
                     continue;
@@ -99,7 +103,7 @@ int main(int argc, char **argv) {
                 }
 
                 if (str_ends_with(new_dir, "/")) {
-                    char *new_path = strcat(current_directory, new_dir);
+                    const char *new_path = strcat(current_directory, new_dir);
                     set_current_directory(new_path);
                 } else {
                     char *new_path = strcat(current_directory, new_dir);
@@ -111,9 +115,10 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        int res = os_system_run((char *)buffer, current_directory);
-        if (res < 0) {
-            printf("\nError: %d", res);
+        const int pid = os_create_process((char *)buffer, current_directory);
+        if (pid < 0) {
+            printf("\nError: %d", pid);
+            return pid;
         }
 
         putchar('\n');
@@ -125,7 +130,7 @@ int main(int argc, char **argv) {
 bool directory_exists(const char *path) {
     struct file_directory *directory = malloc(sizeof(struct file_directory));
     char current_directory[MAX_PATH_LENGTH];
-    char *current_dir = get_current_directory();
+    const char *current_dir = get_current_directory();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
     int res = 0;
 
@@ -133,14 +138,13 @@ bool directory_exists(const char *path) {
         res = opendir(directory, path);
     } else if (strncmp(path, "/", 1) == 0) {
         char root[MAX_PATH_LENGTH] = "0:";
-        char *new_path             = strcat(root, path);
+        const char *new_path       = strcat(root, path);
         res                        = opendir(directory, new_path);
     } else {
-        char *new_path = strcat(current_directory, path);
-        res            = opendir(directory, new_path);
+        const char *new_path = strcat(current_directory, path);
+        res                  = opendir(directory, new_path);
     }
 
-    // opendir(directory, strcat(current_directory, path));
     if (res < 0) {
         free(directory);
         return false;

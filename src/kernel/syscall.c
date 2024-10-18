@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "console.h"
 #include "file.h"
 #include "idt.h"
 #include "kernel.h"
@@ -8,8 +9,8 @@
 #include "status.h"
 #include "string.h"
 #include "task.h"
-#include "terminal.h"
 #include "types.h"
+#include "vga_buffer.h"
 
 void register_syscalls() {
     register_syscall(SYSCALL_EXIT, sys_exit);
@@ -19,7 +20,7 @@ void register_syscalls() {
     register_syscall(SYSCALL_MALLOC, sys_malloc);
     register_syscall(SYSCALL_FREE, sys_free);
     register_syscall(SYSCALL_PUTCHAR_COLOR, sys_putchar_color);
-    register_syscall(SYSCALL_INVOKE_SYSTEM, sys_invoke_system);
+    register_syscall(SYSCALL_CREATE_PROCESS, sys_create_process);
     register_syscall(SYSCALL_GET_PROGRAM_ARGUMENTS, sys_get_program_arguments);
     register_syscall(SYSCALL_OPEN, sys_open);
     register_syscall(SYSCALL_CLOSE, sys_close);
@@ -133,7 +134,7 @@ void *sys_print(struct interrupt_frame *frame) {
 }
 
 void *sys_getkey(struct interrupt_frame *frame) {
-    char c = keyboard_pop();
+    const uchar c = keyboard_pop();
     return (void *)(int)c;
 }
 
@@ -153,7 +154,7 @@ void *sys_putchar_color(struct interrupt_frame *frame) {
 }
 
 void *sys_malloc(struct interrupt_frame *frame) {
-    uintptr_t size = (uintptr_t)task_get_stack_item(task_current(), 0);
+    const uintptr_t size = (uintptr_t)task_get_stack_item(task_current(), 0);
     return process_malloc(task_current()->process, size);
 }
 
@@ -163,7 +164,7 @@ void *sys_free(struct interrupt_frame *frame) {
     return NULL;
 }
 
-void *sys_invoke_system(struct interrupt_frame *frame) {
+void *sys_create_process(struct interrupt_frame *frame) {
     struct command_argument *arguments =
         task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 0));
     if (!arguments || strlen(arguments->argument) == 0) {
@@ -191,8 +192,10 @@ void *sys_invoke_system(struct interrupt_frame *frame) {
         return ERROR(res);
     }
 
+#ifndef MULTITASKING
     task_switch(process->task);
     task_return(&process->task->registers);
+#endif
 
-    return NULL;
+    return (void *)(int)process->pid;
 }

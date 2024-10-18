@@ -1,7 +1,7 @@
 #ifndef ASSERT_H
 #define ASSERT_H
 
-#include "terminal.h"
+#include "vga_buffer.h"
 #include "kernel.h"
 
 #define DEBUG_ASSERT

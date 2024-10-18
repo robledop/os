@@ -4,7 +4,7 @@
 #include "serial.h"
 #include "status.h"
 #include "task.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 
 static struct keyboard *keyboard_list_head = nullptr;
 static struct keyboard *keyboard_list_tail = nullptr;

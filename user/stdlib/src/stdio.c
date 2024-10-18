@@ -1,10 +1,9 @@
 #include "stdio.h"
-#include "stdlib.h"
-#include "os.h"
 #include <stdarg.h>
-#include "string.h"
-#include "string.h"
 #include "memory.h"
+#include "os.h"
+#include "stdlib.h"
+#include "string.h"
 
 #define MAX_FMT_STR 10240
 
@@ -19,8 +18,7 @@
 #define FAT_FILE_RESERVED 0x80
 #define FAT_FILE_LONG_NAME 0x0F
 
-struct fat_directory_entry
-{
+struct fat_directory_entry {
     uint8_t name[8];
     uint8_t ext[3];
     uint8_t attributes;
@@ -36,63 +34,42 @@ struct fat_directory_entry
     uint32_t size;
 } __attribute__((packed));
 
-void clear_screen()
-{
-    os_clear_screen();
-}
+void clear_screen() { os_clear_screen(); }
 
-void putchar_color(char c, unsigned char forecolor, unsigned char backcolor)
-{
+void putchar_color(char c, unsigned char forecolor, unsigned char backcolor) {
     os_putchar_color(c, forecolor, backcolor);
 }
 
-int fstat(int fd, struct file_stat *stat)
-{
-    return os_stat(fd, stat);
-}
+int fstat(int fd, struct file_stat *stat) { return os_stat(fd, stat); }
 
-int fopen(const char *name, const char *mode)
-{
-    return os_open(name, mode);
-}
+int fopen(const char *name, const char *mode) { return os_open(name, mode); }
 
-int fclose(int fd)
-{
-    return os_close(fd);
-}
+int fclose(int fd) { return os_close(fd); }
 
-int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd)
-{
-    return os_read(ptr, size, nmemb, fd);
-}
+int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd) { return os_read(ptr, size, nmemb, fd); }
 
-int putchar(const unsigned char c)
-{
+int putchar(const unsigned char c) {
     os_putchar(c);
     return 0;
 }
 
-int printf(const char *fmt, ...)
-{
+int printf(const char *fmt, ...) {
     static unsigned char forecolor = 0x0F; // Default white
     static unsigned char backcolor = 0x00; // Default black
 
     va_list args;
 
     int x_offset = 0;
-    int num = 0;
+    int num      = 0;
 
     va_start(args, fmt);
 
-    while (*fmt != '\0')
-    {
+    while (*fmt != '\0') {
         char str[MAX_FMT_STR];
-        switch (*fmt)
-        {
+        switch (*fmt) {
         case '%':
             memset(str, 0, MAX_FMT_STR);
-            switch (*(fmt + 1))
-            {
+            switch (*(fmt + 1)) {
             case 'i':
             case 'd':
                 num = va_arg(args, int);
@@ -130,30 +107,24 @@ int printf(const char *fmt, ...)
         case '\033':
             // Handle ANSI escape sequences
             fmt++;
-            if (*fmt != '[')
-            {
+            if (*fmt != '[') {
                 break;
             }
             fmt++;
             int param1 = 0;
-            while (*fmt >= '0' && *fmt <= '9')
-            {
+            while (*fmt >= '0' && *fmt <= '9') {
                 param1 = param1 * 10 + (*fmt - '0');
                 fmt++;
             }
-            if (*fmt == ';')
-            {
+            if (*fmt == ';') {
                 fmt++;
                 int param2 = 0;
-                while (*fmt >= '0' && *fmt <= '9')
-                {
+                while (*fmt >= '0' && *fmt <= '9') {
                     param2 = param2 * 10 + (*fmt - '0');
                     fmt++;
                 }
-                if (*fmt == 'm')
-                {
-                    switch (param1)
-                    {
+                if (*fmt == 'm') {
+                    switch (param1) {
                     case 30:
                         forecolor = 0x00;
                         break; // Black
@@ -181,8 +152,7 @@ int printf(const char *fmt, ...)
                     default:
                         break;
                     }
-                    switch (param2)
-                    {
+                    switch (param2) {
                     case 40:
                         backcolor = 0x00;
                         break; // Black
@@ -213,11 +183,8 @@ int printf(const char *fmt, ...)
                     // Apply the colors to the next characters
                     putchar_color(' ', forecolor, backcolor);
                 }
-            }
-            else if (*fmt == 'm')
-            {
-                switch (param1)
-                {
+            } else if (*fmt == 'm') {
+                switch (param1) {
                 case 30:
                     forecolor = 0x00;
                     break; // Black
@@ -259,40 +226,56 @@ int printf(const char *fmt, ...)
     return 0;
 }
 
-int opendir(struct file_directory *directory, const char *path)
-{
-    return os_open_dir(directory, path);
-}
+/// @brief Opens a directory for reading
+/// @param directory the directory to open
+/// @param path the path to the directory to open
+/// @return 0 on success
+/// @code
+/// struct file_directory *directory = malloc(sizeof(struct file_directory));
+/// int res = opendir(directory, "pah/to/directory");
+int opendir(struct file_directory *directory, const char *path) { return os_open_dir(directory, path); }
 
-int readdir(struct file_directory *directory, struct directory_entry *entry_out, int index)
-{
-    struct fat_directory_entry *entry = directory->entries + (index * sizeof(struct fat_directory_entry));
-    struct directory_entry directory_entry =
-        {
-            .attributes = entry->attributes,
-            .size = entry->size,
-            .access_date = entry->access_date,
-            .creation_date = entry->creation_date,
-            .creation_time = entry->creation_time,
-            .creation_time_tenths = entry->creation_time_tenths,
-            .modification_date = entry->modification_date,
-            .modification_time = entry->modification_time,
-            .is_archive = entry->attributes & FAT_FILE_ARCHIVE,
-            .is_device = entry->attributes & FAT_FILE_DEVICE,
-            .is_directory = entry->attributes & FAT_FILE_SUBDIRECTORY,
-            .is_hidden = entry->attributes & FAT_FILE_HIDDEN,
-            .is_long_name = entry->attributes == FAT_FILE_LONG_NAME,
-            .is_read_only = entry->attributes & FAT_FILE_READ_ONLY,
-            .is_system = entry->attributes & FAT_FILE_SYSTEM,
-            .is_volume_label = entry->attributes & FAT_FILE_VOLUME_LABEL,
-        };
+/// @brief Reads an entry from a directory
+/// @param directory the directory to read from
+/// @param entry_out the entry to read into
+/// @param index the index of the entry to read
+/// @return 0 on success
+/// @code
+/// struct file_directory *directory = malloc(sizeof(struct file_directory));
+/// int res = opendir(directory, "pah/to/directory");
+/// for (size_t i = 0; i < directory->entry_count; i++) {
+///     struct directory_entry entry;
+///     readdir(directory, &entry, i);
+///     printf("\n%s", entry.name);
+/// }
+/// free(directory);
+int readdir(const struct file_directory *directory, struct directory_entry *entry_out, const int index) {
+    const struct fat_directory_entry *entry = directory->entries + (index * sizeof(struct fat_directory_entry));
+    struct directory_entry directory_entry  = {
+         .attributes           = entry->attributes,
+         .size                 = entry->size,
+         .access_date          = entry->access_date,
+         .creation_date        = entry->creation_date,
+         .creation_time        = entry->creation_time,
+         .creation_time_tenths = entry->creation_time_tenths,
+         .modification_date    = entry->modification_date,
+         .modification_time    = entry->modification_time,
+         .is_archive           = entry->attributes & FAT_FILE_ARCHIVE,
+         .is_device            = entry->attributes & FAT_FILE_DEVICE,
+         .is_directory         = entry->attributes & FAT_FILE_SUBDIRECTORY,
+         .is_hidden            = entry->attributes & FAT_FILE_HIDDEN,
+         .is_long_name         = entry->attributes == FAT_FILE_LONG_NAME,
+         .is_read_only         = entry->attributes & FAT_FILE_READ_ONLY,
+         .is_system            = entry->attributes & FAT_FILE_SYSTEM,
+         .is_volume_label      = entry->attributes & FAT_FILE_VOLUME_LABEL,
+    };
 
     // TODO: Check for a memory leak here
     char *name = trim(substring((char *)entry->name, 0, 7));
-    char *ext = trim(substring((char *)entry->ext, 0, 2));
+    char *ext  = trim(substring((char *)entry->ext, 0, 2));
 
     directory_entry.name = name;
-    directory_entry.ext = ext;
+    directory_entry.ext  = ext;
 
     *entry_out = directory_entry;
 
@@ -300,13 +283,7 @@ int readdir(struct file_directory *directory, struct directory_entry *entry_out,
 }
 
 // Get the current directory for the current process
-char *get_current_directory()
-{
-    return os_get_current_directory();
-}
+char *get_current_directory() { return os_get_current_directory(); }
 
 // Set the current directory for the current process
-int set_current_directory(const char *path)
-{
-    return os_set_current_directory(path);
-}
+int set_current_directory(const char *path) { return os_set_current_directory(path); }

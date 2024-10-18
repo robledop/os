@@ -1,6 +1,4 @@
-#ifndef TERMINAL_H
-#define TERMINAL_H
-
+#pragma once
 #include "types.h"
 
 #define KNRM "\x1B[0m"
@@ -20,5 +18,4 @@ void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor);
 void kprintf(const char *fmt, ...);
 
 void ksprintf(const char *str, int max);
-
-#endif
+void update_cursor(const int row, const int col);

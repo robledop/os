@@ -16,7 +16,7 @@
     "unistd.h": "c",
     "errno.h": "c",
     "tss.h": "c",
-    "terminal.h": "c",
+    "vga_buffer.h": "c",
     "types.h": "c",
     "io.h": "c",
     "ata.h": "c",

@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "assert.h"
 #include "config.h"
 #include "io.h"
 #include "kernel.h"
@@ -6,45 +7,43 @@
 #include "serial.h"
 #include "status.h"
 #include "task.h"
-#include "terminal.h"
-#include "assert.h"
+#include "vga_buffer.h"
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 typedef void (*INTERRUPT_HANDLER_FUNCTION)(void);
 
-char *exception_messages[] = {
-    "Division By Zero",
-    "Debug",
-    "Non Maskable Interrupt",
-    "Breakpoint",
-    "Into Detected Overflow",
-    "Out of Bounds",
-    "Invalid Opcode",
-    "No Coprocessor",
-    "Double Fault",
-    "Coprocessor Segment Overrun",
-    "Bad TSS",
-    "Segment Not Present",
-    "Stack Fault",
-    "General Protection Fault",
-    "Page Fault",
-    "Unknown Interrupt",
-    "x87 FPU Floating-Point Error",
-    "Alignment Check",
-    "Machine Check",
-    "SIMD Floating-Point Exception",
-    "Virtualization Exception",
-    "Control Protection Exception",
-    "Reserved",
-    "Reserved",
-    "Reserved",
-    "Reserved",
-    "Reserved",
-    "Reserved",
-    "Reserved",
-    "Reserved",
-    "Security Exception",
-    "Reserved"};
+char *exception_messages[] = {"Division By Zero",
+                              "Debug",
+                              "Non Maskable Interrupt",
+                              "Breakpoint",
+                              "Into Detected Overflow",
+                              "Out of Bounds",
+                              "Invalid Opcode",
+                              "No Coprocessor",
+                              "Double Fault",
+                              "Coprocessor Segment Overrun",
+                              "Bad TSS",
+                              "Segment Not Present",
+                              "Stack Fault",
+                              "General Protection Fault",
+                              "Page Fault",
+                              "Unknown Interrupt",
+                              "x87 FPU Floating-Point Error",
+                              "Alignment Check",
+                              "Machine Check",
+                              "SIMD Floating-Point Exception",
+                              "Virtualization Exception",
+                              "Control Protection Exception",
+                              "Reserved",
+                              "Reserved",
+                              "Reserved",
+                              "Reserved",
+                              "Reserved",
+                              "Reserved",
+                              "Reserved",
+                              "Reserved",
+                              "Security Exception",
+                              "Reserved"};
 
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
@@ -55,16 +54,11 @@ static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void isr80h_wrapper();
 
-void no_interrupt_handler(int interrupt)
-{
-    kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
-}
+void no_interrupt_handler(int interrupt) { kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt); }
 
-void interrupt_handler(int interrupt, struct interrupt_frame *frame)
-{
+void interrupt_handler(int interrupt, struct interrupt_frame *frame) {
     kernel_page();
-    if (interrupt_callbacks[interrupt] != 0)
-    {
+    if (interrupt_callbacks[interrupt] != 0) {
         task_current_save_state(frame);
         interrupt_callbacks[interrupt](interrupt);
     }
@@ -73,12 +67,11 @@ void interrupt_handler(int interrupt, struct interrupt_frame *frame)
     outb(0x20, 0x20);
 }
 
-void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
-{
+void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler) {
     struct idt_desc *desc = &idt_descriptors[interrupt];
-    desc->offset_1 = (uint32_t)handler & 0x0000FFFF;
-    desc->selector = KERNEL_CODE_SELECTOR;
-    desc->zero = 0;
+    desc->offset_1        = (uint32_t)handler & 0x0000FFFF;
+    desc->selector        = KERNEL_CODE_SELECTOR;
+    desc->zero            = 0;
 
     // This value configures various attributes of the interrupt descriptor, such as the type,
     // privilege level, and whether the descriptor is present.  In this context:
@@ -91,24 +84,16 @@ void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler)
     desc->offset_2 = (uint32_t)handler >> 16;
 }
 
-void idt_exception_handler(int interrupt)
-{
-    if (interrupt == 14)
-    {
+void idt_exception_handler(int interrupt) {
+    if (interrupt == 14) {
         uint32_t faulting_address;
-        asm volatile("mov %%cr2, %0"
-                     : "=r"(faulting_address));
+        asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
         kprintf(KRED "\nPage fault at %x" KWHT, faulting_address);
-    }
-    else if (interrupt == 13)
-    {
+    } else if (interrupt == 13) {
         uint32_t error_code;
-        asm volatile("mov %%cr2, %0"
-                     : "=r"(error_code));
+        asm volatile("mov %%cr2, %0" : "=r"(error_code));
         kprintf(KRED "\nGeneral protection fault error code: %x" KWHT, error_code);
-    }
-    else
-    {
+    } else {
         kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
     }
 
@@ -117,33 +102,29 @@ void idt_exception_handler(int interrupt)
     task_next();
 }
 
-void idt_clock(int interrupt)
-{
+void idt_clock(int interrupt) {
     outb(0x20, 0x20);
 
-    // Uncomment to enable multitasking
+#ifdef MULTITASKING
     task_next();
+#endif
 }
 
-void idt_init()
-{
+void idt_init() {
     memset(idt_descriptors, 0, sizeof(idt_descriptors));
 
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
-    idtr_descriptor.base = (uintptr_t)idt_descriptors;
+    idtr_descriptor.base  = (uintptr_t)idt_descriptors;
 
-    for (size_t i = 0; i < TOTAL_INTERRUPTS; i++)
-    {
+    for (size_t i = 0; i < TOTAL_INTERRUPTS; i++) {
         idt_set(i, interrupt_pointer_table[i]);
     }
 
-    for (int i = 0; i < TOTAL_INTERRUPTS; i++)
-    {
+    for (int i = 0; i < TOTAL_INTERRUPTS; i++) {
         idt_register_interrupt_callback(i, no_interrupt_handler);
     }
 
-    for (int i = 0; i < 0x20; i++)
-    {
+    for (int i = 0; i < 0x20; i++) {
         idt_register_interrupt_callback(i, idt_exception_handler);
     }
 
@@ -153,10 +134,8 @@ void idt_init()
     idt_load(&idtr_descriptor);
 }
 
-int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
-{
-    if (interrupt < 0 || interrupt >= TOTAL_INTERRUPTS)
-    {
+int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback) {
+    if (interrupt < 0 || interrupt >= TOTAL_INTERRUPTS) {
         dbgprintf("Interrupt out of bounds: %d\n", interrupt);
         ASSERT(false, "Interrupt out of bounds");
         return -EINVARG;
@@ -167,15 +146,12 @@ int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION i
     return ALL_OK;
 }
 
-void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler)
-{
-    if (command < 0 || command >= MAX_SYSCALLS)
-    {
+void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler) {
+    if (command < 0 || command >= MAX_SYSCALLS) {
         panic("The command is out of bounds");
     }
 
-    if (syscalls[command])
-    {
+    if (syscalls[command]) {
         kprintf("The syscall is already registered %x\n", syscalls[command]);
         panic("The syscall is already registered");
     }
@@ -183,20 +159,17 @@ void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler)
     syscalls[command] = handler;
 }
 
-void *handle_syscall(int syscall, struct interrupt_frame *frame)
-{
+void *handle_syscall(int syscall, struct interrupt_frame *frame) {
     void *result = 0;
 
-    if (syscall < 0 || syscall >= MAX_SYSCALLS)
-    {
+    if (syscall < 0 || syscall >= MAX_SYSCALLS) {
         dbgprintf("Invalid command: %d\n", syscall);
         ASSERT(false, "Invalid command");
         return NULL;
     }
 
     SYSCALL_HANDLER_FUNCTION handler = syscalls[syscall];
-    if (!handler)
-    {
+    if (!handler) {
         dbgprintf("No handler for command: %d\n", syscall);
         ASSERT(false, "No handler for command");
         return NULL;
@@ -207,8 +180,7 @@ void *handle_syscall(int syscall, struct interrupt_frame *frame)
     return result;
 }
 
-void *syscall_handler(int syscalll, struct interrupt_frame *frame)
-{
+void *syscall_handler(int syscalll, struct interrupt_frame *frame) {
     void *res = 0;
     kernel_page();
     task_current_save_state(frame);

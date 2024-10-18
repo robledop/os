@@ -78,7 +78,7 @@ void os_terminal_readline(unsigned char *out, int max, bool output_while_typing)
     out[i] = 0x00;
 }
 
-int os_system_run(const char *command, const char *current_directory) {
+int os_create_process(const char *command, const char *current_directory) {
     char buffer[1024];
     strncpy(buffer, command, sizeof(buffer));
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));

@@ -9,7 +9,7 @@
 #include "serial.h"
 #include "status.h"
 #include "string.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];

@@ -22,7 +22,7 @@
 #define PROGRAM_VIRTUAL_ADDRESS 0x400000
 
 // Must be alligned to 4096 bytes page size
-#define USER_PROGRAM_STACK_SIZE 1024 * 16 
+#define USER_PROGRAM_STACK_SIZE 1024 * 16
 
 #define KERNEL_CODE_SELECTOR 0x08
 #define KERNEL_DATA_SELECTOR 0x10
@@ -37,6 +37,9 @@
 
 #define MAX_SYSCALLS 1024
 #define KEYBOARD_BUFFER_SIZE 1024
+
+// Multitasking enabled
+#define MULTITASKING
 
 // #ifdef GRUB
 // // #define KERNEL_STACK_ADDRESS 0x22c000

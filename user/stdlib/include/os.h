@@ -17,7 +17,7 @@ void os_putchar(unsigned char c);
 void os_putchar_color(char c, unsigned char forecolor, unsigned char backcolor);
 void os_process_get_arguments(struct process_arguments *args);
 int os_system(struct command_argument *args);
-int os_system_run(const char *command, const char *current_directory);
+int os_create_process(const char *command, const char *current_directory);
 void os_exit();
 int os_open(const char *file_name, const char *mode);
 int os_close(int fd);

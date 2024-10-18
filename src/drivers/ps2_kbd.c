@@ -1,10 +1,10 @@
 #include "ps2_kbd.h"
+#include "console.h"
 #include "idt.h"
 #include "io.h"
 #include "kernel.h"
 #include "keyboard.h"
-#include "terminal.h"
-#include "console.h"
+#include "vga_buffer.h"
 
 int ps2_keyboard_init();
 void ps2_keyboard_interrupt_handler(int interrupt);
@@ -29,8 +29,8 @@ void kbd_led_handling(unsigned char ledstatus) {
 
 // Taken from xv6
 uchar keyboard_get_char() {
-    static bool ctrl_pressed = false;
-    static bool key_released = false;
+    // static bool ctrl_pressed = false;
+    // static bool key_released = false;
     static unsigned int shift;
     static uchar *charcode[4] = {normalmap, shiftmap, ctlmap, ctlmap};
 
@@ -40,25 +40,22 @@ uchar keyboard_get_char() {
     }
     unsigned int data = inb(KBD_DATA_PORT);
 
-    // // Update Ctrl key state
-    if (data == 0x1D) { // Ctrl key
-        key_released = false;
-        ctrl_pressed = true;
-    }
-
-    // Check for Function keys (F1, F2, F3)
-    if (!key_released && ctrl_pressed) {
-        if (data == 0x3B) { // F1
-            switch_console(0); // Console 0
-            kprintf("Switching to console 0\n");
-        } else if (data == 0x3C) { // F2
-            switch_console(1); // Console 1
-            kprintf("Switching to console 1\n");
-        } else if (data == 0x3D) { // F3
-            switch_console(2); // Console 2
-            kprintf("Switching to console 2\n");
-        }
-    }
+    // // // Update Ctrl key state
+    // if (data == 0x1D) { // Ctrl key
+    //     key_released = false;
+    //     ctrl_pressed = true;
+    // }
+    //
+    // // Check for Function keys (F1, F2, F3)
+    // if (!key_released && ctrl_pressed) {
+    //     if (data == 0x3B) { // F1
+    //         switch_console(0);
+    //     } else if (data == 0x3C) { // F2
+    //         switch_console(1);
+    //     } else if (data == 0x3D) { // F3
+    //         switch_console(2);
+    //     }
+    // }
 
     if (data == 0xE0) {
         shift |= E0ESC;
@@ -66,7 +63,7 @@ uchar keyboard_get_char() {
     }
     if (data & 0x80) {
         // Key released
-        key_released = true;
+        // key_released = true;
         data         = (shift & E0ESC ? data : data & 0x7F);
         shift &= ~(shiftcode[data] | E0ESC);
         return 0;

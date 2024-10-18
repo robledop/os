@@ -1,28 +1,23 @@
 #include "string.h"
 #include "kernel_heap.h"
-#include <stdbool.h>
 #include "types.h"
 
 /*
  * Functions from Kerninghan/Ritchie - The C Programming Language
  */
-inline void reverse(char s[])
-{
+inline void reverse(char s[]) {
     int c, i, j;
 
-    for (i = 0, j = strlen(s) - 1; i < j; i++, j--)
-    {
-        c = s[i];
+    for (i = 0, j = strlen(s) - 1; i < j; i++, j--) {
+        c    = s[i];
         s[i] = s[j];
         s[j] = c;
     }
 }
 
 // Gets the length of a string
-size_t strlen(const char *s)
-{
-    if (s == NULL)
-    {
+size_t strlen(const char *s) {
+    if (s == NULL) {
         return 0;
     }
     int n;
@@ -33,28 +28,22 @@ size_t strlen(const char *s)
 }
 
 // Gets the length of a string
-size_t strnlen(const char *s, size_t maxlen)
-{
+size_t strnlen(const char *s, size_t maxlen) {
     size_t n;
 
-    for (n = 0; s[n]; n++)
-    {
-        if (n == maxlen)
-        {
+    for (n = 0; s[n]; n++) {
+        if (n == maxlen) {
             break;
         }
     }
     return n;
 }
 
-int strnlen_terminator(const char *s, size_t maxlen, char terminator)
-{
+int strnlen_terminator(const char *s, size_t maxlen, char terminator) {
     size_t n;
 
-    for (n = 0; s[n]; n++)
-    {
-        if (n == maxlen || s[n] == terminator || s[n] == '\0')
-        {
+    for (n = 0; s[n]; n++) {
+        if (n == maxlen || s[n] == terminator || s[n] == '\0') {
             break;
         }
     }
@@ -62,16 +51,13 @@ int strnlen_terminator(const char *s, size_t maxlen, char terminator)
 }
 
 // Compare two memory blocks
-int memcmp(const void *v1, const void *v2, unsigned int n)
-{
+int memcmp(const void *v1, const void *v2, unsigned int n) {
     const unsigned char *s1, *s2;
 
     s1 = v1;
     s2 = v2;
-    while (n-- > 0)
-    {
-        if (*s1 != *s2)
-        {
+    while (n-- > 0) {
+        if (*s1 != *s2) {
             return *s1 - *s2;
         }
         s1++, s2++;
@@ -81,23 +67,18 @@ int memcmp(const void *v1, const void *v2, unsigned int n)
 }
 
 // Compare two strings
-int strncmp(const char *p, const char *q, unsigned int n)
-{
-    while (n > 0 && *p && *p == *q)
-    {
+int strncmp(const char *p, const char *q, unsigned int n) {
+    while (n > 0 && *p && *p == *q) {
         n--, p++, q++;
     }
-    if (n == 0)
-    {
+    if (n == 0) {
         return 0;
     }
     return (unsigned char)*p - (unsigned char)*q;
 }
 
-char tolower(char s1)
-{
-    if (s1 >= 65 && s1 <= 90)
-    {
+char tolower(char s1) {
+    if (s1 >= 65 && s1 <= 90) {
         s1 += 32;
     }
 
@@ -105,11 +86,9 @@ char tolower(char s1)
 }
 
 // Compare two strings ignoring case
-int istrncmp(const char *s1, const char *s2, int n)
-{
+int istrncmp(const char *s1, const char *s2, int n) {
     unsigned char u1, u2;
-    while (n-- > 0)
-    {
+    while (n-- > 0) {
         u1 = (unsigned char)*s1++;
         u2 = (unsigned char)*s2++;
         if (u1 != u2 && tolower(u1) != tolower(u2))
@@ -122,13 +101,10 @@ int istrncmp(const char *s1, const char *s2, int n)
 }
 
 // Copy string t to s
-char *strncpy(char *dest, const char *src, int n)
-{
-    int i = 0;
-    for (i = 0; i < n - 1; i++)
-    {
-        if (src[i] == '\0')
-        {
+char *strncpy(char *dest, const char *src, size_t n) {
+    size_t i = 0;
+    for (i = 0; i < n - 1; i++) {
+        if (src[i] == '\0') {
             break;
         }
         dest[i] = src[i];
@@ -140,13 +116,11 @@ char *strncpy(char *dest, const char *src, int n)
 }
 
 // Like strncpy but guaranteed to NUL-terminate.
-char *safestrcpy(char *s, const char *t, int n)
-{
+char *safestrcpy(char *s, const char *t, int n) {
     char *os;
 
     os = s;
-    if (n <= 0)
-    {
+    if (n <= 0) {
         return os;
     }
     while (--n > 0 && (*s++ = *t++) != 0)
@@ -162,46 +136,38 @@ int tonumericdigit(char c) { return c - 48; }
 bool isspace(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r'; }
 
 // Trim leading and trailing whitespaces
-char *trim(char *str)
-{
+char *trim(char *str) {
     char *end;
-    while (isspace(*str))
-    {
+    while (isspace(*str)) {
         str++;
     }
-    if (*str == 0)
-    {
+    if (*str == 0) {
         return str;
     }
     end = str + strlen(str) - 1;
-    while (end > str && isspace(*end))
-    {
+    while (end > str && isspace(*end)) {
         end--;
     }
     end[1] = '\0';
     return str;
 }
 
-char *substring(char *str, int start, int end)
-{
+char *substring(char *str, int start, int end) {
     char *substr = (char *)kmalloc(sizeof(char) * (end - start + 2));
-    for (int i = start; i <= end; i++)
-    {
+    for (int i = start; i <= end; i++) {
         substr[i - start] = str[i];
     }
     substr[end - start + 1] = '\0';
     return substr;
 }
 
-inline int itoa(int n, char s[])
-{
+inline int itoa(int n, char s[]) {
     int i, sign;
 
     if ((sign = n) < 0)
         n = -n;
     i = 0;
-    do
-    {
+    do {
         s[i++] = n % 10 + '0';
     } while ((n /= 10) > 0);
 
@@ -214,20 +180,15 @@ inline int itoa(int n, char s[])
     return i;
 }
 
-inline int itohex(uint32_t n, char s[])
-{
+inline int itohex(uint32_t n, char s[]) {
     uint32_t i, d;
 
     i = 0;
-    do
-    {
+    do {
         d = n % 16;
-        if (d < 10)
-        {
+        if (d < 10) {
             s[i++] = d + '0';
-        }
-        else
-        {
+        } else {
             s[i++] = d - 10 + 'a';
         }
     } while ((n /= 16) > 0);
@@ -237,46 +198,36 @@ inline int itohex(uint32_t n, char s[])
     return i;
 }
 
-char *strtok(char *str, const char *delim)
-{
+char *strtok(char *str, const char *delim) {
     static char *static_str = NULL; // Stores the string between calls
     int i = 0, j = 0;
     char *token;
 
     // If initial string is provided, reset static_str
-    if (str != NULL)
-    {
+    if (str != NULL) {
         static_str = str;
-    }
-    else
-    {
+    } else {
         // If no more tokens, return NULL
-        if (static_str == NULL)
-        {
+        if (static_str == NULL) {
             return NULL;
         }
     }
 
     // Skip leading delimiters
-    while (static_str[i] != '\0')
-    {
-        for (j = 0; delim[j] != '\0'; j++)
-        {
-            if (static_str[i] == delim[j])
-            {
+    while (static_str[i] != '\0') {
+        for (j = 0; delim[j] != '\0'; j++) {
+            if (static_str[i] == delim[j]) {
                 break;
             }
         }
-        if (delim[j] == '\0')
-        {
+        if (delim[j] == '\0') {
             break;
         }
         i++;
     }
 
     // If end of string is reached, return NULL
-    if (static_str[i] == '\0')
-    {
+    if (static_str[i] == '\0') {
         static_str = NULL;
         return NULL;
     }
@@ -284,12 +235,9 @@ char *strtok(char *str, const char *delim)
     token = &static_str[i];
 
     // Find the end of the token
-    while (static_str[i] != '\0')
-    {
-        for (j = 0; delim[j] != '\0'; j++)
-        {
-            if (static_str[i] == delim[j])
-            {
+    while (static_str[i] != '\0') {
+        for (j = 0; delim[j] != '\0'; j++) {
+            if (static_str[i] == delim[j]) {
                 static_str[i] = '\0'; // Terminate token
                 i++;
                 static_str += i; // Update static_str for next call
@@ -304,13 +252,12 @@ char *strtok(char *str, const char *delim)
     return token;
 }
 
-char *strdup(const char *s)
-{
-    size_t len = strlen(s);
-    char *new = kmalloc(len + 1);
-    if (new == NULL)
-    {
-        return NULL;
+/* Duplicate S, returning an identical malloc'd string.  */
+char *strdup(const char *s) {
+    const size_t len = strlen(s);
+    char *new        = kmalloc(len + 1);
+    if (new == NULL) {
+        return nullptr;
     }
     strncpy(new, s, len + 1);
     return new;

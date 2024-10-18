@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 if grub-file --is-x86-multiboot $1; then
   echo multiboot confirmed

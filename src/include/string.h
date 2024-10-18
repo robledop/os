@@ -8,7 +8,7 @@ size_t strnlen(const char *s, size_t maxlen);
 int strnlen_terminator(const char *s, size_t maxlen, char terminator);
 int memcmp(const void *v1, const void *v2, unsigned int n);
 int strncmp(const char *p, const char *q, unsigned int n);
-char *strncpy(char *dest, const char *src, int n);
+char *strncpy(char *dest, const char *src, size_t n);
 char *safestrcpy(char *s, const char *t, int n);
 bool isdigit(char c);
 int tonumericdigit(char c);
@@ -22,6 +22,7 @@ char tolower(char s1);
 int itoa(int n, char s[]);
 int itohex(uint32_t n, char s[]);
 void reverse(char s[]);
+/* Duplicate S, returning an identical malloc'd string.  */
 char *strdup(const char *s);
 char *strtok(char *str, const char *delim);
 

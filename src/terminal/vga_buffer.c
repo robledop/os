@@ -1,4 +1,4 @@
-#include "terminal.h"
+#include "vga_buffer.h"
 #include <stdarg.h>
 #include "assert.h"
 #include "config.h"
@@ -7,8 +7,8 @@
 #include "memory.h"
 #include "string.h"
 
-extern int active_console;
-extern Console consoles[NUM_CONSOLES];
+// extern int active_console;
+// extern Console consoles[NUM_CONSOLES];
 
 #define BYTES_PER_CHAR 2 // 1 byte for character, 1 byte for attribute (color)
 #define SCREEN_SIZE (VGA_WIDTH * VGA_HEIGHT * BYTES_PER_CHAR)
@@ -69,13 +69,13 @@ static void write_character(const uchar c, const uchar fcolor, const uchar bcolo
         return;
     }
 
-    // const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
-    // volatile uint16_t *where = (volatile uint16_t *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
-    // *where                   = c | (attrib << 8);
-
     const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
-    volatile uint16_t *where = (volatile uint16_t *)consoles[active_console].framebuffer + (y * VGA_WIDTH + x);
+    volatile uint16_t *where = (volatile uint16_t *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
     *where                   = c | (attrib << 8);
+
+    // const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
+    // volatile uint16_t *where = (volatile uint16_t *)consoles[active_console].framebuffer + (y * VGA_WIDTH + x);
+    // *where                   = c | (attrib << 8);
 }
 
 uint16_t get_cursor_position(void) {
@@ -88,8 +88,8 @@ uint16_t get_cursor_position(void) {
 }
 
 void scroll_screen() {
-    // auto const video_memory = (uchar *)VIDEO_MEMORY;
-    auto const video_memory = (uchar *)consoles[active_console].framebuffer;
+    auto const video_memory = (uchar *)VIDEO_MEMORY;
+    // auto const video_memory = (uchar *)consoles[active_console].framebuffer;
 
     // Move all rows up by one
     memmove(video_memory, video_memory + ROW_SIZE, SCREEN_SIZE - ROW_SIZE);

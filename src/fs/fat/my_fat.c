@@ -1,6 +1,6 @@
 #include "my_fat.h"
 #include "ata.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 #include "kernel.h"
 #include "string.h"
 #include "memory.h"

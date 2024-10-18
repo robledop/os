@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # Usage: pad.sh <file> <block size>
 # Example: pad.sh file 512

@@ -3,7 +3,7 @@
 #include <kernel.h>
 
 #include "memory.h"
-#include "terminal.h"
+#include "vga_buffer.h"
 
 Console consoles[NUM_CONSOLES];
 int active_console = 0;

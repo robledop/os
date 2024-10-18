@@ -13,7 +13,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <task.h>
-#include <terminal.h>
+#include <vga_buffer.h>
 #include "console.h"
 
 // Divide by zero error
@@ -53,10 +53,9 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
     asm("mov %%esp, %0" : "=r"(stack_ptr));
 
     disable_interrupts();
-
     init_serial();
     terminal_clear();
-    kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
+    // kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
     char *cpu = cpu_string();
     kprintf(KCYN "CPU: %s\n", cpu);
     cpu_print_info();
@@ -65,20 +64,16 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
     paging_init();
     idt_init();
     display_grub_info(mbd, magic);
-
     pci_scan();
     fs_init();
     disk_init();
-
-    // my_fat16_init();
-
     register_syscalls();
     keyboard_init();
 
-    initialize_consoles();
+    // initialize_consoles();
+    start_shell(0);
 
     enable_interrupts();
-
 
     panic("Kernel finished");
 }
@@ -97,7 +92,6 @@ void start_shell(const int console) {
     }
 
     process->console = console;
-
 
     task_run_first_task();
 }
