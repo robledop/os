@@ -11,7 +11,7 @@
   ; the address where the stage2 will be loaded. This must be the same as what is set in linker.ld
   STAGE2_ADDRESS equ 0x1000 
 
-  ; BIOS Paramater Block
+  ; BIOS Parameter Block
   ; https://wiki.osdev.org/FAT#Boot_Record
   jmp short start
   nop
@@ -134,7 +134,7 @@ ata_lba_read:
   shr eax, 8
   out dx, al
 
-  ; Send uppper 16 bits of the LBA
+  ; Send upper 16 bits of the LBA
   mov dx, 0x1F5
   mov eax, ebx ; Restore the backup LBA
   shr eax, 16

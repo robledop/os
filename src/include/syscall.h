@@ -6,6 +6,7 @@ enum SysCalls {
     SYSCALL_GETKEY,
     SYSCALL_PUTCHAR,
     SYSCALL_MALLOC,
+    SYSCALL_CALLOC,
     SYSCALL_FREE,
     SYSCALL_PUTCHAR_COLOR,
     SYSCALL_CREATE_PROCESS,
@@ -46,3 +47,4 @@ void *sys_get_current_directory(struct interrupt_frame *frame);
 void *sys_wait_pid(struct interrupt_frame *frame);
 void *sys_reboot(struct interrupt_frame *frame);
 void *sys_shutdown(struct interrupt_frame *frame);
+void *sys_calloc(struct interrupt_frame *frame);

@@ -37,7 +37,8 @@ struct fat_directory_entry {
 
 void clear_screen() { syscall0(SYSCALL_CLEAR_SCREEN); }
 
-void putchar_color(const char c, const unsigned char forecolor, const unsigned char backcolor) {
+void putchar_color(const char c, const unsigned char forecolor, const unsigned char backcolor)
+{
     os_putchar_color(c, forecolor, backcolor);
 }
 
@@ -47,7 +48,8 @@ int fopen(const char *name, const char *mode) { return syscall2(SYSCALL_OPEN, na
 
 int fclose(int fd) { return syscall1(SYSCALL_CLOSE, fd); }
 
-int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd) {
+int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd)
+{
     return syscall4(SYSCALL_READ, ptr, size, nmemb, fd);
 }
 
@@ -55,7 +57,8 @@ void putchar(const unsigned char c) { syscall1(SYSCALL_PUTCHAR, c); }
 
 int print(const char *str) { return syscall1(SYSCALL_PRINT, str); }
 
-int printf(const char *fmt, ...) {
+int printf(const char *fmt, ...)
+{
     static unsigned char forecolor = 0x0F; // Default white
     static unsigned char backcolor = 0x00; // Default black
 
@@ -251,7 +254,8 @@ int opendir(struct file_directory *directory, const char *path) { return syscall
 ///     printf("\n%s", entry.name);
 /// }
 /// free(directory);
-int readdir(const struct file_directory *directory, struct directory_entry *entry_out, const int index) {
+int readdir(const struct file_directory *directory, struct directory_entry *entry_out, const int index)
+{
     const struct fat_directory_entry *entry = directory->entries + (index * sizeof(struct fat_directory_entry));
     struct directory_entry directory_entry  = {
          .attributes           = entry->attributes,
@@ -288,10 +292,11 @@ int readdir(const struct file_directory *directory, struct directory_entry *entr
 char *get_current_directory() { return (char *)syscall0(SYSCALL_GET_CURRENT_DIRECTORY); }
 // Set the current directory for the current process
 int set_current_directory(const char *path) { return syscall1(SYSCALL_SET_CURRENT_DIRECTORY, path); }
-int exit() { return syscall0(SYSCALL_EXIT); }
+void exit() { syscall0(SYSCALL_EXIT); }
 int getkey() { return syscall0(SYSCALL_GETKEY); }
 
-int getkey_blocking() {
+int getkey_blocking()
+{
     int key = 0;
     while ((key = getkey()) == 0) {
     }

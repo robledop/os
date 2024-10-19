@@ -5,18 +5,20 @@
 /*
  * Functions from Kerninghan/Ritchie - The C Programming Language
  */
-inline void reverse(char s[]) {
-    int c, i, j;
+inline void reverse(char s[])
+{
+    int i, j;
 
-    for (i = 0, j = strlen(s) - 1; i < j; i++, j--) {
-        c    = s[i];
-        s[i] = s[j];
-        s[j] = c;
+    for (i = 0, j = (int)strlen(s) - 1; i < j; i++, j--) {
+        const int c = (uchar)s[i];
+        s[i]        = s[j];
+        s[j]        = c;
     }
 }
 
 // Gets the length of a string
-size_t strlen(const char *s) {
+size_t strlen(const char *s)
+{
     if (s == NULL) {
         return 0;
     }
@@ -28,7 +30,8 @@ size_t strlen(const char *s) {
 }
 
 // Gets the length of a string
-size_t strnlen(const char *s, size_t maxlen) {
+size_t strnlen(const char *s, size_t maxlen)
+{
     size_t n;
 
     for (n = 0; s[n]; n++) {
@@ -39,7 +42,8 @@ size_t strnlen(const char *s, size_t maxlen) {
     return n;
 }
 
-int strnlen_terminator(const char *s, size_t maxlen, char terminator) {
+int strnlen_terminator(const char *s, const size_t maxlen, const char terminator)
+{
     size_t n;
 
     for (n = 0; s[n]; n++) {
@@ -47,15 +51,14 @@ int strnlen_terminator(const char *s, size_t maxlen, char terminator) {
             break;
         }
     }
-    return n;
+    return (int)n;
 }
 
 // Compare two memory blocks
-int memcmp(const void *v1, const void *v2, unsigned int n) {
-    const unsigned char *s1, *s2;
-
-    s1 = v1;
-    s2 = v2;
+int memcmp(const void *v1, const void *v2, unsigned int n)
+{
+    const unsigned char *s1 = v1;
+    const unsigned char *s2 = v2;
     while (n-- > 0) {
         if (*s1 != *s2) {
             return *s1 - *s2;
@@ -67,7 +70,8 @@ int memcmp(const void *v1, const void *v2, unsigned int n) {
 }
 
 // Compare two strings
-int strncmp(const char *p, const char *q, unsigned int n) {
+int strncmp(const char *p, const char *q, unsigned int n)
+{
     while (n > 0 && *p && *p == *q) {
         n--, p++, q++;
     }
@@ -77,7 +81,8 @@ int strncmp(const char *p, const char *q, unsigned int n) {
     return (unsigned char)*p - (unsigned char)*q;
 }
 
-char tolower(char s1) {
+char tolower(char s1)
+{
     if (s1 >= 65 && s1 <= 90) {
         s1 += 32;
     }
@@ -86,11 +91,11 @@ char tolower(char s1) {
 }
 
 // Compare two strings ignoring case
-int istrncmp(const char *s1, const char *s2, int n) {
-    unsigned char u1, u2;
+int istrncmp(const char *s1, const char *s2, int n)
+{
     while (n-- > 0) {
-        u1 = (unsigned char)*s1++;
-        u2 = (unsigned char)*s2++;
+        const uchar u1 = (unsigned char)*s1++;
+        const uchar u2 = (unsigned char)*s2++;
         if (u1 != u2 && tolower(u1) != tolower(u2))
             return u1 - u2;
         if (u1 == '\0')
@@ -101,7 +106,8 @@ int istrncmp(const char *s1, const char *s2, int n) {
 }
 
 // Copy string t to s
-char *strncpy(char *dest, const char *src, size_t n) {
+char *strncpy(char *dest, const char *src, const size_t n)
+{
     size_t i = 0;
     for (i = 0; i < n - 1; i++) {
         if (src[i] == '\0') {
@@ -116,10 +122,9 @@ char *strncpy(char *dest, const char *src, size_t n) {
 }
 
 // Like strncpy but guaranteed to NUL-terminate.
-char *safestrcpy(char *s, const char *t, int n) {
-    char *os;
-
-    os = s;
+char *safestrcpy(char *s, const char *t, int n)
+{
+    char *os = s;
     if (n <= 0) {
         return os;
     }
@@ -129,22 +134,31 @@ char *safestrcpy(char *s, const char *t, int n) {
     return os;
 }
 
-bool isdigit(char c) { return c >= '0' && c <= '9'; }
+bool isdigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
 
-int tonumericdigit(char c) { return c - 48; }
+int tonumericdigit(char c)
+{
+    return c - 48;
+}
 
-bool isspace(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r'; }
+bool isspace(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
 
 // Trim leading and trailing whitespaces
-char *trim(char *str) {
-    char *end;
+char *trim(char *str)
+{
     while (isspace(*str)) {
         str++;
     }
     if (*str == 0) {
         return str;
     }
-    end = str + strlen(str) - 1;
+    char *end = str + strlen(str) - 1;
     while (end > str && isspace(*end)) {
         end--;
     }
@@ -152,8 +166,9 @@ char *trim(char *str) {
     return str;
 }
 
-char *substring(char *str, int start, int end) {
-    char *substr = (char *)kmalloc(sizeof(char) * (end - start + 2));
+char *substring(const char *str, const int start, const int end)
+{
+    auto const substr = (char *)kmalloc(sizeof(char) * (end - start + 2));
     for (int i = start; i <= end; i++) {
         substr[i - start] = str[i];
     }
@@ -161,12 +176,13 @@ char *substring(char *str, int start, int end) {
     return substr;
 }
 
-inline int itoa(int n, char s[]) {
-    int i, sign;
+inline int itoa(int n, char s[])
+{
+    int sign;
 
     if ((sign = n) < 0)
         n = -n;
-    i = 0;
+    int i = 0;
     do {
         s[i++] = n % 10 + '0';
     } while ((n /= 10) > 0);
@@ -180,12 +196,11 @@ inline int itoa(int n, char s[]) {
     return i;
 }
 
-inline int itohex(uint32_t n, char s[]) {
-    uint32_t i, d;
-
-    i = 0;
+inline int itohex(uint32_t n, char s[])
+{
+    int i = 0;
     do {
-        d = n % 16;
+        const uint32_t d = n % 16;
         if (d < 10) {
             s[i++] = d + '0';
         } else {
@@ -198,10 +213,10 @@ inline int itohex(uint32_t n, char s[]) {
     return i;
 }
 
-char *strtok(char *str, const char *delim) {
-    static char *static_str = NULL; // Stores the string between calls
+char *strtok(char *str, const char *delim)
+{
+    static char *static_str = nullptr; // Stores the string between calls
     int i = 0, j = 0;
-    char *token;
 
     // If initial string is provided, reset static_str
     if (str != NULL) {
@@ -209,7 +224,7 @@ char *strtok(char *str, const char *delim) {
     } else {
         // If no more tokens, return NULL
         if (static_str == NULL) {
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -228,11 +243,11 @@ char *strtok(char *str, const char *delim) {
 
     // If end of string is reached, return NULL
     if (static_str[i] == '\0') {
-        static_str = NULL;
-        return NULL;
+        static_str = nullptr;
+        return nullptr;
     }
 
-    token = &static_str[i];
+    char *token = &static_str[i];
 
     // Find the end of the token
     while (static_str[i] != '\0') {
@@ -248,12 +263,13 @@ char *strtok(char *str, const char *delim) {
     }
 
     // No more delimiters; return the last token
-    static_str = NULL;
+    static_str = nullptr;
     return token;
 }
 
 /* Duplicate S, returning an identical malloc'd string.  */
-char *strdup(const char *s) {
+char *strdup(const char *s)
+{
     const size_t len = strlen(s);
     char *new        = kmalloc(len + 1);
     if (new == NULL) {

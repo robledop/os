@@ -20,7 +20,7 @@
 
 #define PROGRAM_VIRTUAL_ADDRESS 0x400000
 
-// Must be alligned to 4096 bytes page size
+// Must be aligned to 4096 bytes page size
 #define USER_PROGRAM_STACK_SIZE 1024 * 16
 
 #define KERNEL_CODE_SELECTOR 0x08

@@ -14,13 +14,13 @@
 #include <syscall.h>
 #include <task.h>
 #include <vga_buffer.h>
-#include "console.h"
 
 // Divide by zero error
 extern void cause_problem();
 void paging_demo();
 void multitasking_demo();
 void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
+void schedule_idle_task();
 
 #if UINT32_MAX == UINTPTR_MAX
 #define STACK_CHK_GUARD 0xe2dee396
@@ -32,7 +32,8 @@ uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
 
 extern struct page_directory *kernel_page_directory;
 
-__attribute__((noreturn)) void panic(const char *msg) {
+__attribute__((noreturn)) void panic(const char *msg)
+{
     kprintf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
 
     while (1) {
@@ -42,12 +43,14 @@ __attribute__((noreturn)) void panic(const char *msg) {
     __builtin_unreachable();
 }
 
-void kernel_page() {
+void kernel_page()
+{
     kernel_registers();
     paging_switch_directory(kernel_page_directory);
 }
 
-void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
+void kernel_main(multiboot_info_t *mbd, unsigned int magic)
+{
     __stack_chk_guard  = STACK_CHK_GUARD;
     uint32_t stack_ptr = 0;
     asm("mov %%esp, %0" : "=r"(stack_ptr));
@@ -71,7 +74,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
     register_syscalls();
     keyboard_init();
 
-    // initialize_consoles();
+    // schedule_idle_task();
     start_shell(0);
 
     enable_interrupts();
@@ -79,7 +82,8 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
     panic("Kernel finished");
 }
 
-void start_shell(const int console) {
+void start_shell(const int console)
+{
     dbgprintf("Loading shell\n");
     struct process *process = nullptr;
     int res                 = process_load_switch("0:/bin/sh", &process);
@@ -93,11 +97,22 @@ void start_shell(const int console) {
     }
 
     process->task->tty = console;
+    process->priority  = 1;
 
     task_run_first_task();
 }
 
-void multitasking_demo() {
+void schedule_idle_task()
+{
+    struct process *process = nullptr;
+    process_load_switch("0:/bin/idle", &process);
+    process->priority  = 0;
+    process->state     = RUNNING;
+    process->task->tty = 0;
+}
+
+void multitasking_demo()
+{
     struct process *process = nullptr;
     process_load_switch("0:/cblank.elf", &process);
     struct command_argument argument;
@@ -111,12 +126,14 @@ void multitasking_demo() {
     process_inject_arguments(process, &argument);
 }
 
-void paging_demo() {
+void paging_demo()
+{
     char *ptr1 = kzalloc(4096);
 
     ptr1[0] = 'C';
     ptr1[1] = 'D';
-    paging_set(kernel_page_directory, (void *)0x1000,
+    paging_set(kernel_page_directory,
+               (void *)0x1000,
                (uint32_t)ptr1 | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                    PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
@@ -133,7 +150,8 @@ void paging_demo() {
     dbgprintf("ptr2: %s\n", ptr2);
 }
 
-void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic) {
+void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
+{
 #ifdef GRUB
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
         panic("invalid magic number!");
@@ -173,14 +191,16 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic) {
 #endif
 }
 
-void system_reboot() {
+void system_reboot()
+{
     uint8_t good = 0x02;
     while (good & 0x02)
         good = inb(0x64);
     outb(0x64, 0xFE);
 }
 
-void system_shutdown() {
+void system_shutdown()
+{
     outw(0x604, 0x2000);
 
     asm volatile("hlt");

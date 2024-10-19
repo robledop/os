@@ -1,7 +1,5 @@
 #pragma once
 
-#include "types.h"
-#include "vga_buffer.h"
 
 #define DEBUG_SERIAL
 #define DEBUG_WARNINGS
@@ -14,11 +12,10 @@
 
 #ifdef DEBUG_WARNINGS
 #define warningf(a, ...) serial_printf("WARNING: file: %s, line: %d: \n" a, __FILE__, __LINE__, ##__VA_ARGS__)
-// #define warningf(a, ...) kprintf("file: %s, line: %d: " a, __FILE__, __LINE__, ##__VA_ARGS__)
 #else
 #define warningf(a, ...)
 #endif
 
 void init_serial();
-int serial_printf(char *fmt, ...);
+int serial_printf(const char *fmt, ...);
 void serial_put(char a);

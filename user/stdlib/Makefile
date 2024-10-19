@@ -30,7 +30,7 @@ FLAGS = -g \
 	-Wall
 
 all: $(FILES)
-	i686-elf-ld -m elf_i386 -relocatable $(FILES) -o ./stdlib.elf
+	ar rcs libstdlib.a $(FILES)
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@

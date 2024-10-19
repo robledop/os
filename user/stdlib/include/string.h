@@ -12,7 +12,7 @@ bool isdigit(char c);
 int tonumericdigit(char c);
 bool isspace(char c);
 char *trim(char *str);
-char *substring(char *str, int start, int end);
+char *substring(const char *str, int start, int end);
 int istrncmp(const char *s1, const char *s2, int n);
 char tolower(char s1);
 int itohex(unsigned int n, char s[]);

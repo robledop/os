@@ -47,19 +47,19 @@ struct page_directory {
 
 struct page_directory *paging_create_directory(uint8_t flags);
 void paging_free_directory(struct page_directory *page_directory);
-void paging_switch_directory(struct page_directory *chunk);
+void paging_switch_directory(const struct page_directory *directory);
 void enable_paging();
-uint32_t *paging_get_directory(struct page_directory *chunk);
+uint32_t *paging_get_directory(const struct page_directory *directory);
 
-int paging_set(struct page_directory *directory, void *virtual_address, uint32_t value);
+uint32_t paging_get(const struct page_directory *directory, void *virtual_address);
+int paging_set(const struct page_directory *directory, void *virtual_address, uint32_t value);
 bool paging_is_aligned(void *address);
-int paging_map_to(struct page_directory *directory, void *virtual_address, void *physical_start_address,
+int paging_map_to(const struct page_directory *directory, void *virtual_address, void *physical_start_address,
                   void *physical_end_address, int flags);
-int paging_map_range(struct page_directory *directory, void *virtual_address, void *physical_start_address,
+int paging_map_range(const struct page_directory *directory, void *virtual_address, void *physical_start_address,
                      int total_pages, int flags);
-int paging_map(struct page_directory *directory, void *virtual_address, void *physical_address, int flags);
+int paging_map(const struct page_directory *directory, void *virtual_address, void *physical_address, int flags);
 void *paging_align_address(void *address);
 void *paging_align_to_lower_page(void *address);
-uint32_t paging_get(struct page_directory *directory, void *virtual_address);
-void *paging_get_physical_address(struct page_directory *directory, void *virtual_address);
+void *paging_get_physical_address(const struct page_directory *directory, void *virtual_address);
 void paging_init();

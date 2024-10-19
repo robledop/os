@@ -82,4 +82,4 @@ int getkey_blocking();
 char *get_current_directory();
 int set_current_directory(const char *path);
 
-int exit();
+void exit();

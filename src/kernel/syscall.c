@@ -1,5 +1,4 @@
 #include "syscall.h"
-#include "console.h"
 #include "file.h"
 #include "idt.h"
 #include "kernel.h"
@@ -12,12 +11,14 @@
 #include "types.h"
 #include "vga_buffer.h"
 
-void register_syscalls() {
+void register_syscalls()
+{
     register_syscall(SYSCALL_EXIT, sys_exit);
     register_syscall(SYSCALL_PRINT, sys_print);
     register_syscall(SYSCALL_GETKEY, sys_getkey);
     register_syscall(SYSCALL_PUTCHAR, sys_putchar);
     register_syscall(SYSCALL_MALLOC, sys_malloc);
+    register_syscall(SYSCALL_CALLOC, sys_calloc);
     register_syscall(SYSCALL_FREE, sys_free);
     register_syscall(SYSCALL_PUTCHAR_COLOR, sys_putchar_color);
     register_syscall(SYSCALL_CREATE_PROCESS, sys_create_process);
@@ -34,17 +35,20 @@ void register_syscalls() {
     register_syscall(SYSCALL_REBOOT, sys_reboot);
     register_syscall(SYSCALL_SHUTDOWN, sys_shutdown);
 }
-void *sys_reboot(struct interrupt_frame *frame) {
+void *sys_reboot(struct interrupt_frame *frame)
+{
     system_reboot();
     return nullptr;
 }
 
-void *sys_shutdown(struct interrupt_frame *frame) {
+void *sys_shutdown(struct interrupt_frame *frame)
+{
     system_shutdown();
     return nullptr;
 }
 
-void *sys_set_current_directory(struct interrupt_frame *frame) {
+void *sys_set_current_directory(struct interrupt_frame *frame)
+{
     void *path_ptr = task_get_stack_item(task_current(), 0);
     char path[MAX_PATH_LENGTH];
 
@@ -54,7 +58,8 @@ void *sys_set_current_directory(struct interrupt_frame *frame) {
 
 void *sys_get_current_directory(struct interrupt_frame *frame) { return (void *)process_current()->current_directory; }
 
-void *sys_open_dir(struct interrupt_frame *frame) {
+void *sys_open_dir(struct interrupt_frame *frame)
+{
     void *path_ptr = task_get_stack_item(task_current(), 0);
     char path[MAX_PATH_LENGTH];
 
@@ -67,7 +72,8 @@ void *sys_open_dir(struct interrupt_frame *frame) {
     return (void *)fs_open_dir((const char *)path, directory);
 }
 
-void *sys_get_program_arguments(struct interrupt_frame *frame) {
+void *sys_get_program_arguments(struct interrupt_frame *frame)
+{
     const struct process *process = task_current()->process;
     struct process_arguments *arguments =
         task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 0));
@@ -78,13 +84,15 @@ void *sys_get_program_arguments(struct interrupt_frame *frame) {
     return NULL;
 }
 
-void *sys_clear_screen(struct interrupt_frame *frame) {
+void *sys_clear_screen(struct interrupt_frame *frame)
+{
     terminal_clear();
 
     return NULL;
 }
 
-void *sys_stat(struct interrupt_frame *frame) {
+void *sys_stat(struct interrupt_frame *frame)
+{
     const int fd = (int)task_get_stack_item(task_current(), 1);
 
     struct file_stat *stat = task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 0));
@@ -92,7 +100,8 @@ void *sys_stat(struct interrupt_frame *frame) {
     return (void *)fstat(fd, stat);
 }
 
-void *sys_read(struct interrupt_frame *frame) {
+void *sys_read(struct interrupt_frame *frame)
+{
     void *task_file_contents = task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 3));
 
     const unsigned int size  = (unsigned int)task_get_stack_item(task_current(), 2);
@@ -104,14 +113,16 @@ void *sys_read(struct interrupt_frame *frame) {
     return (void *)res;
 }
 
-void *sys_close(struct interrupt_frame *frame) {
+void *sys_close(struct interrupt_frame *frame)
+{
     const int fd = (int)task_get_stack_item(task_current(), 0);
 
     const int res = fclose(fd);
     return (void *)res;
 }
 
-void *sys_open(struct interrupt_frame *frame) {
+void *sys_open(struct interrupt_frame *frame)
+{
     void *file_name = task_get_stack_item(task_current(), 1);
     char *name[MAX_PATH_LENGTH];
 
@@ -126,7 +137,8 @@ void *sys_open(struct interrupt_frame *frame) {
     return (void *)(int)fd;
 }
 
-void *sys_exit(struct interrupt_frame *frame) {
+void *sys_exit(struct interrupt_frame *frame)
+{
     struct process *process = task_current()->process;
     const int retval        = process_terminate(process);
     task_next();
@@ -134,7 +146,8 @@ void *sys_exit(struct interrupt_frame *frame) {
     return (void *)retval;
 }
 
-void *sys_print(struct interrupt_frame *frame) {
+void *sys_print(struct interrupt_frame *frame)
+{
     void *message = task_get_stack_item(task_current(), 0);
     char buffer[2048];
 
@@ -145,18 +158,21 @@ void *sys_print(struct interrupt_frame *frame) {
     return NULL;
 }
 
-void *sys_getkey(struct interrupt_frame *frame) {
+void *sys_getkey(struct interrupt_frame *frame)
+{
     const uchar c = keyboard_pop();
     return (void *)(int)c;
 }
 
-void *sys_putchar(struct interrupt_frame *frame) {
+void *sys_putchar(struct interrupt_frame *frame)
+{
     const char c = (char)(int)task_get_stack_item(task_current(), 0);
     terminal_write_char(c, 0x0F, 0x00);
     return NULL;
 }
 
-void *sys_putchar_color(struct interrupt_frame *frame) {
+void *sys_putchar_color(struct interrupt_frame *frame)
+{
     const unsigned char backcolor = (unsigned char)(int)task_get_stack_item(task_current(), 0);
     const unsigned char forecolor = (unsigned char)(int)task_get_stack_item(task_current(), 1);
     const char c                  = (char)(int)task_get_stack_item(task_current(), 2);
@@ -165,23 +181,34 @@ void *sys_putchar_color(struct interrupt_frame *frame) {
     return nullptr;
 }
 
-void *sys_malloc(struct interrupt_frame *frame) {
+void *sys_calloc(struct interrupt_frame *frame)
+{
+    const int size = (int)task_get_stack_item(task_current(), 0);
+    const int nmemb = (int)task_get_stack_item(task_current(), 1);
+    return process_calloc(task_current()->process, nmemb, size);
+}
+
+void *sys_malloc(struct interrupt_frame *frame)
+{
     const uintptr_t size = (uintptr_t)task_get_stack_item(task_current(), 0);
     return process_malloc(task_current()->process, size);
 }
 
-void *sys_free(struct interrupt_frame *frame) {
+void *sys_free(struct interrupt_frame *frame)
+{
     void *ptr = task_get_stack_item(task_current(), 0);
     process_free(task_current()->process, ptr);
     return NULL;
 }
 
-void *sys_wait_pid(struct interrupt_frame *frame) {
+void *sys_wait_pid(struct interrupt_frame *frame)
+{
     const int pid = (int)task_get_stack_item(task_current(), 0);
     return (void *)process_wait_pid(task_current()->process, pid);
 }
 
-void *sys_create_process(struct interrupt_frame *frame) {
+void *sys_create_process(struct interrupt_frame *frame)
+{
     struct command_argument *arguments =
         task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 0));
     if (!arguments || strlen(arguments->argument) == 0) {
@@ -212,6 +239,7 @@ void *sys_create_process(struct interrupt_frame *frame) {
     struct process *current_process = task_current()->process;
     process->parent                 = current_process;
     process->state                  = RUNNING;
+    process->priority               = 1;
     add_child(current_process, process);
 
 

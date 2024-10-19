@@ -5,20 +5,21 @@
 #include "status.h"
 #include "string.h"
 
-static int path_valid_format(const char *path) {
-    size_t len = strnlen(path, MAX_PATH_LENGTH);
-
+static int path_valid_format(const char *path)
+{
+    const size_t len = strnlen(path, MAX_PATH_LENGTH);
     return len >= 3 && isdigit(path[0]) && memcmp((void *)&path[1], ":/", 2) == 0;
 }
 
-static int get_drive_by_path(const char **path) {
+static int get_drive_by_path(const char **path)
+{
     dbgprintf("Getting drive by path %s\n", *path);
     if (!path_valid_format(*path)) {
         warningf("Invalid path format\n");
         return -EBADPATH;
     }
 
-    int drive_number = tonumericdigit(*path[0]);
+    const int drive_number = tonumericdigit(*path[0]);
 
     // Skip drive number and colon and slash
     *path += 3;
@@ -26,7 +27,8 @@ static int get_drive_by_path(const char **path) {
     return drive_number;
 }
 
-static struct path_root *create_root(int drive_number) {
+static struct path_root *create_root(const int drive_number)
+{
     struct path_root *root = kzalloc(sizeof(struct path_root));
     root->drive_number     = drive_number;
     root->first            = nullptr;
@@ -34,7 +36,8 @@ static struct path_root *create_root(int drive_number) {
     return root;
 }
 
-static const char *get_path_part(const char **path) {
+static const char *get_path_part(const char **path)
+{
     char *path_part = kzalloc(MAX_PATH_LENGTH);
     int i           = 0;
     while (**path != '/' && **path != 0x00) {
@@ -56,7 +59,8 @@ static const char *get_path_part(const char **path) {
     return path_part;
 }
 
-struct path_part *parse_path_part(struct path_part *last_part, const char **path) {
+struct path_part *parse_path_part(struct path_part *last_part, const char **path)
+{
     dbgprintf("Parsing path part\n");
     dbgprintf("Last part: %s\n", last_part ? last_part->part : "NULL");
     dbgprintf("Path: %s\n", *path);
@@ -81,7 +85,8 @@ struct path_part *parse_path_part(struct path_part *last_part, const char **path
     return path_part;
 }
 
-void path_parser_free(struct path_root *root) {
+void path_parser_free(struct path_root *root)
+{
     struct path_part *part = root->first;
     while (part) {
         struct path_part *next = part->next;
@@ -93,7 +98,8 @@ void path_parser_free(struct path_root *root) {
     kfree(root);
 }
 
-struct path_root *path_parser_parse(const char *path, const char *current_directory_path) {
+struct path_root *path_parser_parse(const char *path, const char *current_directory_path)
+{
     dbgprintf("Parsing path %s\n", path);
     int res                = 0;
     const char *tmp_path   = path;

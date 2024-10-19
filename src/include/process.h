@@ -26,8 +26,10 @@ struct process_arguments {
 
 struct process {
     uint16_t pid;
+    int priority;
     char file_name[MAX_PATH_LENGTH];
     struct process *parent;
+    // TODO: Abstract this into a separate data structure for linked lists
     struct process *next;
     struct process *children;
     struct task *task;
@@ -62,9 +64,10 @@ int process_load_for_slot(const char *file_name, struct process **process, uint1
 struct process *process_current();
 struct process *process_get(int pid);
 void *process_malloc(struct process *process, size_t size);
+void *process_calloc(struct process *process, const size_t nmemb, const size_t size);
 void process_free(struct process *process, void *ptr);
 void process_get_arguments(struct process *process, int *argc, char ***argv);
-int process_inject_arguments(struct process *process, struct command_argument *root_argument);
+int process_inject_arguments(struct process *process, const struct command_argument *root_argument);
 int process_terminate(struct process *process);
 int process_set_current_directory(struct process *process, const char *directory);
 void process_unlink(const struct process *process);

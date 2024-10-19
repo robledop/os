@@ -1,7 +1,5 @@
 #include "gdt.h"
 #include "tss.h"
-#include "vga_buffer.h"
-#include "config.h"
 
 struct gdt_entry gdt_entries[6];
 struct gdt_ptr gdt_ptr;

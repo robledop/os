@@ -1,5 +1,4 @@
 #include "ata.h"
-#include "config.h"
 #include "io.h"
 #include "kernel.h"
 #include "serial.h"

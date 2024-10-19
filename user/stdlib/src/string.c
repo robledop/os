@@ -2,7 +2,8 @@
 #include "stdlib.h"
 #include "types.h"
 
-inline void reverse(char s[]) {
+inline void reverse(char s[])
+{
     int c, i, j;
 
     for (i = 0, j = strlen(s) - 1; i < j; i++, j--) {
@@ -13,7 +14,8 @@ inline void reverse(char s[]) {
 }
 
 // Gets the length of a string
-int strlen(const char *ptr) {
+int strlen(const char *ptr)
+{
     int i = 0;
     while (*ptr != 0) {
         i++;
@@ -24,7 +26,8 @@ int strlen(const char *ptr) {
 }
 
 // Gets the length of a string
-size_t strnlen(const char *s, size_t maxlen) {
+size_t strnlen(const char *s, size_t maxlen)
+{
     int n;
 
     for (n = 0; s[n]; n++) {
@@ -35,7 +38,8 @@ size_t strnlen(const char *s, size_t maxlen) {
     return n;
 }
 
-int strnlen_terminator(const char *s, size_t maxlen, char terminator) {
+int strnlen_terminator(const char *s, size_t maxlen, char terminator)
+{
     int n;
 
     for (n = 0; s[n]; n++) {
@@ -47,7 +51,8 @@ int strnlen_terminator(const char *s, size_t maxlen, char terminator) {
 }
 
 // Compare two strings
-int strncmp(const char *p, const char *q, unsigned int n) {
+int strncmp(const char *p, const char *q, unsigned int n)
+{
     while (n > 0 && *p && *p == *q) {
         n--, p++, q++;
     }
@@ -57,9 +62,13 @@ int strncmp(const char *p, const char *q, unsigned int n) {
     return (unsigned char)*p - (unsigned char)*q;
 }
 
-bool starts_with(const char *pre, const char *str) { return strncmp(pre, str, strlen(pre)) == 0; }
+bool starts_with(const char *pre, const char *str)
+{
+    return strncmp(pre, str, strlen(pre)) == 0;
+}
 
-char tolower(char s1) {
+char tolower(char s1)
+{
     if (s1 >= 65 && s1 <= 90) {
         s1 += 32;
     }
@@ -68,11 +77,11 @@ char tolower(char s1) {
 }
 
 // Compare two strings ignoring case
-int istrncmp(const char *s1, const char *s2, int n) {
-    unsigned char u1, u2;
+int istrncmp(const char *s1, const char *s2, int n)
+{
     while (n-- > 0) {
-        u1 = (unsigned char)*s1++;
-        u2 = (unsigned char)*s2++;
+        const unsigned char u1 = (unsigned char)*s1++;
+        const unsigned char u2 = (unsigned char)*s2++;
         if (u1 != u2 && tolower(u1) != tolower(u2))
             return u1 - u2;
         if (u1 == '\0')
@@ -82,7 +91,8 @@ int istrncmp(const char *s1, const char *s2, int n) {
     return 0;
 }
 
-char *strcpy(char *dest, const char *src) {
+char *strcpy(char *dest, const char *src)
+{
     char *d = dest;
     while ((*d++ = *src++) != '\0')
         ;
@@ -90,7 +100,8 @@ char *strcpy(char *dest, const char *src) {
 }
 
 // Copy string t to s
-char *strncpy(char *dest, const char *src, int n) {
+char *strncpy(char *dest, const char *src, int n)
+{
     int i = 0;
     for (i = 0; i < n - 1; i++) {
         if (src[i] == '\0') {
@@ -105,10 +116,9 @@ char *strncpy(char *dest, const char *src, int n) {
 }
 
 // Like strncpy but guaranteed to NUL-terminate.
-char *safestrcpy(char *s, const char *t, int n) {
-    char *os;
-
-    os = s;
+char *safestrcpy(char *s, const char *t, int n)
+{
+    char *os = s;
     if (n <= 0) {
         return os;
     }
@@ -118,22 +128,31 @@ char *safestrcpy(char *s, const char *t, int n) {
     return os;
 }
 
-bool isdigit(char c) { return c >= '0' && c <= '9'; }
+bool isdigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
 
-int tonumericdigit(char c) { return c - 48; }
+int tonumericdigit(char c)
+{
+    return c - 48;
+}
 
-bool isspace(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r'; }
+bool isspace(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
 
 // Trim leading and trailing whitespaces
-char *trim(char *str) {
-    char *end;
+char *trim(char *str)
+{
     while (isspace(*str)) {
         str++;
     }
     if (*str == 0) {
         return str;
     }
-    end = str + strlen(str) - 1;
+    char *end = str + strlen(str) - 1;
     while (end > str && isspace(*end)) {
         end--;
     }
@@ -141,8 +160,9 @@ char *trim(char *str) {
     return str;
 }
 
-char *substring(char *str, int start, int end) {
-    char *substr = (char *)malloc(sizeof(char) * (end - start + 2));
+char *substring(const char *str, int start, int end)
+{
+    auto const substr = (char *)malloc(sizeof(char) * (end - start + 2));
     for (int i = start; i <= end; i++) {
         substr[i - start] = str[i];
     }
@@ -150,27 +170,9 @@ char *substring(char *str, int start, int end) {
     return substr;
 }
 
-// inline int itoa(int n, char s[]) {
-//     int i, sign;
-
-//     if ((sign = n) < 0)
-//         n = -n;
-//     i = 0;
-//     do {
-//         s[i++] = n % 10 + '0';
-//     } while ((n /= 10) > 0);
-
-//     if (sign < 0)
-//         s[i++] = '-';
-
-//     s[i] = '\0';
-//     reverse(s);
-
-//     return i;
-// }
-
 // Convert integer to string
-char *itoa(int i) {
+char *itoa(int i)
+{
     static char str[12];
     int loc  = 11;
     str[11]  = 0;
@@ -196,7 +198,8 @@ char *itoa(int i) {
     return &str[loc];
 }
 
-inline int itohex(unsigned int n, char s[]) {
+inline int itohex(unsigned int n, char s[])
+{
     unsigned int i, d;
 
     i = 0;
@@ -214,7 +217,8 @@ inline int itohex(unsigned int n, char s[]) {
     return i;
 }
 
-char *strtok(char *str, const char *delim) {
+char *strtok(char *str, const char *delim)
+{
     static char *static_str = nullptr; // Stores the string between calls
     int i = 0, j = 0;
 
@@ -271,7 +275,8 @@ char *strtok(char *str, const char *delim) {
 /// @param dest the destination string
 /// @param src the source string
 /// @return the concatenated string
-char *strcat(char *dest, const char *src) {
+char *strcat(char *dest, const char *src)
+{
     char *d = dest;
     while (*d != '\0') {
         d++;
@@ -289,7 +294,8 @@ char *strcat(char *dest, const char *src) {
 /// @param str string to check
 /// @param suffix suffix to check for
 /// @return true if the string ends with the suffix, false otherwise
-bool str_ends_with(const char *str, const char *suffix) {
+bool str_ends_with(const char *str, const char *suffix)
+{
     if (!str || !suffix) {
         return false;
     }

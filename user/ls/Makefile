@@ -37,7 +37,7 @@ FLAGS = -g \
 	-Wall
 
 all: $(FILES)
-	i686-elf-gcc -g -T ./linker.ld -o ../../rootfs/bin/$(OUTPUT) -ffreestanding -O0 -nostdlib -fpic -g $(FILES) ../stdlib/stdlib.elf
+	i686-elf-gcc -g -T ./linker.ld -o ../../rootfs/bin/$(OUTPUT) -ffreestanding -O0 -nostdlib -fpic -g $(FILES) ../stdlib/libstdlib.a
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@

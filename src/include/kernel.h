@@ -2,8 +2,6 @@
 
 #include "multiboot.h"
 
-#include "types.h"
-
 void kernel_main(multiboot_info_t *mbd, unsigned int magic);
 void panic(const char *msg);
 void kernel_page();

@@ -19,14 +19,19 @@
 struct process *current_process                 = nullptr;
 static struct process *processes[MAX_PROCESSES] = {nullptr};
 
-static void process_init(struct process *process) { memset(process, 0, sizeof(struct process)); }
+static void process_init(struct process *process)
+{
+    memset(process, 0, sizeof(struct process));
+}
 // int find_empty_process(void);
 
-struct process *process_current() {
+struct process *process_current()
+{
     return current_process;
 }
 
-struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state) {
+struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state)
+{
     // Traverse the linked list of children
     struct process *child = parent->children;
     while (child) {
@@ -38,7 +43,8 @@ struct process *find_child_process_by_state(const struct process *parent, const 
     return nullptr;
 }
 
-struct process *find_child_process_by_pid(const struct process *parent, const int pid) {
+struct process *find_child_process_by_pid(const struct process *parent, const int pid)
+{
     // Traverse the linked list of children
     struct process *child = parent->children;
     while (child) {
@@ -50,7 +56,8 @@ struct process *find_child_process_by_pid(const struct process *parent, const in
     return nullptr;
 }
 
-int add_child(struct process *parent, struct process *child) {
+int add_child(struct process *parent, struct process *child)
+{
     if (!parent || !child) {
         return -EINVARG;
     }
@@ -71,7 +78,8 @@ int add_child(struct process *parent, struct process *child) {
 
 
 // TODO: free process data
-int remove_child(struct process *parent, struct process *child) {
+int remove_child(struct process *parent, struct process *child)
+{
     if (!parent || !child) {
         return -EINVARG;
     }
@@ -93,7 +101,8 @@ int remove_child(struct process *parent, struct process *child) {
     return -ENOENT;
 }
 
-struct process *process_get(const int pid) {
+struct process *process_get(const int pid)
+{
     if (pid < 0 || pid >= MAX_PROCESSES) {
         warningf("Invalid process id: %d\n", pid);
         ASSERT(false, "Invalid process id");
@@ -103,7 +112,8 @@ struct process *process_get(const int pid) {
     return processes[pid];
 }
 
-int process_switch(struct process *process) {
+int process_switch(struct process *process)
+{
     if (!process) {
         return -EINVARG;
     }
@@ -112,7 +122,8 @@ int process_switch(struct process *process) {
     return ALL_OK;
 }
 
-static int process_find_free_allocation_slot(const struct process *process) {
+static int process_find_free_allocation_slot(const struct process *process)
+{
     for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
         if (process->allocations[i].ptr == NULL) {
             return i;
@@ -137,7 +148,8 @@ static int process_find_free_allocation_slot(const struct process *process) {
 //     return false;
 // }
 
-static struct process_allocation *process_get_allocation_by_address(struct process *process, const void *address) {
+static struct process_allocation *process_get_allocation_by_address(struct process *process, const void *address)
+{
     for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
         if (process->allocations[i].ptr == address) {
             return &process->allocations[i];
@@ -147,7 +159,8 @@ static struct process_allocation *process_get_allocation_by_address(struct proce
     return nullptr;
 }
 
-int process_terminate_allocations(struct process *process) {
+int process_terminate_allocations(struct process *process)
+{
     for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
         process_free(process, process->allocations[i].ptr);
     }
@@ -155,7 +168,8 @@ int process_terminate_allocations(struct process *process) {
     return 0;
 }
 
-int process_free_program_data(const struct process *process) {
+int process_free_program_data(const struct process *process)
+{
     int res = 0;
     switch (process->file_type) {
     case PROCESS_FILE_TYPE_BINARY:
@@ -173,7 +187,8 @@ int process_free_program_data(const struct process *process) {
     return res;
 }
 
-void process_switch_to_any() {
+void process_switch_to_any()
+{
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (processes[i] && processes[i]->state == RUNNING) {
             process_switch(processes[i]);
@@ -184,7 +199,8 @@ void process_switch_to_any() {
     start_shell(0);
 }
 
-void process_unlink(const struct process *process) {
+void process_unlink(const struct process *process)
+{
     // TODO: find a better way to unlink the process
     processes[process->pid] = nullptr;
 
@@ -193,7 +209,8 @@ void process_unlink(const struct process *process) {
     }
 }
 
-int process_terminate(struct process *process) {
+int process_terminate(struct process *process)
+{
     process->state = ZOMBIE;
 
     int res = process_terminate_allocations(process);
@@ -219,7 +236,8 @@ int process_terminate(struct process *process) {
     return res;
 }
 
-int process_count_command_arguments(const struct command_argument *root_argument) {
+int process_count_command_arguments(const struct command_argument *root_argument)
+{
     int i                                  = 0;
     const struct command_argument *current = root_argument;
     while (current) {
@@ -230,7 +248,8 @@ int process_count_command_arguments(const struct command_argument *root_argument
     return i;
 }
 
-int process_inject_arguments(struct process *process, struct command_argument *root_argument) {
+int process_inject_arguments(struct process *process, const struct command_argument *root_argument)
+{
     int res = 0;
     ASSERT(root_argument->current_directory, "Current directory is not set");
 
@@ -274,14 +293,17 @@ out:
     return res;
 }
 
-void process_free(struct process *process, void *ptr) {
+void process_free(struct process *process, void *ptr)
+{
     struct process_allocation *allocation = process_get_allocation_by_address(process, ptr);
     if (!allocation) {
         ASSERT(false, "Failed to find allocation for address");
         return;
     }
 
-    const int res = paging_map_to(process->task->page_directory, allocation->ptr, allocation->ptr,
+    const int res = paging_map_to(process->task->page_directory,
+                                  allocation->ptr,
+                                  allocation->ptr,
                                   paging_align_address((char *)allocation->ptr + allocation->size),
                                   PAGING_DIRECTORY_ENTRY_UNMAPPED);
 
@@ -302,9 +324,21 @@ void process_free(struct process *process, void *ptr) {
     kfree(ptr);
 }
 
+void *process_calloc(struct process *process, const size_t nmemb, const size_t size)
+{
+    void *ptr = process_malloc(process, nmemb * size);
+    if (!ptr) {
+        return NULL;
+    }
+
+    memset(ptr, 0x00, nmemb * size);
+    return ptr;
+}
+
 // Allocate memory to be used by the process
-void *process_malloc(struct process *process, const size_t size) {
-    void *ptr = kzalloc(size);
+void *process_malloc(struct process *process, const size_t size)
+{
+    void *ptr = kmalloc(size);
     if (!ptr) {
         ASSERT(false, "Failed to allocate memory for process");
         goto out_error;
@@ -316,9 +350,12 @@ void *process_malloc(struct process *process, const size_t size) {
         goto out_error;
     }
 
-    int res = paging_map_to(process->task->page_directory, ptr, ptr, paging_align_address((char *)ptr + size),
-                            PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-                                PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+    const int res = paging_map_to(process->task->page_directory,
+                                  ptr,
+                                  ptr,
+                                  paging_align_address((char *)ptr + size),
+                                  PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
+                                      PAGING_DIRECTORY_ENTRY_SUPERVISOR);
     if (res < 0) {
         ASSERT(false, "Failed to map memory for process");
         goto out_error;
@@ -337,7 +374,8 @@ out_error:
 }
 
 // ReSharper disable once CppDFAUnreachableFunctionCall
-static int process_load_binary(const char *file_name, struct process *process) {
+static int process_load_binary(const char *file_name, struct process *process)
+{
     dbgprintf("Loading binary %s\n", file_name);
 
     int res      = 0;
@@ -386,7 +424,8 @@ out:
     return res;
 }
 
-static int process_load_elf(const char *file_name, struct process *process) {
+static int process_load_elf(const char *file_name, struct process *process)
+{
     int res                   = 0;
     struct elf_file *elf_file = nullptr;
 
@@ -404,7 +443,8 @@ out:
     return res;
 }
 
-static int process_load_data(const char *file_name, struct process *process) {
+static int process_load_data(const char *file_name, struct process *process)
+{
     dbgprintf("Loading data for process %s\n", file_name);
     int res = 0;
 
@@ -418,14 +458,18 @@ static int process_load_data(const char *file_name, struct process *process) {
     return res;
 }
 
-static int process_map_binary(const struct process *process) {
-    return paging_map_to(process->task->page_directory, (void *)PROGRAM_VIRTUAL_ADDRESS, process->pointer,
+static int process_map_binary(const struct process *process)
+{
+    return paging_map_to(process->task->page_directory,
+                         (void *)PROGRAM_VIRTUAL_ADDRESS,
+                         process->pointer,
                          paging_align_address((char *)process->pointer + process->size),
                          PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                              PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 }
 
-static int process_map_elf(const struct process *process) {
+static int process_map_elf(const struct process *process)
+{
     int res                   = 0;
     struct elf_file *elf_file = process->elf_file;
     struct elf_header *header = elf_header(elf_file);
@@ -440,9 +484,11 @@ static int process_map_elf(const struct process *process) {
             flags |= PAGING_DIRECTORY_ENTRY_IS_WRITABLE;
         }
 
-        res = paging_map_to(process->task->page_directory, paging_align_to_lower_page((void *)phdr->p_vaddr),
+        res = paging_map_to(process->task->page_directory,
+                            paging_align_to_lower_page((void *)phdr->p_vaddr),
                             paging_align_to_lower_page(phdr_phys_address),
-                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz), flags);
+                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz),
+                            flags);
         if (ISERR(res)) {
             ASSERT(false, "Failed to map ELF file");
             break;
@@ -452,7 +498,8 @@ static int process_map_elf(const struct process *process) {
     return res;
 }
 
-int process_map_memory(const struct process *process) {
+int process_map_memory(const struct process *process)
+{
     int res = 0;
     switch (process->file_type) {
     case PROCESS_FILE_TYPE_ELF:
@@ -470,7 +517,8 @@ int process_map_memory(const struct process *process) {
 
     res = paging_map_to(process->task->page_directory,
                         (char *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
-                        process->stack, paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
+                        process->stack,
+                        paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
                         PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                             PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
@@ -478,7 +526,8 @@ out:
     return res;
 }
 
-int process_get_free_slot() {
+int process_get_free_slot()
+{
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (processes[i] == nullptr) {
             return i;
@@ -488,10 +537,11 @@ int process_get_free_slot() {
     return -EINSTKN;
 }
 
-int process_load_switch(const char *file_name, struct process **process) {
+int process_load_switch(const char *file_name, struct process **process)
+{
     dbgprintf("Loading and switching process %s\n", file_name);
 
-    int res = process_load(file_name, process);
+    const int res = process_load(file_name, process);
     if (res == 0) {
         process_switch(*process);
     }
@@ -499,7 +549,8 @@ int process_load_switch(const char *file_name, struct process **process) {
     return res;
 }
 
-int process_load(const char *file_name, struct process **process) {
+int process_load(const char *file_name, struct process **process)
+{
     dbgprintf("Loading process %s\n", file_name);
     int res                = 0;
     const int process_slot = process_get_free_slot();
@@ -516,7 +567,8 @@ out:
     return res;
 }
 
-int process_load_for_slot(const char *file_name, struct process **process, const uint16_t slot) {
+int process_load_for_slot(const char *file_name, struct process **process, const uint16_t slot)
+{
     int res                     = 0;
     struct task *task           = nullptr;
     struct process *proc        = nullptr;
@@ -591,7 +643,8 @@ out:
     return res;
 }
 
-int process_set_current_directory(struct process *process, const char *directory) {
+int process_set_current_directory(struct process *process, const char *directory)
+{
     if (!process || !directory || strlen(directory) == 0) {
         return -EINVARG;
     }
@@ -605,7 +658,8 @@ int process_set_current_directory(struct process *process, const char *directory
     return ALL_OK;
 }
 
-int process_wait_pid(struct process *process, const int pid) {
+int process_wait_pid(struct process *process, const int pid)
+{
     disable_interrupts();
 
     struct process *child = find_child_process_by_pid(process, pid);

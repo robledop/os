@@ -1,10 +1,8 @@
 #include "serial.h"
-#include "io.h"
-#include "string.h"
-#include "memory.h"
-#include "kernel.h"
-#include "task.h"
 #include <stdarg.h>
+#include "io.h"
+#include "memory.h"
+#include "string.h"
 
 #define PORT 0x3f8 // COM1
 #define MAX_FMT_STR_SERIAL 100
@@ -12,30 +10,26 @@ static int serial_init_done = 0;
 
 void serial_put(char a)
 {
-    if (!serial_init_done)
-    {
+    if (!serial_init_done) {
         return;
     }
-    while ((inb(PORT + 5) & 0x20) == 0)
-    {
+    while ((inb(PORT + 5) & 0x20) == 0) {
     };
 
     outb(PORT, a);
 }
 
-void serial_write(char *str)
+void serial_write(const char *str)
 {
-    if (!serial_init_done)
-    {
+    if (!serial_init_done) {
         return;
     }
-    for (size_t i = 0; i < strlen(str); i++)
-    {
+    for (size_t i = 0; i < strlen(str); i++) {
         serial_put(str[i]);
     }
 }
 
-int serial_printf(char *fmt, ...)
+int serial_printf(const char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL
@@ -46,14 +40,11 @@ int serial_printf(char *fmt, ...)
 
     va_start(args, fmt);
     size_t i = 0;
-    while (*fmt != '\0' && i++ < sizeof(str))
-    {
-        switch (*fmt)
-        {
+    while (*fmt != '\0' && i++ < sizeof(str)) {
+        switch (*fmt) {
         case '%':
             memset(str, 0, sizeof(str));
-            switch (*(fmt + 1))
-            {
+            switch (*(fmt + 1)) {
             case 'd':
                 num = va_arg(args, int);
                 itoa(num, str);
@@ -64,14 +55,17 @@ int serial_printf(char *fmt, ...)
                 itohex(num, str);
                 serial_write("0x");
                 serial_write(str);
+                written += (int)strlen(str) + 2;
                 break;
             case 's':;
-                char *str_arg = va_arg(args, char *);
+                const char *str_arg = va_arg(args, char *);
                 serial_write(str_arg);
+                written += (int)strlen(str_arg);
                 break;
             case 'c':;
-                char char_arg = (char)va_arg(args, int);
+                const char char_arg = (char)va_arg(args, int);
                 serial_put(char_arg);
+                written++;
                 break;
 
             default:
@@ -81,6 +75,7 @@ int serial_printf(char *fmt, ...)
             break;
         default:
             serial_put(*fmt);
+            written++;
         }
         fmt++;
     }
@@ -107,8 +102,7 @@ void init_serial()
     outb(PORT + 0, 0xAE); // Test serial chip (send byte 0xAE and check if serial returns same byte)
 
     // Check if serial is faulty (i.e: not same byte as sent)
-    if (inb(PORT + 0) != 0xAE)
-    {
+    if (inb(PORT + 0) != 0xAE) {
         return;
     }
 

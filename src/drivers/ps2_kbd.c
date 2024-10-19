@@ -1,10 +1,8 @@
 #include "ps2_kbd.h"
-#include "console.h"
 #include "idt.h"
 #include "io.h"
 #include "kernel.h"
 #include "keyboard.h"
-#include "vga_buffer.h"
 
 int ps2_keyboard_init();
 void ps2_keyboard_interrupt_handler(int interrupt);

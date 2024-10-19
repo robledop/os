@@ -10,7 +10,7 @@ os_putchar_color:
     push dword [ebp + 8] ; c
     push dword [ebp + 12] ; foreground
     push dword [ebp + 14] ; background
-    mov eax, 6           ; sys_putchar_color command
+    mov eax, 7           ; sys_putchar_color command
     int 0x80
     add esp, 10
     mov esp, ebp
