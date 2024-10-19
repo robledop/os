@@ -1,5 +1,5 @@
-#ifndef PCI_H
-#define PCI_H
+#pragma once
+
 #include "types.h"
 
 struct pci_t
@@ -37,5 +37,3 @@ struct pci_t
 } __attribute__((packed));
 
 void pci_scan();
-
-#endif

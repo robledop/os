@@ -1,5 +1,5 @@
-#ifndef STATUS_H
-#define STATUS_H
+#pragma once
+
 
 #define ALL_OK 0
 // Input/output error
@@ -23,4 +23,5 @@
 // No such file or directory
 #define ENOENT 10
 
-#endif
+// Resource temporarily unavailable
+#define EAGAIN 11

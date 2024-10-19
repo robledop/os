@@ -1,5 +1,4 @@
-#ifndef STRING_H
-#define STRING_H
+#pragma once
 
 #include "types.h"
 
@@ -25,5 +24,3 @@ void reverse(char s[]);
 /* Duplicate S, returning an identical malloc'd string.  */
 char *strdup(const char *s);
 char *strtok(char *str, const char *delim);
-
-#endif

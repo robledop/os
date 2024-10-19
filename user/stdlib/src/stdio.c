@@ -1,9 +1,10 @@
 #include "stdio.h"
 #include <stdarg.h>
+#include "../../../src/include/syscall.h"
 #include "memory.h"
 #include "os.h"
-#include "stdlib.h"
 #include "string.h"
+#include "syscall.h"
 
 #define MAX_FMT_STR 10240
 
@@ -34,24 +35,25 @@ struct fat_directory_entry {
     uint32_t size;
 } __attribute__((packed));
 
-void clear_screen() { os_clear_screen(); }
+void clear_screen() { syscall0(SYSCALL_CLEAR_SCREEN); }
 
-void putchar_color(char c, unsigned char forecolor, unsigned char backcolor) {
+void putchar_color(const char c, const unsigned char forecolor, const unsigned char backcolor) {
     os_putchar_color(c, forecolor, backcolor);
 }
 
-int fstat(int fd, struct file_stat *stat) { return os_stat(fd, stat); }
+int fstat(int fd, struct file_stat *stat) { return syscall2(SYSCALL_STAT, fd, stat); }
 
-int fopen(const char *name, const char *mode) { return os_open(name, mode); }
+int fopen(const char *name, const char *mode) { return syscall2(SYSCALL_OPEN, name, mode); }
 
-int fclose(int fd) { return os_close(fd); }
+int fclose(int fd) { return syscall1(SYSCALL_CLOSE, fd); }
 
-int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd) { return os_read(ptr, size, nmemb, fd); }
-
-int putchar(const unsigned char c) {
-    os_putchar(c);
-    return 0;
+int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd) {
+    return syscall4(SYSCALL_READ, ptr, size, nmemb, fd);
 }
+
+void putchar(const unsigned char c) { syscall1(SYSCALL_PUTCHAR, c); }
+
+int print(const char *str) { return syscall1(SYSCALL_PRINT, str); }
 
 int printf(const char *fmt, ...) {
     static unsigned char forecolor = 0x0F; // Default white
@@ -75,21 +77,21 @@ int printf(const char *fmt, ...) {
                 num = va_arg(args, int);
                 strncpy(str, itoa(num), MAX_FMT_STR);
                 // str = itoa(num);
-                os_print(str);
+                print(str);
                 x_offset += strlen(str);
                 break;
 
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);
-                os_print("0x");
-                os_print(str);
+                print("0x");
+                print(str);
                 x_offset += strlen(str);
                 break;
 
             case 's':
                 const char *str_arg = va_arg(args, char *);
-                os_print(str_arg);
+                print(str_arg);
                 x_offset += strlen(str_arg);
                 break;
 
@@ -233,7 +235,7 @@ int printf(const char *fmt, ...) {
 /// @code
 /// struct file_directory *directory = malloc(sizeof(struct file_directory));
 /// int res = opendir(directory, "pah/to/directory");
-int opendir(struct file_directory *directory, const char *path) { return os_open_dir(directory, path); }
+int opendir(struct file_directory *directory, const char *path) { return syscall2(SYSCALL_OPEN_DIR, directory, path); }
 
 /// @brief Reads an entry from a directory
 /// @param directory the directory to read from
@@ -283,7 +285,16 @@ int readdir(const struct file_directory *directory, struct directory_entry *entr
 }
 
 // Get the current directory for the current process
-char *get_current_directory() { return os_get_current_directory(); }
-
+char *get_current_directory() { return (char *)syscall0(SYSCALL_GET_CURRENT_DIRECTORY); }
 // Set the current directory for the current process
-int set_current_directory(const char *path) { return os_set_current_directory(path); }
+int set_current_directory(const char *path) { return syscall1(SYSCALL_SET_CURRENT_DIRECTORY, path); }
+int exit() { return syscall0(SYSCALL_EXIT); }
+int getkey() { return syscall0(SYSCALL_GETKEY); }
+
+int getkey_blocking() {
+    int key = 0;
+    while ((key = getkey()) == 0) {
+    }
+
+    return key;
+}

@@ -1,5 +1,5 @@
-#ifndef KEYBOARD_H
-#define KEYBOARD_H
+#pragma once
+
 #include "process.h"
 
 #define KEYBOARD_CAPSLOCK_ON 0x01
@@ -20,5 +20,3 @@ void keyboard_backspace(struct process *process);
 void keyboard_push(const uchar c);
 uchar keyboard_pop();
 int keyboard_register(struct keyboard *kbd);
-
-#endif

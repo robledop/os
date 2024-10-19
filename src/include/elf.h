@@ -1,5 +1,4 @@
-#ifndef EFL_H
-#define ELF_H
+#pragma once
 
 #include "types.h"
 
@@ -125,5 +124,3 @@ struct elf32_sym
 
 void *elf_get_entry_ptr(const struct elf_header *elf_header);
 uint32_t elf_get_entry(const struct elf_header *elf_header);
-
-#endif

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "types.h"
 
 #define KNRM "\x1B[0m"

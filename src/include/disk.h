@@ -1,5 +1,4 @@
-#ifndef DISK_H
-#define DISK_H
+#pragma once
 
 #include "types.h"
 
@@ -22,5 +21,3 @@ void disk_init();
 struct disk *disk_get(int index);
 int disk_read_block(const struct disk *idisk, const unsigned int lba, const int total, void *buffer);
 int disk_read_sector(const uint32_t sector, uint8_t *buffer);
-
-#endif

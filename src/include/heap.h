@@ -1,5 +1,4 @@
-#ifndef HEAP_H
-#define HEAP_H
+#pragma once
 
 #include "config.h"
 #include "types.h"
@@ -26,5 +25,3 @@ struct heap
 int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *table);
 void *heap_malloc(struct heap *heap, size_t size);
 void heap_free(struct heap *heap, void *ptr);
-
-#endif

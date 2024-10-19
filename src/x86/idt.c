@@ -54,11 +54,11 @@ static SYSCALL_HANDLER_FUNCTION syscalls[MAX_SYSCALLS];
 extern void idt_load(struct idtr_desc *ptr);
 extern void isr80h_wrapper();
 
-void no_interrupt_handler(int interrupt) { kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt); }
+void no_interrupt_handler(const int interrupt) { kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt); }
 
-void interrupt_handler(int interrupt, struct interrupt_frame *frame) {
+void interrupt_handler(const int interrupt, struct interrupt_frame *frame) {
     kernel_page();
-    if (interrupt_callbacks[interrupt] != 0) {
+    if (interrupt_callbacks[interrupt] != nullptr) {
         task_current_save_state(frame);
         interrupt_callbacks[interrupt](interrupt);
     }
@@ -67,7 +67,7 @@ void interrupt_handler(int interrupt, struct interrupt_frame *frame) {
     outb(0x20, 0x20);
 }
 
-void idt_set(int interrupt, INTERRUPT_HANDLER_FUNCTION handler) {
+void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler) {
     struct idt_desc *desc = &idt_descriptors[interrupt];
     desc->offset_1        = (uint32_t)handler & 0x0000FFFF;
     desc->selector        = KERNEL_CODE_SELECTOR;
@@ -116,7 +116,7 @@ void idt_init() {
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
     idtr_descriptor.base  = (uintptr_t)idt_descriptors;
 
-    for (size_t i = 0; i < TOTAL_INTERRUPTS; i++) {
+    for (int i = 0; i < TOTAL_INTERRUPTS; i++) {
         idt_set(i, interrupt_pointer_table[i]);
     }
 
@@ -134,7 +134,7 @@ void idt_init() {
     idt_load(&idtr_descriptor);
 }
 
-int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback) {
+int idt_register_interrupt_callback(const int interrupt, const INTERRUPT_CALLBACK_FUNCTION interrupt_callback) {
     if (interrupt < 0 || interrupt >= TOTAL_INTERRUPTS) {
         dbgprintf("Interrupt out of bounds: %d\n", interrupt);
         ASSERT(false, "Interrupt out of bounds");
@@ -146,45 +146,42 @@ int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION i
     return ALL_OK;
 }
 
-void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler) {
+void register_syscall(const int command, const SYSCALL_HANDLER_FUNCTION handler) {
     if (command < 0 || command >= MAX_SYSCALLS) {
         panic("The command is out of bounds");
     }
 
     if (syscalls[command]) {
-        kprintf("The syscall is already registered %x\n", syscalls[command]);
+        kprintf("The syscall %x is already registered\n", syscalls[command]);
         panic("The syscall is already registered");
     }
 
     syscalls[command] = handler;
 }
 
-void *handle_syscall(int syscall, struct interrupt_frame *frame) {
-    void *result = 0;
+void *handle_syscall(const int syscall, struct interrupt_frame *frame) {
 
     if (syscall < 0 || syscall >= MAX_SYSCALLS) {
         dbgprintf("Invalid command: %d\n", syscall);
+        kprintf("Invalid command: %d\n", syscall);
         ASSERT(false, "Invalid command");
         return NULL;
     }
 
-    SYSCALL_HANDLER_FUNCTION handler = syscalls[syscall];
+    const SYSCALL_HANDLER_FUNCTION handler = syscalls[syscall];
     if (!handler) {
         dbgprintf("No handler for command: %d\n", syscall);
         ASSERT(false, "No handler for command");
         return NULL;
     }
 
-    result = handler(frame);
-
-    return result;
+    return handler(frame);
 }
 
-void *syscall_handler(int syscalll, struct interrupt_frame *frame) {
-    void *res = 0;
+void *syscall_handler(const int syscalll, struct interrupt_frame *frame) {
     kernel_page();
     task_current_save_state(frame);
-    res = handle_syscall(syscalll, frame);
+    void *res = handle_syscall(syscalll, frame);
     task_page();
 
     return res;

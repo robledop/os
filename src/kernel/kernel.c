@@ -54,6 +54,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic) {
 
     disable_interrupts();
     init_serial();
+    print(""); // Without this, the terminal gets all messed up, but only when using my bootloader
     terminal_clear();
     // kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
     char *cpu = cpu_string();
@@ -91,7 +92,7 @@ void start_shell(const int console) {
         panic("Failed to set current directory");
     }
 
-    process->console = console;
+    process->task->tty = console;
 
     task_run_first_task();
 }

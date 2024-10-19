@@ -1,6 +1,4 @@
-#ifndef STDLIBSTRING_H
-#define STDLIBSTRING_H
-
+#pragma once
 #include "types.h"
 
 int strlen(const char *s);
@@ -24,5 +22,3 @@ char *strtok(char *str, const char *delimiters);
 bool starts_with(const char *pre, const char *str);
 char *strcat(char *dest, const char *src);
 bool str_ends_with(const char *str, const char *suffix);
-
-#endif

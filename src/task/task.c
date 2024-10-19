@@ -4,6 +4,7 @@
 #include "kernel.h"
 #include "kernel_heap.h"
 #include "memory.h"
+#include "process.h"
 #include "serial.h"
 #include "status.h"
 #include "string.h"
@@ -19,7 +20,7 @@ struct task *task_current() {
 
 struct task *task_get_next() {
     if (!current_task && !task_head) {
-        panic("No current task");
+        return nullptr;
     }
 
     if (!current_task) {
@@ -33,7 +34,7 @@ struct task *task_get_next() {
     return current_task->next;
 }
 
-static void task_list_remove(struct task *task) {
+static void task_list_remove(const struct task *task) {
     if (task->prev) {
         task->prev->next = task->next;
     }
@@ -238,14 +239,33 @@ void *task_get_stack_item(struct task *task, int index) {
     return result;
 }
 
-void *task_virtual_to_physical_address(struct task *task, void *virtual_address) {
+void *task_virtual_to_physical_address(const struct task *task, void *virtual_address) {
     return paging_get_physical_address(task->page_directory, virtual_address);
 }
 
 void task_next() {
     struct task *next = task_get_next();
     if (!next) {
-        panic("No next task");
+        kprintf("\nRestarting the shell");
+        start_shell(0);
+        return;
+    }
+
+    auto const process = next->process;
+
+    // TODO: Add a way for the child process to signal to the parent that it has exited
+    if (process->state == WAITING) {
+        auto const child = find_child_process_by_pid(process, process->wait_pid);
+        if (child->state == ZOMBIE) {
+            process->state     = RUNNING;
+            process->exit_code = child->exit_code;
+            process->wait_pid  = 0;
+            remove_child(process, child);
+            process_unlink(child);
+        } else {
+            task_switch(child->task);
+            task_return(&child->task->registers);
+        }
     }
 
     task_switch(next);

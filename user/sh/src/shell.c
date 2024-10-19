@@ -35,19 +35,32 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        if (istrncmp((char *)buffer, "dir", 3) == 0) {
-            const int pid = os_create_process("ls", current_directory);
-            if (pid < 0) {
-                printf("\nError: %d", pid);
-                return pid;
-            }
+        if (istrncmp((char *)buffer, "exit", 4) == 0) {
+            return exit();
+        }
+
+        if (istrncmp((char *)buffer, "reboot", 6) == 0) {
+            reboot();
+            return 0;
+        }
+
+        if (istrncmp((char *)buffer, "shutdown", 8) == 0) {
+            shutdown();
+            return 0;
+        }
+
+        if (istrncmp((char *)buffer, "help", 4) == 0) {
+            printf("\nShell commands:\n");
+            printf(KCYN "  cls" KWHT " or" KCYN " clear " KWHT "- Clear the screen\n");
+            printf(KCYN "  exit" KWHT " - Exit the shell\n");
+            printf(KCYN "  reboot" KWHT " - Reboot the system\n");
+            printf(KCYN "  shutdown" KWHT " - Shutdown the system\n");
+            printf(KCYN "  help" KWHT " - Display this help message\n");
+            printf(KCYN "  cd " KYEL "[directory] " KWHT " - Change the current directory\n");
+            printf(KCYN "  [command]" KWHT " - Run a command\n");
             continue;
         }
 
-        if (istrncmp((char *)buffer, "exit", 3) == 0) {
-            os_exit();
-            return 0;
-        }
 
         if (strncmp((char *)buffer, "cd", 2) == 0) {
             char *new_dir = trim((char *)buffer + 3);
@@ -118,7 +131,8 @@ int main(int argc, char **argv) {
         const int pid = os_create_process((char *)buffer, current_directory);
         if (pid < 0) {
             printf("\nError: %d", pid);
-            return pid;
+        } else {
+            waitpid(pid);
         }
 
         putchar('\n');
@@ -158,7 +172,7 @@ void shell_terminal_readline(uchar *out, int max, bool output_while_typing) {
     uint8_t current_history_index = history_index;
     int i                         = 0;
     for (; i < max - 1; i++) {
-        const unsigned char key = os_getkey_blocking();
+        const unsigned char key = getkey_blocking();
 
         // Up arrow
         if (key == 226) {
@@ -167,7 +181,7 @@ void shell_terminal_readline(uchar *out, int max, bool output_while_typing) {
             }
 
             for (int j = 0; j < i - 1; j++) {
-                os_putchar('\b');
+                putchar('\b');
             }
             current_history_index--;
             strncpy((char *)out, command_history[current_history_index], max);
@@ -184,7 +198,7 @@ void shell_terminal_readline(uchar *out, int max, bool output_while_typing) {
             }
 
             for (int j = 0; j < i - 1; j++) {
-                os_putchar('\b');
+                putchar('\b');
             }
             current_history_index++;
             strncpy((char *)out, command_history[current_history_index], max);
@@ -213,7 +227,7 @@ void shell_terminal_readline(uchar *out, int max, bool output_while_typing) {
         }
 
         if (output_while_typing) {
-            os_putchar(key);
+            putchar(key);
         }
 
         if (key == '\b' && i > 0) {

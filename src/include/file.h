@@ -1,5 +1,5 @@
-#ifndef FILE_H
-#define FILE_H
+#pragma once
+
 #include "path_parser.h"
 #include "types.h"
 
@@ -125,5 +125,3 @@ int fclose(int fd);
 void fs_insert_file_system(struct file_system *filesystem);
 struct file_system *fs_resolve(struct disk *disk);
 int fs_open_dir(const char *name, struct file_directory *directory);
-
-#endif

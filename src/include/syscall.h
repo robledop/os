@@ -1,8 +1,6 @@
-#ifndef COMMAND_H
-#define COMMAND_H
+#pragma once
 
-enum SysCalls
-{
+enum SysCalls {
     SYSCALL_EXIT,
     SYSCALL_PRINT,
     SYSCALL_GETKEY,
@@ -20,6 +18,9 @@ enum SysCalls
     SYSCALL_OPEN_DIR,
     SYSCALL_SET_CURRENT_DIRECTORY,
     SYSCALL_GET_CURRENT_DIRECTORY,
+    SYSCALL_WAIT_PID,
+    SYSCALL_REBOOT,
+    SYSCALL_SHUTDOWN,
 };
 
 void register_syscalls();
@@ -42,5 +43,6 @@ void *sys_clear_screen(struct interrupt_frame *frame);
 void *sys_open_dir(struct interrupt_frame *frame);
 void *sys_set_current_directory(struct interrupt_frame *frame);
 void *sys_get_current_directory(struct interrupt_frame *frame);
-
-#endif
+void *sys_wait_pid(struct interrupt_frame *frame);
+void *sys_reboot(struct interrupt_frame *frame);
+void *sys_shutdown(struct interrupt_frame *frame);

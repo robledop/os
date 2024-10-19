@@ -1,5 +1,5 @@
-#ifndef IO_H
-#define IO_H
+#pragma once
+
 
 #include "types.h"
 
@@ -12,5 +12,3 @@ void outl(uint16_t portid, uint32_t value);
 void cpu_print_info();
 char *cpu_string();
 int cpu_get_model(void);
-
-#endif

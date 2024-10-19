@@ -1,4 +1,7 @@
 #include "process.h"
+
+#include <idt.h>
+
 #include "assert.h"
 #include "elfloader.h"
 #include "file.h"
@@ -12,13 +15,82 @@
 #include "task.h"
 #include "vga_buffer.h"
 
+
 struct process *current_process                 = nullptr;
 static struct process *processes[MAX_PROCESSES] = {nullptr};
 
 static void process_init(struct process *process) { memset(process, 0, sizeof(struct process)); }
+// int find_empty_process(void);
 
 struct process *process_current() {
     return current_process;
+}
+
+struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state) {
+    // Traverse the linked list of children
+    struct process *child = parent->children;
+    while (child) {
+        if (child->state == state) {
+            return child;
+        }
+        child = child->next;
+    }
+    return nullptr;
+}
+
+struct process *find_child_process_by_pid(const struct process *parent, const int pid) {
+    // Traverse the linked list of children
+    struct process *child = parent->children;
+    while (child) {
+        if (child->pid == pid) {
+            return child;
+        }
+        child = child->next;
+    }
+    return nullptr;
+}
+
+int add_child(struct process *parent, struct process *child) {
+    if (!parent || !child) {
+        return -EINVARG;
+    }
+
+    if (parent->children == nullptr) {
+        parent->children = child;
+        return ALL_OK;
+    }
+
+    struct process *current = parent->children;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = child;
+    return ALL_OK;
+}
+
+
+// TODO: free process data
+int remove_child(struct process *parent, struct process *child) {
+    if (!parent || !child) {
+        return -EINVARG;
+    }
+
+    if (parent->children == child) {
+        parent->children = child->next;
+        return ALL_OK;
+    }
+
+    struct process *current = parent->children;
+    while (current->next) {
+        if (current->next == child) {
+            current->next = child->next;
+            return ALL_OK;
+        }
+        current = current->next;
+    }
+
+    return -ENOENT;
 }
 
 struct process *process_get(const int pid) {
@@ -103,7 +175,7 @@ int process_free_program_data(const struct process *process) {
 
 void process_switch_to_any() {
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i]) {
+        if (processes[i] && processes[i]->state == RUNNING) {
             process_switch(processes[i]);
             return;
         }
@@ -112,7 +184,8 @@ void process_switch_to_any() {
     start_shell(0);
 }
 
-static void process_unlink(const struct process *process) {
+void process_unlink(const struct process *process) {
+    // TODO: find a better way to unlink the process
     processes[process->pid] = nullptr;
 
     if (current_process == process) {
@@ -121,9 +194,9 @@ static void process_unlink(const struct process *process) {
 }
 
 int process_terminate(struct process *process) {
-    int res = 0;
+    process->state = ZOMBIE;
 
-    res = process_terminate_allocations(process);
+    int res = process_terminate_allocations(process);
     if (res < 0) {
         warningf("Failed to terminate allocations for process %d\n", process->pid);
         ASSERT(false, "Failed to terminate allocations for process");
@@ -139,7 +212,9 @@ int process_terminate(struct process *process) {
 
     kfree(process->stack);
     task_free(process->task);
-    process_unlink(process);
+
+    // TODO: find a way to free the process
+    // process_unlink(process);
 
     return res;
 }
@@ -206,9 +281,9 @@ void process_free(struct process *process, void *ptr) {
         return;
     }
 
-    int res = paging_map_to(process->task->page_directory, allocation->ptr, allocation->ptr,
-                            paging_align_address((char *)allocation->ptr + allocation->size),
-                            PAGING_DIRECTORY_ENTRY_UNMAPPED);
+    const int res = paging_map_to(process->task->page_directory, allocation->ptr, allocation->ptr,
+                                  paging_align_address((char *)allocation->ptr + allocation->size),
+                                  PAGING_DIRECTORY_ENTRY_UNMAPPED);
 
     if (res < 0) {
         ASSERT(false, "Failed to unmap memory");
@@ -528,4 +603,30 @@ int process_set_current_directory(struct process *process, const char *directory
     strncpy(process->current_directory, directory, MAX_PATH_LENGTH);
 
     return ALL_OK;
+}
+
+int process_wait_pid(struct process *process, const int pid) {
+    disable_interrupts();
+
+    struct process *child = find_child_process_by_pid(process, pid);
+    if (child == nullptr) {
+        enable_interrupts();
+        return -1;
+    }
+
+    if (child->state == ZOMBIE) {
+        const int status = child->exit_code;
+        remove_child(process, child);
+        process_unlink(child);
+        enable_interrupts();
+        return status;
+    }
+
+    // No child has terminated; block the parent process
+    process->state    = WAITING;
+    process->wait_pid = pid;
+    task_next(); // Context switch to another process
+
+    enable_interrupts();
+    return -1; // No child to wait for
 }

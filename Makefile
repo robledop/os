@@ -1,5 +1,8 @@
 $(shell mkdir -p ./bin)
 $(shell mkdir -p ./rootfs/bin)
+CC=i686-elf-gcc
+AS=nasm
+LD=i686-elf-ld
 SRC_DIRS := $(shell find ./src -type d ! -path './src/include' ! -path './src/boot')
 BUILD_DIRS := $(patsubst ./src/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))
@@ -87,25 +90,25 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 # stat --format=%n:%s ./kernel.bin
 
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
-	i686-elf-ld -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
-	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
+	$(LD) -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
+	$(CC) $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
 	./scripts/pad.sh ./bin/kernel.bin 512
 
 ./bin/boot.bin: ./src/boot/boot.asm 
 	$(shell mkdir -p ./build/boot)
-	nasm -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
-	nasm -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
-	i686-elf-gcc $(STAGE2_FLAGS) -I./src/include -c ./src/boot/stage2.c -o ./build/boot/stage2.o
-	i686-elf-ld -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
-	i686-elf-gcc $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
+	$(AS) -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
+	$(AS) -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
+	$(CC) $(STAGE2_FLAGS) -I./src/include -c ./src/boot/stage2.c -o ./build/boot/stage2.o
+	$(LD) -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
+	$(CC) $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
 
 	./scripts/pad.sh ./bin/stage2.bin 512
 
 ./build/%.asm.o: ./src/%.asm
-	nasm -f elf -g $< -o $@
+	$(AS) -f elf -g $< -o $@
 
 ./build/%.o: ./src/%.c
-	i686-elf-gcc $(INCLUDES) $(FLAGS) -c $< -o $@
+	$(CC) $(INCLUDES) $(FLAGS) -c $< -o $@
 
 .PHONY: grub
 grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
@@ -114,8 +117,8 @@ grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	# VBoxManage convertdd ./disk.img ./disk.vdi
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
-	i686-elf-ld -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o 
-	i686-elf-gcc $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
+	$(LD) -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o
+	$(CC) $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
 
 .PHONY: iso
 iso: grub

@@ -1,5 +1,4 @@
-#ifndef TSS_H
-#define TSS_H
+#pragma once
 
 #include "types.h"
 
@@ -37,5 +36,3 @@ struct tss_entry
 
 void write_tss(int num, uint16_t ss0, uint32_t esp0);
 void set_kernel_stack(uint32_t stack);
-
-#endif

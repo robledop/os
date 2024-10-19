@@ -28,8 +28,20 @@ void register_syscalls() {
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_CLEAR_SCREEN, sys_clear_screen);
     register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
-    register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
     register_syscall(SYSCALL_GET_CURRENT_DIRECTORY, sys_get_current_directory);
+    register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
+    register_syscall(SYSCALL_WAIT_PID, sys_wait_pid);
+    register_syscall(SYSCALL_REBOOT, sys_reboot);
+    register_syscall(SYSCALL_SHUTDOWN, sys_shutdown);
+}
+void *sys_reboot(struct interrupt_frame *frame) {
+    system_reboot();
+    return nullptr;
+}
+
+void *sys_shutdown(struct interrupt_frame *frame) {
+    system_shutdown();
+    return nullptr;
 }
 
 void *sys_set_current_directory(struct interrupt_frame *frame) {
@@ -56,7 +68,7 @@ void *sys_open_dir(struct interrupt_frame *frame) {
 }
 
 void *sys_get_program_arguments(struct interrupt_frame *frame) {
-    struct process *process = task_current()->process;
+    const struct process *process = task_current()->process;
     struct process_arguments *arguments =
         task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 0));
 
@@ -73,7 +85,7 @@ void *sys_clear_screen(struct interrupt_frame *frame) {
 }
 
 void *sys_stat(struct interrupt_frame *frame) {
-    int fd = (int)task_get_stack_item(task_current(), 1);
+    const int fd = (int)task_get_stack_item(task_current(), 1);
 
     struct file_stat *stat = task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 0));
 
@@ -83,19 +95,19 @@ void *sys_stat(struct interrupt_frame *frame) {
 void *sys_read(struct interrupt_frame *frame) {
     void *task_file_contents = task_virtual_to_physical_address(task_current(), task_get_stack_item(task_current(), 3));
 
-    unsigned int size  = (unsigned int)task_get_stack_item(task_current(), 2);
-    unsigned int nmemb = (unsigned int)task_get_stack_item(task_current(), 1);
-    int fd             = (int)task_get_stack_item(task_current(), 0);
+    const unsigned int size  = (unsigned int)task_get_stack_item(task_current(), 2);
+    const unsigned int nmemb = (unsigned int)task_get_stack_item(task_current(), 1);
+    const int fd             = (int)task_get_stack_item(task_current(), 0);
 
-    int res = fread((void *)task_file_contents, size, nmemb, fd);
+    const int res = fread((void *)task_file_contents, size, nmemb, fd);
 
     return (void *)res;
 }
 
 void *sys_close(struct interrupt_frame *frame) {
-    int fd = (int)task_get_stack_item(task_current(), 0);
+    const int fd = (int)task_get_stack_item(task_current(), 0);
 
-    int res = fclose(fd);
+    const int res = fclose(fd);
     return (void *)res;
 }
 
@@ -110,16 +122,16 @@ void *sys_open(struct interrupt_frame *frame) {
 
     copy_string_from_task(task_current(), mode, mode_str, sizeof(mode_str));
 
-    int fd = fopen((const char *)name, mode_str);
+    const int fd = fopen((const char *)name, mode_str);
     return (void *)(int)fd;
 }
 
 void *sys_exit(struct interrupt_frame *frame) {
     struct process *process = task_current()->process;
-    process_terminate(process);
+    const int retval        = process_terminate(process);
     task_next();
 
-    return NULL;
+    return (void *)retval;
 }
 
 void *sys_print(struct interrupt_frame *frame) {
@@ -139,18 +151,18 @@ void *sys_getkey(struct interrupt_frame *frame) {
 }
 
 void *sys_putchar(struct interrupt_frame *frame) {
-    char c = (char)(int)task_get_stack_item(task_current(), 0);
+    const char c = (char)(int)task_get_stack_item(task_current(), 0);
     terminal_write_char(c, 0x0F, 0x00);
     return NULL;
 }
 
 void *sys_putchar_color(struct interrupt_frame *frame) {
-    const unsigned char backcolor = (unsigned char)(uint32_t)task_get_stack_item(task_current(), 0);
-    const unsigned char forecolor = (unsigned char)(uint32_t)task_get_stack_item(task_current(), 1);
+    const unsigned char backcolor = (unsigned char)(int)task_get_stack_item(task_current(), 0);
+    const unsigned char forecolor = (unsigned char)(int)task_get_stack_item(task_current(), 1);
     const char c                  = (char)(int)task_get_stack_item(task_current(), 2);
 
     terminal_write_char(c, forecolor, backcolor);
-    return NULL;
+    return nullptr;
 }
 
 void *sys_malloc(struct interrupt_frame *frame) {
@@ -162,6 +174,11 @@ void *sys_free(struct interrupt_frame *frame) {
     void *ptr = task_get_stack_item(task_current(), 0);
     process_free(task_current()->process, ptr);
     return NULL;
+}
+
+void *sys_wait_pid(struct interrupt_frame *frame) {
+    const int pid = (int)task_get_stack_item(task_current(), 0);
+    return (void *)process_wait_pid(task_current()->process, pid);
 }
 
 void *sys_create_process(struct interrupt_frame *frame) {
@@ -191,6 +208,12 @@ void *sys_create_process(struct interrupt_frame *frame) {
         warningf("Failed to inject arguments for process %s\n", program_name);
         return ERROR(res);
     }
+
+    struct process *current_process = task_current()->process;
+    process->parent                 = current_process;
+    process->state                  = RUNNING;
+    add_child(current_process, process);
+
 
 #ifndef MULTITASKING
     task_switch(process->task);

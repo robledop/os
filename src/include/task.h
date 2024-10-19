@@ -1,12 +1,9 @@
-#ifndef TASK_H
-#define TASK_H
+#pragma once
 
-#include "config.h"
 #include "paging.h"
 #include "process.h"
 
-struct registers
-{
+struct registers {
     uint32_t edi;
     uint32_t esi;
     uint32_t ebp;
@@ -25,13 +22,13 @@ struct registers
 struct process;
 struct interrupt_frame;
 
-struct task
-{
+struct task {
     struct page_directory *page_directory;
     struct registers registers;
     struct process *process;
     struct task *next;
     struct task *prev;
+    int tty;
 };
 
 void task_run_first_task();
@@ -50,7 +47,5 @@ void task_current_save_state(struct interrupt_frame *interrupt_frame);
 int copy_string_from_task(struct task *task, void *virtual, void *physical, int max);
 void *task_get_stack_item(struct task *task, int index);
 int task_page_task(struct task *task);
-void *task_virtual_to_physical_address(struct task *task, void *virtual_address);
+void *task_virtual_to_physical_address(const struct task *task, void *virtual_address);
 void task_next();
-
-#endif

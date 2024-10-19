@@ -1,5 +1,9 @@
 #include "os.h"
+
+#include <stdlib.h>
+
 #include "string.h"
+#include "syscall.h"
 
 struct command_argument *os_parse_command(const char *command, int max) {
     struct command_argument *head = nullptr;
@@ -15,7 +19,7 @@ struct command_argument *os_parse_command(const char *command, int max) {
         return head;
     }
 
-    head = os_malloc(sizeof(struct command_argument));
+    head = malloc(sizeof(struct command_argument));
     if (head == NULL) {
         return nullptr;
     }
@@ -27,7 +31,7 @@ struct command_argument *os_parse_command(const char *command, int max) {
     token                            = strtok(nullptr, " ");
 
     while (token != NULL) {
-        struct command_argument *next = os_malloc(sizeof(struct command_argument));
+        struct command_argument *next = malloc(sizeof(struct command_argument));
         if (next == NULL) {
             break;
         }
@@ -42,18 +46,11 @@ struct command_argument *os_parse_command(const char *command, int max) {
     return head;
 }
 
-unsigned char os_getkey_blocking() {
-    int key = 0;
-    while ((key = os_getkey()) == 0) {
-    }
 
-    return key;
-}
-
-void os_terminal_readline(unsigned char *out, int max, bool output_while_typing) {
+void os_terminal_readline(unsigned char *out, const int max, const bool output_while_typing) {
     int i = 0;
     for (; i < max - 1; i++) {
-        const unsigned char key = os_getkey_blocking();
+        const unsigned char key = getkey();
         if (key == '\n' || key == '\r') {
             break;
         }
@@ -64,7 +61,7 @@ void os_terminal_readline(unsigned char *out, int max, bool output_while_typing)
         }
 
         if (output_while_typing) {
-            os_putchar(key);
+            putchar(key);
         }
 
         if (key == '\b' && i > 0) {
@@ -87,10 +84,10 @@ int os_create_process(const char *command, const char *current_directory) {
     }
 
     if (root_command_argument->current_directory == NULL) {
-        root_command_argument->current_directory = os_malloc(MAX_PATH_LENGTH);
+        root_command_argument->current_directory = malloc(MAX_PATH_LENGTH);
     }
 
     strncpy(root_command_argument->current_directory, current_directory, MAX_PATH_LENGTH);
 
-    return os_system(root_command_argument);
+    return syscall1(SYSCALL_CREATE_PROCESS, root_command_argument);
 }

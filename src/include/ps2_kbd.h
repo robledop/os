@@ -1,5 +1,4 @@
-#ifndef CLASSIC_H
-#define CLASSIC_H
+#pragma once
 
 // #define PS2_PORT 0x64
 // #define PS2_COMMAND_ENABLE_PORT1 0xAE
@@ -120,5 +119,3 @@ static unsigned char ctlmap[256] =
 #pragma GCC diagnostic pop
 
 struct keyboard *ps2_init();
-
-#endif

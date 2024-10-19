@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #define TOTAL_INTERRUPTS 512
 
@@ -53,6 +52,4 @@
 #define KERNEL_LOAD_ADDRESS 0x200000
 #else
 #define KERNEL_LOAD_ADDRESS 0x200000
-#endif
-
 #endif

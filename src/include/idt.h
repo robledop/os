@@ -1,5 +1,4 @@
-#ifndef IDT_H
-#define IDT_H
+#pragma once
 
 #include "types.h"
 
@@ -46,5 +45,3 @@ typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt);
 
 void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler);
 int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION callback);
-
-#endif

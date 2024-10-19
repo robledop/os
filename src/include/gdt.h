@@ -1,5 +1,4 @@
-#ifndef GDT_H
-#define GDT_H
+#pragma once
 
 #include "types.h"
 
@@ -26,5 +25,3 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_
 // External assembly functions
 extern void gdt_flush(uint32_t);
 extern void tss_flush();
-
-#endif

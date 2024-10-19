@@ -1,5 +1,4 @@
-#ifndef ELFLOADER_H
-#define ELFLOADER_H
+#pragma once
 
 #include "types.h"
 
@@ -35,5 +34,3 @@ struct elf32_phdr *elf_pheader(struct elf_header *header);
 struct elf32_phdr *elf_program_header(struct elf_header *header, int index);
 struct elf32_shdr *elf_section(struct elf_header *header, int index);
 void *elf_phdr_phys_address(struct elf_file *file, struct elf32_phdr *phdr);
-
-#endif

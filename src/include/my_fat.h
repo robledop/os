@@ -1,5 +1,5 @@
-#ifndef MY_FAT_H
-#define MY_FAT_H
+#pragma once
+
 #include "types.h"
 
 // Tests with the FAT16 file system
@@ -66,5 +66,3 @@ typedef struct
 int my_fat16_init();
 FAT16_DirEntry *fat_find_item(char *path);
 void fat_read_file(FAT16_DirEntry dirEntry, uint8_t *output);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef SERIAL_H
-#define SERIAL_H
+#pragma once
 
 #include "types.h"
 #include "vga_buffer.h"
@@ -23,4 +22,3 @@
 void init_serial();
 int serial_printf(char *fmt, ...);
 void serial_put(char a);
-#endif

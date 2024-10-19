@@ -1,5 +1,5 @@
-#ifndef STDIO_H
-#define STDIO_H
+#pragma once
+
 #include "types.h"
 
 #define KNRM "\x1B[0m"
@@ -13,8 +13,7 @@
 
 typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
-struct directory_entry
-{
+struct directory_entry {
     char *name;
     char *ext;
     uint8_t attributes;
@@ -35,58 +34,41 @@ struct directory_entry
     bool is_device;
 };
 
-struct file_directory
-{
+struct file_directory {
     char *name;
     int entry_count;
     void *entries;
     DIRECTORY_GET_ENTRY get_entry;
 };
 
-struct command_argument
-{
+struct command_argument {
     char argument[512];
     struct command_argument *next;
     char *current_directory;
 };
 
-struct process_arguments
-{
+struct process_arguments {
     int argc;
     char **argv;
 };
 
 typedef unsigned int FILE_SEEK_MODE;
-enum
-{
-    SEEK_SET,
-    SEEK_CURRENT,
-    SEEK_END
-};
+enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
 
 typedef unsigned int FILE_MODE;
-enum
-{
-    FILE_MODE_READ,
-    FILE_MODE_WRITE,
-    FILE_MODE_APPEND,
-    FILE_MODE_INVALID
-};
+enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
 typedef unsigned int FILE_STAT_FLAGS;
-enum
-{
-    FILE_STAT_IS_READ_ONLY = 0b00000001
-};
+enum { FILE_STAT_IS_READ_ONLY = 0b00000001 };
 
-struct file_stat
-{
+struct file_stat {
     FILE_STAT_FLAGS flags;
     unsigned int size;
 };
 
-int putchar(unsigned char c);
+void putchar(unsigned char c);
 int printf(const char *format, ...);
+int print(const char *str);
 int fopen(const char *name, const char *mode);
 int fclose(int fd);
 int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
@@ -94,8 +76,10 @@ int fstat(int fd, struct file_stat *stat);
 void clear_screen();
 int opendir(struct file_directory *directory, const char *path);
 int readdir(const struct file_directory *directory, struct directory_entry *entry, const int index);
+int getkey();
+int getkey_blocking();
 
 char *get_current_directory();
 int set_current_directory(const char *path);
 
-#endif
+int exit();
