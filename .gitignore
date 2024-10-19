@@ -3,6 +3,7 @@ bin/
 mnt/
 *.bin
 *.o
+*.a
 *.log
 *.img
 *.iso
