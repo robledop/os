@@ -48,8 +48,4 @@
 // #define KERNEL_STACK_ADDRESS 0x600000
 // #endif
 
-#ifdef GRUB
 #define KERNEL_LOAD_ADDRESS 0x200000
-#else
-#define KERNEL_LOAD_ADDRESS 0x200000
-#endif

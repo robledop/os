@@ -36,14 +36,14 @@ _start:
     ; need to remap the PICs to different interrupt vectors.
 
     ; ; Remap the master PIC
-    mov al, 00010001b
-    out 0x20, al
-
-    mov al, 0x20
-    out 0x21, al
-
-    mov al, 00000001b
-    out 0x21, al
+;    mov al, 00010001b
+;    out 0x20, al
+;
+;    mov al, 0x20
+;    out 0x21, al
+;
+;    mov al, 00000001b
+;    out 0x21, al
     ; finished
 
 	extern kernel_main

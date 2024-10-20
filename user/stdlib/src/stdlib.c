@@ -32,3 +32,13 @@ void shutdown()
 {
     syscall0(SYSCALL_SHUTDOWN);
 }
+
+int fork()
+{
+    return syscall0(SYSCALL_FORK);
+}
+
+int getpid()
+{
+    return syscall0(SYSCALL_GET_PID);
+}

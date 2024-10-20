@@ -2,13 +2,15 @@ global gdt_flush
 
 section .text
 
+%include "constants.asm"
+
 gdt_flush:
     ; Get the pointer to gdt_ptr from the stack
     mov eax, [esp + 4]
     lgdt [eax]        ; Load the new GDT
 
     ; Reload the segment registers with the new selectors
-    mov ax, 0x10      ; Data segment selector offset (0x10)
+    mov ax, KERNEL_DATA_SELECTOR      ; Data segment selector offset (0x10)
     mov ds, ax
     mov es, ax
     mov fs, ax

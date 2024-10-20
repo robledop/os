@@ -12,6 +12,7 @@ ASM_OBJS := $(ASM_FILES:./src/%.asm=./build/%.asm.o)
 C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
 INCLUDES = -I ./src/include
+NASM_INCLUDES = -I./src/include
 STAGE2_FLAGS = -g \
 	-ffreestanding \
 	-O0 \
@@ -60,8 +61,8 @@ FLAGS = -g \
 	-Wextra \
 	-std=gnu23 \
 	-pedantic \
-	-fstack-protector \
-	-fsanitize=undefined \
+	 -fstack-protector \
+	 -fsanitize=undefined \
 	-Wall
 
 	# -pedantic-errors \
@@ -96,8 +97,8 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 
 ./bin/boot.bin: ./src/boot/boot.asm 
 	$(shell mkdir -p ./build/boot)
-	$(AS) -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
-	$(AS) -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
+	$(AS) $(NASM_INCLUDES) -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
+	$(AS) $(NASM_INCLUDES) -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
 	$(CC) $(STAGE2_FLAGS) -I./src/include -c ./src/boot/stage2.c -o ./build/boot/stage2.o
 	$(LD) -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
 	$(CC) $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
@@ -105,7 +106,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 	./scripts/pad.sh ./bin/stage2.bin 512
 
 ./build/%.asm.o: ./src/%.asm
-	$(AS) -f elf -g $< -o $@
+	$(AS) $(NASM_INCLUDES) -f elf -g $< -o $@
 
 ./build/%.o: ./src/%.c
 	$(CC) $(INCLUDES) $(FLAGS) -c $< -o $@

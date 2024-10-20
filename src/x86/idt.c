@@ -1,4 +1,7 @@
 #include "idt.h"
+
+#include <scheduler.h>
+
 #include "assert.h"
 #include "config.h"
 #include "io.h"
@@ -63,11 +66,11 @@ void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
     kernel_page();
     if (interrupt_callbacks[interrupt] != nullptr) {
-        task_current_save_state(frame);
+        scheduler_save_current_task(frame);
         interrupt_callbacks[interrupt](interrupt);
     }
 
-    task_page();
+    scheduler_switch_current_task_page();
     outb(0x20, 0x20);
 }
 
@@ -94,7 +97,7 @@ void idt_exception_handler(int interrupt)
     if (interrupt == 14) {
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
-        kprintf(KRED "\nPage fault at %x" KWHT, faulting_address);
+        kprintf(KRED "\nException: %x. Page fault at %x" KWHT, interrupt, faulting_address);
     } else if (interrupt == 13) {
         uint32_t error_code;
         asm volatile("mov %%cr2, %0" : "=r"(error_code));
@@ -103,9 +106,10 @@ void idt_exception_handler(int interrupt)
         kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
     }
 
-    process_terminate(task_current()->process);
-    kprintf("\nThe process with id %d has been terminated.", task_current()->process->pid);
-    task_next();
+    int pid = scheduler_get_current_task()->process->pid;
+    process_terminate(scheduler_get_current_task()->process);
+    kprintf("\nThe process with id %d has been terminated.", pid);
+    schedule();
 }
 
 void idt_clock(int interrupt)
@@ -113,7 +117,7 @@ void idt_clock(int interrupt)
     outb(0x20, 0x20);
 
 #ifdef MULTITASKING
-    task_next();
+    schedule();
 #endif
 }
 
@@ -192,9 +196,11 @@ void *handle_syscall(const int syscall, struct interrupt_frame *frame)
 void *syscall_handler(const int syscalll, struct interrupt_frame *frame)
 {
     kernel_page();
-    task_current_save_state(frame);
+    scheduler_save_current_task(frame);
+
     void *res = handle_syscall(syscalll, frame);
-    task_page();
+
+    scheduler_switch_current_task_page();
 
     return res;
 }

@@ -3,6 +3,7 @@
 #include "io.h"
 #include "kernel.h"
 #include "keyboard.h"
+#include <scheduler.h>
 
 int ps2_keyboard_init();
 void ps2_keyboard_interrupt_handler(int interrupt);
@@ -102,7 +103,7 @@ void ps2_keyboard_interrupt_handler(int interrupt) {
     if (c > 0) {
         keyboard_push(c);
     }
-    task_page();
+    scheduler_switch_current_task_page();
 }
 
 struct keyboard *ps2_init() {

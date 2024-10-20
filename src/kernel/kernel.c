@@ -8,7 +8,10 @@
 #include <keyboard.h>
 #include <paging.h>
 #include <pci.h>
+#include <pic.h>
+#include <pit.h>
 #include <process.h>
+#include <scheduler.h>
 #include <serial.h>
 #include <string.h>
 #include <syscall.h>
@@ -43,9 +46,10 @@ __attribute__((noreturn)) void panic(const char *msg)
     __builtin_unreachable();
 }
 
+/// @brief Set the kernel mode segments and switch to the kernel page directory
 void kernel_page()
 {
-    kernel_registers();
+    set_kernel_mode_segments();
     paging_switch_directory(kernel_page_directory);
 }
 
@@ -57,7 +61,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
 
     disable_interrupts();
     init_serial();
-    print(""); // Without this, the terminal gets all messed up, but only when using my bootloader
+    print(""); // BUG: Without this, the terminal gets all messed up, but only when using my bootloader
     terminal_clear();
     // kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
     char *cpu = cpu_string();
@@ -67,12 +71,14 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     kernel_heap_init();
     paging_init();
     idt_init();
+    pic_init();
     display_grub_info(mbd, magic);
     pci_scan();
     fs_init();
     disk_init();
     register_syscalls();
     keyboard_init();
+    pit_init();
 
     // schedule_idle_task();
     start_shell(0);
@@ -99,55 +105,7 @@ void start_shell(const int console)
     process->task->tty = console;
     process->priority  = 1;
 
-    task_run_first_task();
-}
-
-void schedule_idle_task()
-{
-    struct process *process = nullptr;
-    process_load_switch("0:/bin/idle", &process);
-    process->priority  = 0;
-    process->state     = RUNNING;
-    process->task->tty = 0;
-}
-
-void multitasking_demo()
-{
-    struct process *process = nullptr;
-    process_load_switch("0:/cblank.elf", &process);
-    struct command_argument argument;
-    strncpy(argument.argument, "Program 0", sizeof(argument.argument));
-    argument.next = nullptr;
-    process_inject_arguments(process, &argument);
-
-    process_load_switch("0:/cblank.elf", &process);
-    strncpy(argument.argument, "Program 1", sizeof(argument.argument));
-    argument.next = nullptr;
-    process_inject_arguments(process, &argument);
-}
-
-void paging_demo()
-{
-    char *ptr1 = kzalloc(4096);
-
-    ptr1[0] = 'C';
-    ptr1[1] = 'D';
-    paging_set(kernel_page_directory,
-               (void *)0x1000,
-               (uint32_t)ptr1 | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-                   PAGING_DIRECTORY_ENTRY_SUPERVISOR);
-
-    char *ptr2 = (char *)0x1000;
-
-    dbgprintf("*ptr1: %x\n", ptr1);
-    dbgprintf("*ptr2: %x\n", ptr2);
-    dbgprintf("ptr1 before: %x\n", ptr1);
-
-    ptr2[0] = 'A';
-    ptr2[1] = 'B';
-
-    dbgprintf("ptr1 after: %s\n", ptr1);
-    dbgprintf("ptr2: %s\n", ptr2);
+    scheduler_run_first_task();
 }
 
 void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)

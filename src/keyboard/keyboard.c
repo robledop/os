@@ -1,4 +1,7 @@
 #include "keyboard.h"
+
+#include <scheduler.h>
+
 #include "assert.h"
 #include "ps2_kbd.h"
 #include "serial.h"
@@ -44,7 +47,7 @@ void keyboard_push(const uchar c) {
         return;
     }
 
-    struct process *process = process_current();
+    struct process *process = scheduler_get_current_process();
     if (!process) {
         warningf("No current process\n");
         return;
@@ -56,12 +59,12 @@ void keyboard_push(const uchar c) {
 }
 
 uchar keyboard_pop() {
-    if (!task_current()) {
+    if (!scheduler_get_current_task()) {
         warningf("No current task\n");
         return 0;
     }
 
-    struct process *process = task_current()->process;
+    struct process *process = scheduler_get_current_task()->process;
 
     const int real_index = process->keyboard.head % KEYBOARD_BUFFER_SIZE;
     const uchar c        = process->keyboard.buffer[real_index];

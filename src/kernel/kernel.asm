@@ -1,24 +1,22 @@
 ; NOT USED BY GRUB
 [BITS 32]
 
+%include "constants.asm"
+
   global _start
   global cause_problem
-  global kernel_registers
-
-  CODE_SEG equ 0x08
-  DATA_SEG equ 0x10
+  global set_kernel_mode_segments
 
 _start:
   ; Set selector registers
-  mov ax, DATA_SEG
+  mov ax, KERNEL_DATA_SELECTOR
   mov ds, ax
   mov es, ax
   mov fs, ax
   mov gs, ax
   mov ss, ax
   ; Remember that the stack grows downwards
-  mov ebp, 0x00600000 ; Set stack pointer
-;   mov ebp, 0x00EFFFFF ; Set stack pointer
+  mov ebp, stack_top
   mov esp, ebp
 
   ; https://wiki.osdev.org/A20_Line
@@ -27,17 +25,16 @@ _start:
   out 0x92, al
 
   ; Remap the master PIC
-  mov al, 00010001b
-  out 0x20, al
-
-  mov al, 0x20
-  out 0x21, al
-
-  mov al, 00000001b
-  out 0x21, al
+;  mov al, 00010001b
+;  out 0x20, al
+;
+;  mov al, 0x20
+;  out 0x21, al
+;
+;  mov al, 00000001b
+;  out 0x21, al
   ; finished
 
-  mov esp, stack_top
   extern kernel_main
   call kernel_main
 
@@ -45,8 +42,8 @@ _start:
     hlt
     jmp null_loop
 
-kernel_registers:
-    mov ax, 0x10
+set_kernel_mode_segments:
+    mov ax, KERNEL_DATA_SELECTOR
     mov ds, ax
     mov es, ax
     mov gs, ax
@@ -62,7 +59,6 @@ cause_problem:
 section .bss
     align 16
     stack_bottom:
-    ; resb 16384 ; 16 KiB
     resb 1048576 ; 1 MiB
     stack_top:
 

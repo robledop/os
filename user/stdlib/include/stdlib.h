@@ -7,3 +7,5 @@ void free(void *ptr);
 int waitpid(int pid);
 void reboot();
 void shutdown();
+int fork();
+int getpid();

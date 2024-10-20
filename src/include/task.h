@@ -31,21 +31,12 @@ struct task {
     int tty;
 };
 
-void task_run_first_task();
-
 struct task *task_create(struct process *process);
 int task_free(struct task *task);
-struct task *task_current();
-struct task *task_get_next();
 void restore_general_purpose_registers(struct registers *registers);
-// Enter user mode
-void task_return(struct registers *registers);
-void user_registers();
-int task_switch(struct task *task);
-int task_page();
-void task_current_save_state(const struct interrupt_frame *interrupt_frame);
 int copy_string_from_task(const struct task *task, const void *virtual, void *physical, int max);
 void *task_get_stack_item(const struct task *task, int index);
-int task_page_task(const struct task *task);
 void *task_virtual_to_physical_address(const struct task *task, void *virtual_address);
-void task_next();
+int task_page_task(const struct task *task);
+void task_save_state(struct task *task, const struct interrupt_frame *frame);
+void task_copy_registers(struct task* dest, const struct task* src);

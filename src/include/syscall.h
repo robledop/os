@@ -10,6 +10,8 @@ enum SysCalls {
     SYSCALL_FREE,
     SYSCALL_PUTCHAR_COLOR,
     SYSCALL_CREATE_PROCESS,
+    SYSCALL_FORK,
+    SYSCALL_GET_PID,
     SYSCALL_GET_PROGRAM_ARGUMENTS,
     SYSCALL_OPEN,
     SYSCALL_CLOSE,
@@ -48,3 +50,5 @@ void *sys_wait_pid(struct interrupt_frame *frame);
 void *sys_reboot(struct interrupt_frame *frame);
 void *sys_shutdown(struct interrupt_frame *frame);
 void *sys_calloc(struct interrupt_frame *frame);
+void *sys_fork(struct interrupt_frame *frame);
+void *sys_getpid(struct interrupt_frame *frame);

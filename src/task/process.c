@@ -1,7 +1,6 @@
 #include "process.h"
 
 #include <idt.h>
-
 #include "assert.h"
 #include "elfloader.h"
 #include "file.h"
@@ -9,6 +8,7 @@
 #include "kernel_heap.h"
 #include "memory.h"
 #include "paging.h"
+#include "scheduler.h"
 #include "serial.h"
 #include "status.h"
 #include "string.h"
@@ -16,19 +16,10 @@
 #include "vga_buffer.h"
 
 
-struct process *current_process                 = nullptr;
-static struct process *processes[MAX_PROCESSES] = {nullptr};
-
-static void process_init(struct process *process)
-{
-    memset(process, 0, sizeof(struct process));
-}
-// int find_empty_process(void);
-
-struct process *process_current()
-{
-    return current_process;
-}
+// static void process_init(struct process *process)
+// {
+//     memset(process, 0, sizeof(struct process));
+// }
 
 struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state)
 {
@@ -56,7 +47,7 @@ struct process *find_child_process_by_pid(const struct process *parent, const in
     return nullptr;
 }
 
-int add_child(struct process *parent, struct process *child)
+int process_add_child(struct process *parent, struct process *child)
 {
     if (!parent || !child) {
         return -EINVARG;
@@ -76,9 +67,8 @@ int add_child(struct process *parent, struct process *child)
     return ALL_OK;
 }
 
-
 // TODO: free process data
-int remove_child(struct process *parent, struct process *child)
+int process_remove_child(struct process *parent, struct process *child)
 {
     if (!parent || !child) {
         return -EINVARG;
@@ -99,27 +89,6 @@ int remove_child(struct process *parent, struct process *child)
     }
 
     return -ENOENT;
-}
-
-struct process *process_get(const int pid)
-{
-    if (pid < 0 || pid >= MAX_PROCESSES) {
-        warningf("Invalid process id: %d\n", pid);
-        ASSERT(false, "Invalid process id");
-        return nullptr;
-    }
-
-    return processes[pid];
-}
-
-int process_switch(struct process *process)
-{
-    if (!process) {
-        return -EINVARG;
-    }
-
-    current_process = process;
-    return ALL_OK;
 }
 
 static int process_find_free_allocation_slot(const struct process *process)
@@ -185,28 +154,6 @@ int process_free_program_data(const struct process *process)
         res = -EINVARG;
     }
     return res;
-}
-
-void process_switch_to_any()
-{
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i] && processes[i]->state == RUNNING) {
-            process_switch(processes[i]);
-            return;
-        }
-    }
-
-    start_shell(0);
-}
-
-void process_unlink(const struct process *process)
-{
-    // TODO: find a better way to unlink the process
-    processes[process->pid] = nullptr;
-
-    if (current_process == process) {
-        process_switch_to_any();
-    }
 }
 
 int process_terminate(struct process *process)
@@ -335,7 +282,7 @@ void *process_calloc(struct process *process, const size_t nmemb, const size_t s
     return ptr;
 }
 
-// Allocate memory to be used by the process
+// Allocate memory accessible by the process
 void *process_malloc(struct process *process, const size_t size)
 {
     void *ptr = kmalloc(size);
@@ -438,6 +385,7 @@ static int process_load_elf(const char *file_name, struct process *process)
 
     process->file_type = PROCESS_FILE_TYPE_ELF;
     process->elf_file  = elf_file;
+    process->size      = elf_file->in_memory_size;
 
 out:
     return res;
@@ -470,15 +418,15 @@ static int process_map_binary(const struct process *process)
 
 static int process_map_elf(const struct process *process)
 {
-    int res                   = 0;
-    struct elf_file *elf_file = process->elf_file;
-    struct elf_header *header = elf_header(elf_file);
-    struct elf32_phdr *phdrs  = elf_pheader(header);
+    int res                         = 0;
+    const struct elf_file *elf_file = process->elf_file;
+    struct elf_header *header       = elf_header(elf_file);
+    const struct elf32_phdr *phdrs  = elf_pheader(header);
 
     for (int i = 0; i < header->e_phnum; i++) {
-        struct elf32_phdr *phdr = &phdrs[i];
-        void *phdr_phys_address = elf_phdr_phys_address(elf_file, phdr);
-        int flags               = PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR;
+        const struct elf32_phdr *phdr = &phdrs[i];
+        void *phdr_phys_address       = elf_phdr_phys_address(elf_file, phdr);
+        int flags                     = PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR;
 
         if (phdr->p_flags & PF_W) {
             flags |= PAGING_DIRECTORY_ENTRY_IS_WRITABLE;
@@ -526,16 +474,6 @@ out:
     return res;
 }
 
-int process_get_free_slot()
-{
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i] == nullptr) {
-            return i;
-        }
-    }
-
-    return -EINSTKN;
-}
 
 int process_load_switch(const char *file_name, struct process **process)
 {
@@ -543,7 +481,7 @@ int process_load_switch(const char *file_name, struct process **process)
 
     const int res = process_load(file_name, process);
     if (res == 0) {
-        process_switch(*process);
+        scheduler_set_current_process(*process);
     }
 
     return res;
@@ -552,31 +490,31 @@ int process_load_switch(const char *file_name, struct process **process)
 int process_load(const char *file_name, struct process **process)
 {
     dbgprintf("Loading process %s\n", file_name);
-    int res                = 0;
-    const int process_slot = process_get_free_slot();
-    if (process_slot < 0) {
+    int res       = 0;
+    const int pid = scheduler_get_free_pid();
+    if (pid < 0) {
         warningf("Failed to get free process slot\n");
         ASSERT(false, "Failed to get free process slot");
         res = -EINSTKN;
         goto out;
     }
 
-    res = process_load_for_slot(file_name, process, process_slot);
+    res = process_load_for_slot(file_name, process, pid);
 
 out:
     return res;
 }
 
-int process_load_for_slot(const char *file_name, struct process **process, const uint16_t slot)
+int process_load_for_slot(const char *file_name, struct process **process, const uint16_t pid)
 {
     int res                     = 0;
     struct task *task           = nullptr;
     struct process *proc        = nullptr;
     void *program_stack_pointer = nullptr;
 
-    dbgprintf("Loading process %s to slot %d\n", file_name, slot);
+    dbgprintf("Loading process %s to slot %d\n", file_name, pid);
 
-    if (process_get(slot) != nullptr) {
+    if (scheduler_get_process(pid) != nullptr) {
         warningf("Process slot is not empty\n");
         ASSERT(false, "Process slot is not empty");
         res = -EINSTKN;
@@ -590,7 +528,6 @@ int process_load_for_slot(const char *file_name, struct process **process, const
         goto out;
     }
 
-    process_init(proc);
     res = process_load_data(file_name, proc);
     if (res < 0) {
         warningf("Failed to load data for process\n");
@@ -607,9 +544,9 @@ int process_load_for_slot(const char *file_name, struct process **process, const
 
     strncpy(proc->file_name, file_name, sizeof(proc->file_name));
     proc->stack = program_stack_pointer;
-    proc->pid   = slot;
+    proc->pid   = pid;
 
-    dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, slot);
+    dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, pid);
 
     task = task_create(proc);
     if (ERROR_I(task) == 0) {
@@ -630,7 +567,8 @@ int process_load_for_slot(const char *file_name, struct process **process, const
 
     *process = proc;
 
-    processes[slot] = proc;
+    scheduler_set_process(pid, proc);
+    // processes[slot] = proc;
 
 out:
     if (ISERR(res)) {
@@ -650,7 +588,7 @@ int process_set_current_directory(struct process *process, const char *directory
     }
 
     if (process->current_directory == NULL) {
-        process->current_directory = kzalloc(MAX_PATH_LENGTH);
+        process->current_directory = process_malloc(process, MAX_PATH_LENGTH);
     }
 
     strncpy(process->current_directory, directory, MAX_PATH_LENGTH);
@@ -670,8 +608,9 @@ int process_wait_pid(struct process *process, const int pid)
 
     if (child->state == ZOMBIE) {
         const int status = child->exit_code;
-        remove_child(process, child);
-        process_unlink(child);
+        process_remove_child(process, child);
+        // TODO: Unlink the child process when the parent does not wait for it
+        scheduler_unlink_process(child);
         enable_interrupts();
         return status;
     }
@@ -679,8 +618,128 @@ int process_wait_pid(struct process *process, const int pid)
     // No child has terminated; block the parent process
     process->state    = WAITING;
     process->wait_pid = pid;
-    task_next(); // Context switch to another process
+    schedule(); // Context switch to another process
 
     enable_interrupts();
     return -1; // No child to wait for
+}
+
+int process_copy_allocations(struct process *dest, const struct process *src)
+{
+    for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
+        if (src->allocations[i].ptr) {
+            void *ptr = process_malloc(dest, src->allocations[i].size);
+            if (!ptr) {
+                return -ENOMEM;
+            }
+
+            memcpy(ptr, src->allocations[i].ptr, src->allocations[i].size);
+            dest->allocations[i].ptr = ptr;
+        }
+    }
+
+    return ALL_OK;
+}
+
+void process_copy_stack(struct process *dest, const struct process *src)
+{
+    dest->stack = kzalloc(USER_PROGRAM_STACK_SIZE);
+    memcpy(dest->stack, src->stack, USER_PROGRAM_STACK_SIZE);
+}
+
+void process_copy_file_info(struct process *dest, const struct process *src)
+{
+    memcpy(dest->file_name, src->file_name, sizeof(src->file_name));
+    dest->file_type = src->file_type;
+    if (dest->file_type == PROCESS_FILE_TYPE_ELF) {
+        dest->elf_file = kzalloc(sizeof(struct elf_file));
+        memcpy(dest->elf_file, src->elf_file, sizeof(struct elf_file));
+    } else {
+        dest->pointer = process_malloc(dest, src->size);
+        memcpy(dest->pointer, src->pointer, src->size);
+    }
+    dest->size = src->size;
+}
+
+void process_copy_arguments(struct process *dest, const struct process *src)
+{
+    dest->current_directory = process_malloc(dest, MAX_PATH_LENGTH);
+    memcpy(dest->current_directory, src->current_directory, MAX_PATH_LENGTH);
+
+    dest->arguments.argv = process_malloc(dest, sizeof(char *) * src->arguments.argc);
+    for (int i = 0; i < src->arguments.argc; i++) {
+        dest->arguments.argv[i] = process_malloc(dest, strlen(src->arguments.argv[i]) + 1);
+        strncpy(dest->arguments.argv[i], src->arguments.argv[i], strlen(src->arguments.argv[i]) + 1);
+    }
+}
+
+void process_copy_task(struct process *dest, const struct process *src)
+{
+    struct task *task = task_create(dest);
+    task_copy_registers(task, src->task);
+    dest->task          = task;
+    dest->task->process = dest;
+    dest->task->tty     = src->task->tty;
+}
+
+struct process *process_clone(struct process *process)
+{
+    struct process *clone = kzalloc(sizeof(struct process));
+    if (!clone) {
+        return nullptr;
+    }
+
+    const int pid = scheduler_get_free_pid();
+    if (pid < 0) {
+        kfree(clone);
+        return nullptr;
+    }
+
+    clone->pid    = pid;
+    clone->parent = process;
+
+    // This is not super efficient
+
+    process_copy_file_info(clone, process);
+    process_copy_stack(clone, process);
+    process_copy_task(clone, process);
+    process_copy_arguments(clone, process);
+    process_map_memory(clone);
+    process_copy_allocations(clone, process);
+
+    process_add_child(process, clone);
+    scheduler_set_process(clone->pid, clone);
+
+    return clone;
+}
+
+struct process *process_create_replacement(const struct process *parent, const char *file_name)
+{
+    struct process *replacement = kzalloc(sizeof(struct process));
+    if (!replacement) {
+        return nullptr;
+    }
+
+    const int res = process_load_data(file_name, replacement);
+    if (res < 0) {
+        kfree(replacement);
+        return nullptr;
+    }
+
+    replacement->pid               = parent->pid;
+    replacement->task              = parent->task;
+    replacement->state             = RUNNING;
+    replacement->parent            = parent->parent;
+    replacement->children          = parent->children;
+    replacement->next              = parent->next;
+    replacement->wait_pid          = parent->wait_pid;
+    replacement->exit_code         = parent->exit_code;
+    replacement->file_type         = parent->file_type;
+    replacement->pointer           = parent->pointer;
+    replacement->stack             = parent->stack;
+    replacement->size              = parent->size;
+    replacement->arguments         = parent->arguments;
+    replacement->current_directory = parent->current_directory;
+
+    return replacement;
 }

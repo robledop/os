@@ -2,18 +2,15 @@
 
 section .text
 
-global restore_general_purpose_registers
-global task_return
-global user_registers
+%include "constants.asm"
 
-; void task_return(struct register* registers)
-task_return:
+global restore_general_purpose_registers
+global scheduler_run_task_in_user_mode
+global set_user_mode_segments
+
+; void scheduler_run_task_in_user_mode(struct register* registers)
+scheduler_run_task_in_user_mode:
     mov ebp, esp
-    ; push the data segment
-    ; push stack address
-    ; push flags
-    ; push code segment
-    ; push ip
 
     ; access the struct passed as argument
     mov ebx, [ebp + 4]
@@ -44,9 +41,8 @@ task_return:
     call restore_general_purpose_registers
     add esp, 4
 
-    ; leave kernel mode
+    ; enter user mode
     iretd
-
 
 ; void restore_general_purpose_registers(struct registers* regs)
 restore_general_purpose_registers:
@@ -65,32 +61,9 @@ restore_general_purpose_registers:
     add esp, 4
     ret
 
-    ; push ebp                      ; Preserve EBP
-    ; mov ebp, esp                  ; Setup new stack frame
-
-    ; mov ebx, [ebp + 8]            ; EBX = pointer to struct registers
-
-    ; mov edi, [ebx + 0]            ; EDI at offset 0
-    ; mov esi, [ebx + 4]            ; ESI at offset 4
-    ; mov edx, [ebx + 16]           ; EDX at offset 16
-    ; mov ecx, [ebx + 20]           ; ECX at offset 20
-    ; mov eax, [ebx + 24]           ; EAX at offset 24
-    ; mov ebx, [ebx + 12]           ; EBX at offset 12
-
-    ; ; Restore EBP from the struct registers if necessary
-    ; ; Caution: This can corrupt the current stack frame
-    ; ; Consider handling EBP restoration outside this function
-    ; ; mov ebp, [ebx + 8]            ; EBP at offset 8
-
-    ; add esp, 4
-    ; pop ebp                       ; Restore original EBP
-    ; ret
-
-
-
-; void user_registers()
-user_registers:
-    mov ax, 0x23
+; void set_user_mode_registers()
+set_user_mode_segments:
+    mov ax, USER_DATA_SELECTOR
     mov ds, ax
     mov es, ax
     mov fs, ax

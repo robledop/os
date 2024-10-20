@@ -32,11 +32,11 @@ __attribute__((noreturn)) void scram(int, const struct scram_undefined_behavior 
 
 void scram(const int event, const struct scram_undefined_behavior *info)
 {
-    kprintf("Event: %d\n", event);
-    kprintf("File: %s\n", info->filename);
-    kprintf("Line: %d\n", info->line);
-    kprintf("Column: %d\n", info->column);
-    kprintf("Violation: %s\n", info->violation);
+    kprintf(KYEL "\nEvent:" KWHT " %d\n", event);
+    kprintf(KYEL "File:" KWHT " %s\n", info->filename);
+    kprintf(KYEL "Line:" KWHT " %d\n", info->line);
+    kprintf(KYEL "Column:" KWHT " %d\n", info->column);
+    kprintf(KYEL "Violation:" KWHT " %s\n", info->violation);
     panic("Undefined behavior detected");
 
     __builtin_unreachable();

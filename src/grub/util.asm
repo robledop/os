@@ -2,10 +2,11 @@
 
 section .text
 
-    global kernel_registers
+%include "constants.asm"
+    global set_kernel_mode_segments
 
-kernel_registers:
-    mov ax, 0x10
+set_kernel_mode_segments:
+    mov ax, KERNEL_DATA_SELECTOR
     mov ds, ax
     mov es, ax
     mov gs, ax
