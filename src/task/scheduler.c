@@ -1,17 +1,25 @@
 #include <assert.h>
 #include <config.h>
 #include <idt.h>
+#include <kernel_heap.h>
+#include <memory.h>
+#include <pic.h>
+#include <pit.h>
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
 #include <status.h>
 
+#include "../../user/stdlib/include/string.h"
+
+uint32_t milliseconds                           = 0;
 struct process *current_process                 = nullptr;
 static struct process *processes[MAX_PROCESSES] = {nullptr};
 
 struct task *current_task = nullptr;
 struct task *task_tail    = nullptr;
 struct task *task_head    = nullptr;
+struct task *idle_task;
 
 struct process *scheduler_get_current_process()
 {
@@ -52,7 +60,7 @@ void scheduler_set_current_process(struct process *process)
 void scheduler_switch_to_any()
 {
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i] && processes[i]->state == RUNNING) {
+        if (processes[i] && processes[i]->priority != 0) {
             scheduler_set_current_process(processes[i]);
             return;
         }
@@ -85,6 +93,29 @@ int scheduler_get_free_pid()
 struct task *scheduler_get_current_task()
 {
     return current_task;
+}
+
+int scheduler_get_task_count()
+{
+    const struct task *task = task_head;
+    int count               = 0;
+    while (task) {
+        count++;
+        task = task->next;
+    }
+    return count;
+}
+
+struct task *scheduler_get_runnable_task()
+{
+    struct task *task = task_head;
+    while (task) {
+        if (task->process->state == RUNNING) {
+            return task;
+        }
+        task = task->next;
+    }
+    return nullptr;
 }
 
 struct task *scheduler_get_next_task()
@@ -178,6 +209,44 @@ int scheduler_switch_current_task_page()
     return ALL_OK;
 }
 
+void scheduler_idle_task()
+{
+    // ReSharper disable once CppDFAEndlessLoop
+    while (true) {
+        // kprintf("Idle task\n");
+        asm("hlt");
+    }
+}
+
+void scheduler_initialize_idle_task()
+{
+    idle_task = kzalloc(sizeof(struct task));
+    memset(idle_task, 0, sizeof(struct task));
+    idle_task->kernel_state.eip = (uint32_t)&scheduler_idle_task;
+    idle_task->kernel_state.cs  = KERNEL_CODE_SELECTOR;
+    idle_task->kernel_state.eflags |= 0x200; // Enable interrupts
+    idle_task->kernel_state.esp = (uint32_t)kzalloc(4096) + 4096;
+
+    idle_task->process           = (struct process *)kzalloc(sizeof(struct process));
+    idle_task->process->pid      = 0;
+    idle_task->process->state    = RUNNING;
+    idle_task->process->priority = 0;
+    idle_task->process->task     = idle_task;
+
+    scheduler_set_process(idle_task->process->pid, idle_task->process);
+}
+
+void scheduler_run_task_in_kernel_mode(cpu_state_t state)
+{
+    asm volatile("2:\n"
+                 "mov %1, %%eax\n"
+                 "sti\n"
+                 "jmp *%%eax\n"
+                 :
+                 : "m"(state.esp), "m"(state.eip)
+                 : "%eax");
+}
+
 /// @brief Gets the next task and runs it
 void schedule()
 {
@@ -185,7 +254,24 @@ void schedule()
     if (!next) {
         // No tasks to run, restart the shell
         kprintf("\nRestarting the shell");
+        pic_acknowledge();
         start_shell(0);
+        return;
+    }
+
+    // If the task is terminated or a zombie, remove it from the scheduler
+    if (next->process->state == TERMINATED || next->process->state == ZOMBIE) {
+        // If the task is a child process, signal the parent that the child has exited
+        if (next->process->parent && next->process->parent->state == WAITING &&
+            (next->process->parent->wait_pid == next->process->pid || next->process->parent->wait_pid == -1)) {
+            next->process->parent->state     = RUNNING;
+            next->process->parent->exit_code = next->process->exit_code;
+            next->process->parent->wait_pid  = 0;
+        }
+
+        scheduler_unqueue_task(next);
+        scheduler_unlink_process(next->process);
+        pic_acknowledge();
         return;
     }
 
@@ -216,24 +302,77 @@ void schedule()
         } else {
             if (child) {
                 // If the task is waiting and the child is still running, switch to the child task
+                pic_acknowledge();
                 scheduler_switch_task(child->task);
                 scheduler_run_task_in_user_mode(&child->task->registers);
             } else {
-                // TODO: We need an idle process here, otherwise we may not have a task to switch to
+                // Try to find another runnable task, if none, run the idle task
+                next = scheduler_get_runnable_task();
+                if (next == nullptr) {
+                    pic_acknowledge();
+                    scheduler_run_task_in_kernel_mode(idle_task->kernel_state);
+                    return;
+                }
             }
         }
     }
 
+    pic_acknowledge();
     scheduler_switch_task(next);
     scheduler_run_task_in_user_mode(&next->registers);
 }
 
-int scheduler_replace(struct process* old, struct process* new)
+int scheduler_replace(struct process *old, struct process *new)
 {
-    processes[old->pid] = new;
-
-    // TODO: Free the old process
     process_terminate(old);
 
+    processes[old->pid] = new;
+
     return ALL_OK;
+}
+
+void handle_pit_interrupt(int interrupt)
+{
+    milliseconds += 2;
+    if (milliseconds >= 10) {
+        milliseconds = 0;
+        schedule();
+    }
+    pic_acknowledge();
+}
+
+int scheduler_init()
+{
+    scheduler_initialize_idle_task();
+    pit_set_interval(2);
+    return idt_register_interrupt_callback(0x20, handle_pit_interrupt);
+}
+
+int scheduler_get_processes(struct process_info **proc_info, int *count)
+{
+    // Count the number of processes
+    *count = 0;
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i] != nullptr) {
+            (*count)++;
+        }
+    }
+
+    *proc_info = (struct process_info *)kmalloc(sizeof(struct process_info) * *count);
+
+    for (int i = 0; i < *count; i++) {
+        if (processes[i]) {
+            struct process_info info = {
+                .pid        = processes[i]->pid,
+                .priority   = processes[i]->priority,
+                .state      = processes[i]->state,
+                .wait_state = processes[i]->wait_state,
+                .exit_code  = processes[i]->exit_code,
+            };
+            strncpy(info.file_name, processes[i]->file_name, MAX_PATH_LENGTH);
+            memcpy(*proc_info + i, &info, sizeof(struct process_info));
+        }
+    }
+
+    return 0;
 }

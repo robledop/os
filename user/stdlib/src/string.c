@@ -309,3 +309,15 @@ bool str_ends_with(const char *str, const char *suffix)
 
     return strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
 }
+
+/* Duplicate S, returning an identical malloc'd string.  */
+char *strdup(const char *s)
+{
+    const size_t len = strlen(s);
+    char *new        = malloc(len + 1);
+    if (new == NULL) {
+        return nullptr;
+    }
+    strncpy(new, s, len + 1);
+    return new;
+}

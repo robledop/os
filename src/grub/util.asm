@@ -2,7 +2,7 @@
 
 section .text
 
-%include "constants.asm"
+%include "config.asm"
     global set_kernel_mode_segments
 
 set_kernel_mode_segments:

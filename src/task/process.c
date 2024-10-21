@@ -133,7 +133,7 @@ static struct process_allocation *process_get_allocation_by_address(struct proce
     return nullptr;
 }
 
-int process_terminate_allocations(struct process *process)
+int process_free_allocations(struct process *process)
 {
     for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
         process_free(process, process->allocations[i].ptr);
@@ -165,7 +165,7 @@ int process_terminate(struct process *process)
 {
     process->state = ZOMBIE;
 
-    int res = process_terminate_allocations(process);
+    int res = process_free_allocations(process);
     if (res < 0) {
         warningf("Failed to terminate allocations for process %d\n", process->pid);
         ASSERT(false, "Failed to terminate allocations for process");
@@ -183,7 +183,7 @@ int process_terminate(struct process *process)
     task_free(process->task);
 
     // TODO: Warn the parent process that the child has been terminated
-    // process_unlink(process);
+    scheduler_unlink_process(process);
 
     return res;
 }
@@ -396,7 +396,7 @@ out:
     return res;
 }
 
-static int process_load_data(const char *file_name, struct process *process)
+int process_load_data(const char *file_name, struct process *process)
 {
     dbgprintf("Loading data for process %s\n", file_name);
     int res = 0;
@@ -419,6 +419,15 @@ static int process_map_binary(const struct process *process)
                          paging_align_address((char *)process->pointer + process->size),
                          PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                              PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+}
+
+static int process_unmap_binary(const struct process *process)
+{
+    return paging_map_to(process->task->page_directory,
+                         (void *)PROGRAM_VIRTUAL_ADDRESS,
+                         process->pointer,
+                         paging_align_address((char *)process->pointer + process->size),
+                         PAGING_DIRECTORY_ENTRY_UNMAPPED);
 }
 
 static int process_map_elf(const struct process *process)
@@ -444,6 +453,31 @@ static int process_map_elf(const struct process *process)
                             flags);
         if (ISERR(res)) {
             ASSERT(false, "Failed to map ELF file");
+            break;
+        }
+    }
+
+    return res;
+}
+
+static int process_unmap_elf(const struct process *process)
+{
+    int res                         = 0;
+    const struct elf_file *elf_file = process->elf_file;
+    struct elf_header *header       = elf_header(elf_file);
+    const struct elf32_phdr *phdrs  = elf_pheader(header);
+
+    for (int i = 0; i < header->e_phnum; i++) {
+        const struct elf32_phdr *phdr = &phdrs[i];
+        void *phdr_phys_address       = elf_phdr_phys_address(elf_file, phdr);
+
+        res = paging_map_to(process->task->page_directory,
+                            paging_align_to_lower_page((void *)phdr->p_vaddr),
+                            paging_align_to_lower_page(phdr_phys_address),
+                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz),
+                            PAGING_DIRECTORY_ENTRY_UNMAPPED);
+        if (ISERR(res)) {
+            ASSERT(false, "Failed to unmap ELF file");
             break;
         }
     }
@@ -479,6 +513,31 @@ out:
     return res;
 }
 
+int process_unmap_memory(const struct process *process)
+{
+    int res = 0;
+    switch (process->file_type) {
+    case PROCESS_FILE_TYPE_ELF:
+        res = process_unmap_elf(process);
+        break;
+    case PROCESS_FILE_TYPE_BINARY:
+        res = process_unmap_binary(process);
+        break;
+    default:
+        panic("Unknown process file type");
+        break;
+    }
+
+    ASSERT(res >= 0, "Failed to unmap memory for process");
+
+    res = paging_map_to(process->task->page_directory,
+                        (char *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
+                        process->stack,
+                        paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
+                        PAGING_DIRECTORY_ENTRY_UNMAPPED);
+    return res;
+}
+
 
 int process_load_switch(const char *file_name, struct process **process)
 {
@@ -510,6 +569,69 @@ out:
     return res;
 }
 
+struct process *process_create(const char *file_name)
+{
+    int res                     = 0;
+    struct task *task           = nullptr;
+    struct process *proc        = nullptr;
+    void *program_stack_pointer = nullptr;
+
+    proc = kzalloc(sizeof(struct process));
+    if (!proc) {
+        warningf("Failed to allocate memory for process\n");
+        ASSERT(false, "Failed to allocate memory for process");
+        res = -ENOMEM;
+        goto out;
+    }
+
+    res = process_load_data(file_name, proc);
+    if (res < 0) {
+        warningf("Failed to load data for process\n");
+        goto out;
+    }
+
+    program_stack_pointer = kzalloc(USER_PROGRAM_STACK_SIZE);
+    if (!program_stack_pointer) {
+        warningf("Failed to allocate memory for program stack\n");
+        ASSERT(false, "Failed to allocate memory for program stack");
+        res = -ENOMEM;
+        goto out;
+    }
+
+    strncpy(proc->file_name, file_name, sizeof(proc->file_name));
+    proc->stack = program_stack_pointer;
+    // proc->pid   = pid;
+
+
+    task = task_create(proc);
+    if (ERROR_I(task) == 0) {
+        warningf("Failed to create task\n");
+        ASSERT(false, "Failed to create task");
+        res = -ENOMEM;
+        goto out;
+    }
+
+    proc->task = task;
+
+    res = process_map_memory(proc);
+    if (res < 0) {
+        warningf("Failed to map memory for process\n");
+        ASSERT(false, "Failed to map memory for process");
+        goto out;
+    }
+
+out:
+    if (ISERR(res)) {
+        if (proc && proc->task) {
+            task_free(proc->task);
+        }
+
+        // TODO: free process data
+    }
+    return proc;
+}
+
+
 int process_load_for_slot(const char *file_name, struct process **process, const uint16_t pid)
 {
     int res                     = 0;
@@ -519,12 +641,12 @@ int process_load_for_slot(const char *file_name, struct process **process, const
 
     dbgprintf("Loading process %s to slot %d\n", file_name, pid);
 
-    // if (scheduler_get_process(pid) != nullptr) {
-    //     warningf("Process slot is not empty\n");
-    //     ASSERT(false, "Process slot is not empty");
-    //     res = -EINSTKN;
-    //     goto out;
-    // }
+    if (scheduler_get_process(pid) != nullptr) {
+        warningf("Process slot is not empty\n");
+        ASSERT(false, "Process slot is not empty");
+        res = -EINSTKN;
+        goto out;
+    }
 
     proc = kzalloc(sizeof(struct process));
     if (!proc) {
@@ -752,19 +874,9 @@ struct process *process_clone(struct process *process)
 
 struct process *process_replace(const struct process *parent, const char *file_name)
 {
-    struct process *child = kzalloc(sizeof(struct process));
-    if (!child) {
-        return nullptr;
-    }
-
-    process_load_for_slot(file_name, &child, parent->pid);
-    // const int res = process_load_data(file_name, child);
-    // if (res < 0) {
-    //     kfree(child);
-    //     return nullptr;
-    // }
-
-    child->parent = parent->parent;
+    struct process *child = process_create(file_name);
+    child->parent         = parent->parent;
+    child->pid            = parent->pid;
 
     // TODO: Copy file descriptors
 

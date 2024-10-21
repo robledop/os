@@ -1,9 +1,8 @@
 #include "os.h"
 #include <stdlib.h>
 #include "string.h"
-#include "syscall.h"
 
-struct command_argument *os_parse_command(const char *command, int max) {
+struct command_argument *os_parse_command(const char *command, const int max) {
     struct command_argument *head = nullptr;
     char scommand[1025];
     if (max >= (int)sizeof(scommand)) {

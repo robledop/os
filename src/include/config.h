@@ -1,4 +1,8 @@
-#pragma once
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// config.asm is generated from config.h using the script c_to_nasm.sh
+// This file must only contain #ifndef, #define and #endif
 
 #define TOTAL_INTERRUPTS 512
 
@@ -27,6 +31,7 @@
 #define KERNEL_DATA_SELECTOR 0x10
 #define USER_CODE_SELECTOR 0x1B
 #define USER_DATA_SELECTOR 0x23
+#define TSS_SELECTOR 0x28
 
 #define PROGRAM_VIRTUAL_STACK_ADDRESS_START 0x3FF000
 #define PROGRAM_VIRTUAL_STACK_ADDRESS_END PROGRAM_VIRTUAL_STACK_ADDRESS_START - USER_PROGRAM_STACK_SIZE
@@ -49,3 +54,5 @@
 // #endif
 
 #define KERNEL_LOAD_ADDRESS 0x200000
+
+#endif

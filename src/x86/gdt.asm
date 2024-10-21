@@ -2,7 +2,7 @@ global gdt_flush
 
 section .text
 
-%include "constants.asm"
+%include "config.asm"
 
 gdt_flush:
     ; Get the pointer to gdt_ptr from the stack

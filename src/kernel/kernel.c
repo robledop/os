@@ -72,13 +72,14 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     paging_init();
     idt_init();
     pic_init();
+    pit_init();
+    scheduler_init();
     display_grub_info(mbd, magic);
     pci_scan();
     fs_init();
     disk_init();
     register_syscalls();
     keyboard_init();
-    pit_init();
 
     // schedule_idle_task();
     start_shell(0);

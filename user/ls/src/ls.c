@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
         printf("\nNo such file or directory");
         return 0;
     case -EBADPATH:
-        printf("\nInvalid path");
+        printf("\nInvalid path: %s", argv[1]);
         return 0;
     default:
         printf("\nError: %d", res);

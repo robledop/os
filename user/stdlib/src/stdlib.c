@@ -1,6 +1,7 @@
 #include "stdlib.h"
 
 #include <os.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include "../../../src/include/syscall.h"
@@ -46,9 +47,28 @@ int fork()
     return syscall0(SYSCALL_FORK);
 }
 
-int exec(const char *path, const char *argv[])
+int exec(const char *path, const char *arg, ...)
 {
-    return syscall2(SYSCALL_EXEC, path, argv);
+    if (arg == NULL) {
+        return syscall3(SYSCALL_EXEC, path, NULL, 0);
+    }
+
+    va_list args;
+    va_start(args, arg);
+
+    char *argv[10];
+    int argc     = 0;
+    argv[argc++] = (char *)arg;
+
+    char *next_arg = va_arg(args, char *);
+    while (next_arg != NULL) {
+        argv[argc++] = next_arg;
+        next_arg     = va_arg(args, char *);
+    }
+
+    va_end(args);
+
+    return syscall3(SYSCALL_EXEC, path, argv, argc);
 }
 
 int getpid()

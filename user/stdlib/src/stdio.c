@@ -331,8 +331,10 @@ int getkey()
 int getkey_blocking()
 {
     int key = 0;
-    while ((key = getkey()) == 0)
-        ;
+    key     = getkey();
+    while (key == 0) {
+        key = getkey();
+    }
 
     return key;
 }

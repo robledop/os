@@ -1,7 +1,7 @@
 ; NOT USED BY GRUB
 [BITS 32]
 
-%include "constants.asm"
+%include "config.asm"
 
   global _start
   global cause_problem

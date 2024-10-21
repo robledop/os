@@ -2,7 +2,7 @@
 
 section .text
 
-%include "constants.asm"
+%include "config.asm"
 
 global restore_general_purpose_registers
 global scheduler_run_task_in_user_mode

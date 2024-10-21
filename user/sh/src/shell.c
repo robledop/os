@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 
         const int pid = create_process((char *)buffer, current_directory);
         if (pid < 0) {
+            printf("\nCommand: %s\n", (char *)buffer);
             printf("\nError: %d", pid);
         } else {
             waitpid(pid, ZOMBIE);
@@ -77,6 +78,9 @@ void shell_terminal_readline(uchar *out, const int max, const bool output_while_
     int i                         = 0;
     for (; i < max - 1; i++) {
         const unsigned char key = getkey_blocking();
+        if (key == 0) {
+            continue;
+        }
 
         // Up arrow
         if (key == 226) {
@@ -178,7 +182,7 @@ void change_directory(char *args, char *current_directory)
 
     if (strncmp(new_dir, "0:/", 3) == 0) {
         if (!directory_exists(new_dir)) {
-            printf("\nDirectory does not exist\n");
+            printf("\nDirectory does not exist: %s\n", new_dir);
             return;
         }
 
@@ -190,7 +194,7 @@ void change_directory(char *args, char *current_directory)
         }
     } else if (strncmp(new_dir, "/", 1) == 0) {
         if (!directory_exists(new_dir)) {
-            printf("\nDirectory does not exist\n");
+            printf("\nDirectory does not exist: %s\n", new_dir);
             return;
         }
         char root[MAX_PATH_LENGTH] = "0:";
@@ -218,7 +222,7 @@ void change_directory(char *args, char *current_directory)
         set_current_directory(current_directory);
     } else {
         if (!directory_exists((char *)args)) {
-            printf("\nDirectory does not exist\n");
+            printf("\nDirectory does not exist: %s\n", args);
             return;
         }
 

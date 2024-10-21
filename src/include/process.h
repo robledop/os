@@ -24,6 +24,7 @@ struct process_arguments {
     char **argv;
 };
 
+
 struct process {
     uint16_t pid;
     int priority;
@@ -78,3 +79,11 @@ int process_add_child(struct process *parent, struct process *child);
 int process_remove_child(struct process *parent, struct process *child);
 struct process *process_clone(struct process *process);
 struct process *process_replace(const struct process *parent, const char *file_name);
+
+
+struct process *process_create(const char *file_name);
+int process_load_data(const char *file_name, struct process *process);
+int process_map_memory(const struct process *process);
+int process_unmap_memory(const struct process *process);
+int process_free_allocations(struct process *process);
+int process_free_program_data(const struct process *process);

@@ -1,5 +1,6 @@
 #include "syscall.h"
 
+#include <kernel_heap.h>
 #include <scheduler.h>
 
 #include "file.h"
@@ -59,16 +60,51 @@ void *sys_fork(struct interrupt_frame *frame)
 // int exec(const char *path, const char *argv[])
 void *sys_exec(struct interrupt_frame *frame)
 {
-    const void *argv_ptr = task_peek_stack_item(scheduler_get_current_task(), 0);
-    const void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 1);
+    struct process_info *proc_info = nullptr;
+    int *count                     = kmalloc(sizeof(int));
+
+    scheduler_get_processes(&proc_info, count);
+
+    kprintf("\nNumber of processes: %d\n", *count);
+    for (int i = 0; i < *count; i++) {
+        struct process_info *proc = (proc_info + i);
+        kprintf("Process %d: %s, state: %x\n", proc->pid, proc->file_name, proc->state);
+    }
+
+    const void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 2);
+    char(*argv_ptr)[]    = (char(*)[])task_virtual_to_physical_address(
+        scheduler_get_current_task(), task_peek_stack_item(scheduler_get_current_task(), 1));
+    int argc = (int)task_peek_stack_item(scheduler_get_current_task(), 0);
     char path[MAX_PATH_LENGTH];
 
     copy_string_from_task(scheduler_get_current_task(), path_ptr, path, sizeof(path));
 
     struct process *process = scheduler_get_current_task()->process;
-    struct process *child   = process_replace(process, path);
+    process_unmap_memory(process);
+    process_free_allocations(process);
+    process_free_program_data(process);
+    kfree(process->stack);
+    task_free(process->task);
 
-    scheduler_replace(process, child);
+    process_load_data(path, process);
+    void *program_stack_pointer = kzalloc(USER_PROGRAM_STACK_SIZE);
+    strncpy(process->file_name, path, sizeof(process->file_name));
+    struct task *task = task_create(process);
+    process->task     = task;
+    process_map_memory(process);
+    process->stack = program_stack_pointer;
+
+    // scheduler_queue_task(process->task);
+    scheduler_set_process(process->pid, process);
+
+
+    scheduler_get_processes(&proc_info, count);
+
+    kprintf("\nNumber of processes: %d\n", *count);
+    for (int i = 0; i < *count; i++) {
+        struct process_info *proc = (proc_info + i);
+        kprintf("Process %d: %s, state: %x\n", proc->pid, proc->file_name, proc->state);
+    }
 
     schedule();
 
@@ -195,6 +231,10 @@ void *sys_exit(struct interrupt_frame *frame)
 void *sys_print(struct interrupt_frame *frame)
 {
     const void *message = task_peek_stack_item(scheduler_get_current_task(), 0);
+    // if (!message) {
+    //     return nullptr;
+    // }
+
     char buffer[2048];
 
     copy_string_from_task(scheduler_get_current_task(), message, buffer, sizeof(buffer));

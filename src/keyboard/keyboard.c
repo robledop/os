@@ -12,9 +12,13 @@
 static struct keyboard *keyboard_list_head = nullptr;
 static struct keyboard *keyboard_list_tail = nullptr;
 
-void keyboard_init() { keyboard_register(ps2_init()); }
+void keyboard_init()
+{
+    keyboard_register(ps2_init());
+}
 
-int keyboard_register(struct keyboard *kbd) {
+int keyboard_register(struct keyboard *kbd)
+{
     if (kbd->init == NULL) {
         warningf("keyboard->init is NULL\n");
         ASSERT(false, "keyboard->init is NULL");
@@ -32,17 +36,20 @@ int keyboard_register(struct keyboard *kbd) {
     return kbd->init();
 }
 
-static int keyboard_get_tail_index(const struct process *process) {
+static int keyboard_get_tail_index(const struct process *process)
+{
     return process->keyboard.tail % KEYBOARD_BUFFER_SIZE;
 }
 
-void keyboard_backspace(struct process *process) {
+void keyboard_backspace(struct process *process)
+{
     process->keyboard.tail               = (process->keyboard.tail - 1) % KEYBOARD_BUFFER_SIZE;
     const int real_index                 = keyboard_get_tail_index(process);
     process->keyboard.buffer[real_index] = 0x00;
 }
 
-void keyboard_push(const uchar c) {
+void keyboard_push(const uchar c)
+{
     if (c == 0x00) {
         return;
     }
@@ -58,7 +65,8 @@ void keyboard_push(const uchar c) {
     process->keyboard.tail               = (process->keyboard.tail + 1) % KEYBOARD_BUFFER_SIZE;
 }
 
-uchar keyboard_pop() {
+uchar keyboard_pop()
+{
     if (!scheduler_get_current_task()) {
         warningf("No current task\n");
         return 0;

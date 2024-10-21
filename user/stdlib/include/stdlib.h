@@ -11,6 +11,6 @@ int wait(enum PROCESS_STATE state);
 void reboot();
 void shutdown();
 int fork();
-int exec(const char* path, const char* argv[]);
+int exec(const char *path, const char *arg, ...);
 int getpid();
 int create_process(const char *command, const char *current_directory);

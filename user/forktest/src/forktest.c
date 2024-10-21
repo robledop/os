@@ -12,8 +12,9 @@ int main(const int argc, char **argv)
         exit();
     } else if (rc == 0) {
         printf("Child (pid:%d)\n", getpid());
-        printf("Child will exec blank.elf\n");
-        exec("0:/bin/blank.elf", nullptr);
+        printf("Child will exec blank.elf");
+
+        // exec("0:/bin/blank.elf", nullptr);
 
         printf("This should not be printed\n");
     } else {
