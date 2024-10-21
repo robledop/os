@@ -15,11 +15,16 @@
 #include "task.h"
 #include "vga_buffer.h"
 
-
-// static void process_init(struct process *process)
-// {
-//     memset(process, 0, sizeof(struct process));
-// }
+int process_get_child_count(const struct process *process)
+{
+    int count                   = 0;
+    const struct process *child = process->children;
+    while (child) {
+        count++;
+        child = child->next;
+    }
+    return count;
+}
 
 struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state)
 {
@@ -177,7 +182,7 @@ int process_terminate(struct process *process)
     kfree(process->stack);
     task_free(process->task);
 
-    // TODO: find a way to free the process
+    // TODO: Warn the parent process that the child has been terminated
     // process_unlink(process);
 
     return res;
@@ -514,12 +519,13 @@ int process_load_for_slot(const char *file_name, struct process **process, const
 
     dbgprintf("Loading process %s to slot %d\n", file_name, pid);
 
-    if (scheduler_get_process(pid) != nullptr) {
-        warningf("Process slot is not empty\n");
-        ASSERT(false, "Process slot is not empty");
-        res = -EINSTKN;
-        goto out;
-    }
+    // if (scheduler_get_process(pid) != nullptr) {
+    //     warningf("Process slot is not empty\n");
+    //     ASSERT(false, "Process slot is not empty");
+    //     res = -EINSTKN;
+    //     goto out;
+    // }
+
     proc = kzalloc(sizeof(struct process));
     if (!proc) {
         warningf("Failed to allocate memory for process\n");
@@ -527,6 +533,7 @@ int process_load_for_slot(const char *file_name, struct process **process, const
         res = -ENOMEM;
         goto out;
     }
+
 
     res = process_load_data(file_name, proc);
     if (res < 0) {
@@ -596,32 +603,62 @@ int process_set_current_directory(struct process *process, const char *directory
     return ALL_OK;
 }
 
-int process_wait_pid(struct process *process, const int pid)
+int process_wait_pid(struct process *process, const int pid, const enum PROCESS_STATE state)
 {
     disable_interrupts();
 
-    struct process *child = find_child_process_by_pid(process, pid);
+    if (process_get_child_count(process) == 0) {
+        enable_interrupts();
+        return -1;
+    }
+
+    struct process *child = nullptr;
+
+    if (pid == -1) {
+        child = find_child_process_by_state(process, state);
+        if (child == nullptr) {
+            process->state      = WAITING;
+            process->wait_state = state;
+            process->wait_pid   = pid;
+            schedule();
+            enable_interrupts();
+            return -1;
+        }
+    }
+
+    if (pid > 0) {
+        child = find_child_process_by_pid(process, pid);
+    }
+
     if (child == nullptr) {
         enable_interrupts();
         return -1;
     }
 
-    if (child->state == ZOMBIE) {
+    if (child->state == state) {
+        if (child->state == ZOMBIE || child->state == TERMINATED) {
+            process_remove_child(process, child);
+            // TODO: Unlink the child process when the parent does not wait for it
+            scheduler_unlink_process(child);
+        }
         const int status = child->exit_code;
-        process_remove_child(process, child);
-        // TODO: Unlink the child process when the parent does not wait for it
-        scheduler_unlink_process(child);
         enable_interrupts();
         return status;
     }
 
     // No child has terminated; block the parent process
-    process->state    = WAITING;
-    process->wait_pid = pid;
+    process->state      = WAITING;
+    process->wait_state = state;
+    process->wait_pid   = pid;
     schedule(); // Context switch to another process
 
     enable_interrupts();
     return -1; // No child to wait for
+}
+
+int process_wait(struct process *process, const enum PROCESS_STATE state)
+{
+    return process_wait_pid(process, -1, state);
 }
 
 int process_copy_allocations(struct process *dest, const struct process *src)
@@ -713,33 +750,23 @@ struct process *process_clone(struct process *process)
     return clone;
 }
 
-struct process *process_create_replacement(const struct process *parent, const char *file_name)
+struct process *process_replace(const struct process *parent, const char *file_name)
 {
-    struct process *replacement = kzalloc(sizeof(struct process));
-    if (!replacement) {
+    struct process *child = kzalloc(sizeof(struct process));
+    if (!child) {
         return nullptr;
     }
 
-    const int res = process_load_data(file_name, replacement);
-    if (res < 0) {
-        kfree(replacement);
-        return nullptr;
-    }
+    process_load_for_slot(file_name, &child, parent->pid);
+    // const int res = process_load_data(file_name, child);
+    // if (res < 0) {
+    //     kfree(child);
+    //     return nullptr;
+    // }
 
-    replacement->pid               = parent->pid;
-    replacement->task              = parent->task;
-    replacement->state             = RUNNING;
-    replacement->parent            = parent->parent;
-    replacement->children          = parent->children;
-    replacement->next              = parent->next;
-    replacement->wait_pid          = parent->wait_pid;
-    replacement->exit_code         = parent->exit_code;
-    replacement->file_type         = parent->file_type;
-    replacement->pointer           = parent->pointer;
-    replacement->stack             = parent->stack;
-    replacement->size              = parent->size;
-    replacement->arguments         = parent->arguments;
-    replacement->current_directory = parent->current_directory;
+    child->parent = parent->parent;
 
-    return replacement;
+    // TODO: Copy file descriptors
+
+    return child;
 }

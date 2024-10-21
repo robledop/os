@@ -35,7 +35,7 @@ struct task *task_create(struct process *process);
 int task_free(struct task *task);
 void restore_general_purpose_registers(struct registers *registers);
 int copy_string_from_task(const struct task *task, const void *virtual, void *physical, int max);
-void *task_get_stack_item(const struct task *task, int index);
+void *task_peek_stack_item(const struct task *task, int index);
 void *task_virtual_to_physical_address(const struct task *task, void *virtual_address);
 int task_page_task(const struct task *task);
 void task_save_state(struct task *task, const struct interrupt_frame *frame);

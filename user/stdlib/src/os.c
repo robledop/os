@@ -72,20 +72,3 @@ void os_terminal_readline(unsigned char *out, const int max, const bool output_w
 
     out[i] = 0x00;
 }
-
-int os_create_process(const char *command, const char *current_directory) {
-    char buffer[1024];
-    strncpy(buffer, command, sizeof(buffer));
-    struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
-    if (root_command_argument == NULL) {
-        return -1;
-    }
-
-    if (root_command_argument->current_directory == NULL) {
-        root_command_argument->current_directory = malloc(MAX_PATH_LENGTH);
-    }
-
-    strncpy(root_command_argument->current_directory, current_directory, MAX_PATH_LENGTH);
-
-    return syscall1(SYSCALL_CREATE_PROCESS, root_command_argument);
-}

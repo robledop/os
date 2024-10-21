@@ -1,6 +1,9 @@
 #include "stdlib.h"
+
+#include <os.h>
+#include <string.h>
+
 #include "../../../src/include/syscall.h"
-#include "memory.h"
 #include "syscall.h"
 
 void *malloc(size_t size)
@@ -18,9 +21,14 @@ void free(void *ptr)
     syscall1(SYSCALL_FREE, ptr);
 }
 
-int waitpid(const int pid)
+int waitpid(const int pid, enum PROCESS_STATE state)
 {
-    return syscall1(SYSCALL_WAIT_PID, pid);
+    return syscall2(SYSCALL_WAIT_PID, pid, state);
+}
+
+int wait(enum PROCESS_STATE state)
+{
+    return syscall2(SYSCALL_WAIT_PID, -1, state);
 }
 
 void reboot()
@@ -38,7 +46,30 @@ int fork()
     return syscall0(SYSCALL_FORK);
 }
 
+int exec(const char *path, const char *argv[])
+{
+    return syscall2(SYSCALL_EXEC, path, argv);
+}
+
 int getpid()
 {
     return syscall0(SYSCALL_GET_PID);
+}
+
+int create_process(const char *command, const char *current_directory)
+{
+    char buffer[1024];
+    strncpy(buffer, command, sizeof(buffer));
+    struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
+    if (root_command_argument == NULL) {
+        return -1;
+    }
+
+    if (root_command_argument->current_directory == NULL) {
+        root_command_argument->current_directory = malloc(MAX_PATH_LENGTH);
+    }
+
+    strncpy(root_command_argument->current_directory, current_directory, MAX_PATH_LENGTH);
+
+    return syscall1(SYSCALL_CREATE_PROCESS, root_command_argument);
 }

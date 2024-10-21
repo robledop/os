@@ -143,7 +143,7 @@ int task_init(struct task *task, struct process *process)
     return ALL_OK;
 }
 
-void *task_get_stack_item(const struct task *task, const int index)
+void *task_peek_stack_item(const struct task *task, const int index)
 {
     const uint32_t *stack_pointer = (uint32_t *)task->registers.esp;
     task_page_task(task);

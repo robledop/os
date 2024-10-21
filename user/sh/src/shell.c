@@ -31,14 +31,12 @@ int main(int argc, char **argv)
     printf(KWHT "\nUser mode shell started\n");
 
     for (int i = 0; i < 256; i++) {
-        command_history[i] = malloc(1024);
+        command_history[i] = malloc(256);
     }
 
     // ReSharper disable once CppDFAEndlessLoop
     while (1) {
-        char current_directory[MAX_PATH_LENGTH];
-        const char *current_dir = get_current_directory();
-        strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
+        char *current_directory = get_current_directory();
         printf(KGRN "%s> " KWHT, current_directory);
 
         uchar buffer[1024];
@@ -58,11 +56,12 @@ int main(int argc, char **argv)
             continue;
         }
 
-        const int pid = os_create_process((char *)buffer, current_directory);
+        const int pid = create_process((char *)buffer, current_directory);
         if (pid < 0) {
             printf("\nError: %d", pid);
         } else {
-            waitpid(pid);
+            waitpid(pid, ZOMBIE);
+            // wait(ZOMBIE);
         }
 
         putchar('\n');

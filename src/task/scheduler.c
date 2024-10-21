@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <config.h>
 #include <idt.h>
-#include <memory.h>
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
@@ -194,21 +193,47 @@ void schedule()
 
     // TODO: Add a way for the child process to signal to the parent that it has exited
     if (process->state == WAITING) {
-        ASSERT(process->wait_pid > 0, "A waiting process should have a wait pid");
-        auto const child = find_child_process_by_pid(process, process->wait_pid);
-        if (child->state == ZOMBIE) {
+        struct process *child;
+        if (process->wait_pid == -1) {
+            child = find_child_process_by_state(process, process->wait_state);
+        } else {
+            child = find_child_process_by_pid(process, process->wait_pid);
+            if (!child) {
+                process->state     = RUNNING;
+                process->exit_code = 0;
+                process->wait_pid  = 0;
+            }
+        }
+        if (child && child->state == process->wait_state) {
             process->state     = RUNNING;
             process->exit_code = child->exit_code;
             process->wait_pid  = 0;
-            process_remove_child(process, child);
-            scheduler_unlink_process(child);
+
+            if (child->state == TERMINATED || child->state == ZOMBIE) {
+                process_remove_child(process, child);
+                scheduler_unlink_process(child);
+            }
         } else {
-            // If the task is waiting and the child is still running, switch to the child task
-            scheduler_switch_task(child->task);
-            scheduler_run_task_in_user_mode(&child->task->registers);
+            if (child) {
+                // If the task is waiting and the child is still running, switch to the child task
+                scheduler_switch_task(child->task);
+                scheduler_run_task_in_user_mode(&child->task->registers);
+            } else {
+                // TODO: We need an idle process here, otherwise we may not have a task to switch to
+            }
         }
     }
 
     scheduler_switch_task(next);
     scheduler_run_task_in_user_mode(&next->registers);
+}
+
+int scheduler_replace(struct process* old, struct process* new)
+{
+    processes[old->pid] = new;
+
+    // TODO: Free the old process
+    process_terminate(old);
+
+    return ALL_OK;
 }

@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     const char *current_directory = get_current_directory();
 
     int res = 0;
-    if (argv[1] == NULL || strlen(argv[1]) == 0) {
+    if (argv[1] == NULL || strlen(argv[1]) < 2) {
         res = opendir(directory, current_directory);
     } else {
         res = opendir(directory, argv[1]);

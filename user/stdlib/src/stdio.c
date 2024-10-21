@@ -35,27 +35,45 @@ struct fat_directory_entry {
     uint32_t size;
 } __attribute__((packed));
 
-void clear_screen() { syscall0(SYSCALL_CLEAR_SCREEN); }
+void clear_screen()
+{
+    syscall0(SYSCALL_CLEAR_SCREEN);
+}
 
 void putchar_color(const char c, const unsigned char forecolor, const unsigned char backcolor)
 {
     os_putchar_color(c, forecolor, backcolor);
 }
 
-int fstat(int fd, struct file_stat *stat) { return syscall2(SYSCALL_STAT, fd, stat); }
+int fstat(int fd, struct file_stat *stat)
+{
+    return syscall2(SYSCALL_STAT, fd, stat);
+}
 
-int fopen(const char *name, const char *mode) { return syscall2(SYSCALL_OPEN, name, mode); }
+int fopen(const char *name, const char *mode)
+{
+    return syscall2(SYSCALL_OPEN, name, mode);
+}
 
-int fclose(int fd) { return syscall1(SYSCALL_CLOSE, fd); }
+int fclose(int fd)
+{
+    return syscall1(SYSCALL_CLOSE, fd);
+}
 
 int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd)
 {
     return syscall4(SYSCALL_READ, ptr, size, nmemb, fd);
 }
 
-void putchar(const unsigned char c) { syscall1(SYSCALL_PUTCHAR, c); }
+void putchar(const unsigned char c)
+{
+    syscall1(SYSCALL_PUTCHAR, c);
+}
 
-int print(const char *str) { return syscall1(SYSCALL_PRINT, str); }
+int print(const char *str)
+{
+    return syscall1(SYSCALL_PRINT, str);
+}
 
 int printf(const char *fmt, ...)
 {
@@ -238,7 +256,10 @@ int printf(const char *fmt, ...)
 /// @code
 /// struct file_directory *directory = malloc(sizeof(struct file_directory));
 /// int res = opendir(directory, "pah/to/directory");
-int opendir(struct file_directory *directory, const char *path) { return syscall2(SYSCALL_OPEN_DIR, directory, path); }
+int opendir(struct file_directory *directory, const char *path)
+{
+    return syscall2(SYSCALL_OPEN_DIR, directory, path);
+}
 
 /// @brief Reads an entry from a directory
 /// @param directory the directory to read from
@@ -289,17 +310,29 @@ int readdir(const struct file_directory *directory, struct directory_entry *entr
 }
 
 // Get the current directory for the current process
-char *get_current_directory() { return (char *)syscall0(SYSCALL_GET_CURRENT_DIRECTORY); }
+char *get_current_directory()
+{
+    return (char *)syscall0(SYSCALL_GET_CURRENT_DIRECTORY);
+}
 // Set the current directory for the current process
-int set_current_directory(const char *path) { return syscall1(SYSCALL_SET_CURRENT_DIRECTORY, path); }
-void exit() { syscall0(SYSCALL_EXIT); }
-int getkey() { return syscall0(SYSCALL_GETKEY); }
+int set_current_directory(const char *path)
+{
+    return syscall1(SYSCALL_SET_CURRENT_DIRECTORY, path);
+}
+void exit()
+{
+    syscall0(SYSCALL_EXIT);
+}
+int getkey()
+{
+    return syscall0(SYSCALL_GETKEY);
+}
 
 int getkey_blocking()
 {
     int key = 0;
-    while ((key = getkey()) == 0) {
-    }
+    while ((key = getkey()) == 0)
+        ;
 
     return key;
 }
