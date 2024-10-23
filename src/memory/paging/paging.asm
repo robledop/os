@@ -24,8 +24,3 @@ enable_paging:
     pop ebp
     
     ret
-
- 
-; section .data
-; message1 db "Page directory loaded", 0
-; message2 db "Loading page directory", 0

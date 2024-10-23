@@ -13,7 +13,6 @@
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
-#include <string.h>
 #include <syscall.h>
 #include <task.h>
 #include <vga_buffer.h>
@@ -32,6 +31,7 @@ void schedule_idle_task();
 #endif
 
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
+int __cli_count               = 0;
 
 extern struct page_directory *kernel_page_directory;
 
@@ -59,7 +59,8 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     uint32_t stack_ptr = 0;
     asm("mov %%esp, %0" : "=r"(stack_ptr));
 
-    disable_interrupts();
+    ENTER_CRITICAL();
+
     init_serial();
     print(""); // BUG: Without this, the terminal gets all messed up, but only when using my bootloader
     terminal_clear();
@@ -84,7 +85,7 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     // schedule_idle_task();
     start_shell(0);
 
-    enable_interrupts();
+    LEAVE_CRITICAL();
 
     panic("Kernel finished");
 }
@@ -106,7 +107,11 @@ void start_shell(const int console)
     process->task->tty = console;
     process->priority  = 1;
 
-    scheduler_run_first_task();
+    // scheduler_switch_task(process->task);
+    // scheduler_run_task_in_user_mode(&process->task->registers);
+
+    // scheduler_run_first_task();
+    schedule();
 }
 
 void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)

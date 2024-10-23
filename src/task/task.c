@@ -113,6 +113,7 @@ int task_init(struct task *task, struct process *process)
     memset(task, 0, sizeof(struct task));
     task->page_directory =
         paging_create_directory(PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+
     if (!task->page_directory) {
         dbgprintf("Failed to create page directory for task %x\n", &task);
         return -ENOMEM;
@@ -132,7 +133,7 @@ int task_init(struct task *task, struct process *process)
 
     task->registers.ss  = USER_DATA_SELECTOR;
     task->registers.cs  = USER_CODE_SELECTOR;
-    task->registers.esp = PROGRAM_VIRTUAL_STACK_ADDRESS_START;
+    task->registers.esp = USER_STACK_TOP;
 
     task->process = process;
 
@@ -174,7 +175,7 @@ void task_save_state(struct task *task, const struct interrupt_frame *frame)
     task->registers.ss    = frame->ss;
 }
 
-void task_copy_registers(struct task* dest, const struct task* src)
+void task_copy_registers(struct task *dest, const struct task *src)
 {
     dest->registers.edi = src->registers.edi;
     dest->registers.esi = src->registers.esi;

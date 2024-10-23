@@ -502,12 +502,14 @@ int process_map_memory(const struct process *process)
 
     ASSERT(res >= 0, "Failed to map memory for process");
 
+    // Map stack
     res = paging_map_to(process->task->page_directory,
-                        (char *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
+                        (char *)USER_STACK_BOTTOM, // stack grows down
                         process->stack,
-                        paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
+                        paging_align_address((char *)process->stack + USER_STACK_SIZE),
                         PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                             PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+
 
 out:
     return res;
@@ -531,9 +533,9 @@ int process_unmap_memory(const struct process *process)
     ASSERT(res >= 0, "Failed to unmap memory for process");
 
     res = paging_map_to(process->task->page_directory,
-                        (char *)PROGRAM_VIRTUAL_STACK_ADDRESS_END, // stack grows down
+                        (char *)USER_STACK_BOTTOM, // stack grows down
                         process->stack,
-                        paging_align_address((char *)process->stack + USER_PROGRAM_STACK_SIZE),
+                        paging_align_address((char *)process->stack + USER_STACK_SIZE),
                         PAGING_DIRECTORY_ENTRY_UNMAPPED);
     return res;
 }
@@ -590,7 +592,7 @@ struct process *process_create(const char *file_name)
         goto out;
     }
 
-    program_stack_pointer = kzalloc(USER_PROGRAM_STACK_SIZE);
+    program_stack_pointer = kzalloc(USER_STACK_SIZE);
     if (!program_stack_pointer) {
         warningf("Failed to allocate memory for program stack\n");
         ASSERT(false, "Failed to allocate memory for program stack");
@@ -663,7 +665,7 @@ int process_load_for_slot(const char *file_name, struct process **process, const
         goto out;
     }
 
-    program_stack_pointer = kzalloc(USER_PROGRAM_STACK_SIZE);
+    program_stack_pointer = kzalloc(USER_STACK_SIZE);
     if (!program_stack_pointer) {
         warningf("Failed to allocate memory for program stack\n");
         ASSERT(false, "Failed to allocate memory for program stack");
@@ -697,7 +699,6 @@ int process_load_for_slot(const char *file_name, struct process **process, const
     *process = proc;
 
     scheduler_set_process(pid, proc);
-    // processes[slot] = proc;
 
 out:
     if (ISERR(res)) {
@@ -727,10 +728,10 @@ int process_set_current_directory(struct process *process, const char *directory
 
 int process_wait_pid(struct process *process, const int pid, const enum PROCESS_STATE state)
 {
-    disable_interrupts();
+    ENTER_CRITICAL();
 
     if (process_get_child_count(process) == 0) {
-        enable_interrupts();
+        LEAVE_CRITICAL();
         return -1;
     }
 
@@ -743,7 +744,7 @@ int process_wait_pid(struct process *process, const int pid, const enum PROCESS_
             process->wait_state = state;
             process->wait_pid   = pid;
             schedule();
-            enable_interrupts();
+            LEAVE_CRITICAL();
             return -1;
         }
     }
@@ -753,7 +754,7 @@ int process_wait_pid(struct process *process, const int pid, const enum PROCESS_
     }
 
     if (child == nullptr) {
-        enable_interrupts();
+        LEAVE_CRITICAL();
         return -1;
     }
 
@@ -764,7 +765,7 @@ int process_wait_pid(struct process *process, const int pid, const enum PROCESS_
             scheduler_unlink_process(child);
         }
         const int status = child->exit_code;
-        enable_interrupts();
+        LEAVE_CRITICAL();
         return status;
     }
 
@@ -774,7 +775,7 @@ int process_wait_pid(struct process *process, const int pid, const enum PROCESS_
     process->wait_pid   = pid;
     schedule(); // Context switch to another process
 
-    enable_interrupts();
+    LEAVE_CRITICAL();
     return -1; // No child to wait for
 }
 
@@ -802,8 +803,8 @@ int process_copy_allocations(struct process *dest, const struct process *src)
 
 void process_copy_stack(struct process *dest, const struct process *src)
 {
-    dest->stack = kzalloc(USER_PROGRAM_STACK_SIZE);
-    memcpy(dest->stack, src->stack, USER_PROGRAM_STACK_SIZE);
+    dest->stack = kzalloc(USER_STACK_SIZE);
+    memcpy(dest->stack, src->stack, USER_STACK_SIZE);
 }
 
 void process_copy_file_info(struct process *dest, const struct process *src)
@@ -811,10 +812,14 @@ void process_copy_file_info(struct process *dest, const struct process *src)
     memcpy(dest->file_name, src->file_name, sizeof(src->file_name));
     dest->file_type = src->file_type;
     if (dest->file_type == PROCESS_FILE_TYPE_ELF) {
-        dest->elf_file = kzalloc(sizeof(struct elf_file));
-        memcpy(dest->elf_file, src->elf_file, sizeof(struct elf_file));
+        dest->elf_file                 = kzalloc(sizeof(struct elf_file));
+        dest->elf_file->elf_memory     = kzalloc(src->elf_file->in_memory_size);
+        memcpy(dest->elf_file->elf_memory, src->elf_file->elf_memory, src->elf_file->in_memory_size);
+        dest->elf_file->in_memory_size = src->elf_file->in_memory_size;
+        strncpy(dest->elf_file->filename, src->elf_file->filename, sizeof(src->elf_file->filename));
+
     } else {
-        dest->pointer = process_malloc(dest, src->size);
+        dest->pointer = kzalloc(src->size);
         memcpy(dest->pointer, src->pointer, src->size);
     }
     dest->size = src->size;

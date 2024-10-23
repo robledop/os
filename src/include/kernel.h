@@ -13,3 +13,17 @@ void system_shutdown();
 #define ERROR(x) ((void *)(x))
 #define ERROR_I(x) ((int)(x))
 #define ISERR(x) ((int)(x) < 0)
+
+// Keep track of how many times we entered a critical section
+extern int __cli_count;
+
+#define ENTER_CRITICAL()                                                                                               \
+    __cli_count++;                                                                                                     \
+    asm volatile("cli");
+
+// Only leave critical section if we are the last one
+#define LEAVE_CRITICAL()                                                                                               \
+    __cli_count--;                                                                                                     \
+    if (__cli_count == 0) {                                                                                            \
+        asm volatile("sti");                                                                                           \
+    }

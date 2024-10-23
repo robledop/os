@@ -1,34 +1,59 @@
 #include "shell.h"
+#include "../../../src/include/types.h"
 #include "os.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "types.h"
 
+void stack_overflow();
 bool directory_exists(const char *path);
 void shell_terminal_readline(uchar *out, int max, bool output_while_typing);
 void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
 
+
+#define USER_STACK_SIZE (1024 * 512)
+#define USER_STACK_TOP 0x3FF000
+#define USER_STACK_BOTTOM (USER_STACK_TOP - USER_STACK_SIZE)
+
 char *command_history[256];
 uint8_t history_index = 0;
 
 const cmd commands[] = {
-    {"cls",      clear_screen},
-    {"clear",    clear_screen},
-    {"exit",     exit        },
-    {"reboot",   reboot      },
-    {"shutdown", shutdown    },
-    {"help",     print_help  },
+    {"cls",      clear_screen  },
+    {"clear",    clear_screen  },
+    {"exit",     exit          },
+    {"reboot",   reboot        },
+    {"shutdown", shutdown      },
+    {"help",     print_help    },
+    {"so",       stack_overflow},
 };
 
 int number_of_commands = sizeof(commands) / sizeof(struct cmd);
 
+#pragma GCC diagnostic ignored "-Winfinite-recursion"
+static uint32_t pass = 0;
+// Generate a stack overflow
+void stack_overflow() // NOLINT(*-no-recursion)
+{
+    char a = 0;
+    printf("%d | Stack address: %p | Stack usage: %d KiB | Max: %d KiB\n",
+           ++pass,
+           &a,
+           ((uint32_t)USER_STACK_TOP - (uint32_t)&a) / 1024,
+           USER_STACK_SIZE / 1024);
+
+    // ReSharper disable once CppDFAInfiniteRecursion
+    stack_overflow();
+}
+#pragma GCC diagnostic pop
 
 int main(int argc, char **argv)
 {
     printf(KWHT "\nUser mode shell started\n");
+    pass = 0;
 
     for (int i = 0; i < 256; i++) {
         command_history[i] = malloc(256);
@@ -39,7 +64,7 @@ int main(int argc, char **argv)
         char *current_directory = get_current_directory();
         printf(KGRN "%s> " KWHT, current_directory);
 
-        uchar buffer[1024];
+        uchar buffer[1024] = {0};
         shell_terminal_readline(buffer, sizeof(buffer), true);
 
         strncpy(command_history[history_index], (char *)buffer, sizeof(buffer));
@@ -172,9 +197,12 @@ int cmd_lookup(const char *name)
     return -1;
 }
 
+
 void change_directory(char *args, char *current_directory)
 {
-    char *new_dir = trim((char *)args);
+    char new_dir[MAX_PATH_LENGTH] = {0};
+    strncpy(new_dir, trim((char *)args), MAX_PATH_LENGTH);
+
     if (strlen(new_dir) == 0) {
         printf("\n");
         return;
@@ -197,6 +225,11 @@ void change_directory(char *args, char *current_directory)
             printf("\nDirectory does not exist: %s\n", new_dir);
             return;
         }
+
+        if (!str_ends_with(new_dir, "/")) {
+            strcat(new_dir, "/");
+        }
+
         char root[MAX_PATH_LENGTH] = "0:";
 
         set_current_directory(strcat(root, new_dir));

@@ -1,5 +1,6 @@
 #include "syscall.h"
 
+#include <assert.h>
 #include <kernel_heap.h>
 #include <scheduler.h>
 
@@ -43,6 +44,33 @@ void register_syscalls()
     register_syscall(SYSCALL_SHUTDOWN, sys_shutdown);
 }
 
+/// @brief Get the pointer argument from the stack of the current task
+/// @param index position of the argument in the stack
+static void *get_pointer_argument(const int index)
+{
+    return task_peek_stack_item(scheduler_get_current_task(), index);
+}
+
+/// @brief Get the int argument from the stack of the current task
+/// @param index position of the argument in the stack
+static int get_integer_argument(const int index)
+{
+    return (int)task_peek_stack_item(scheduler_get_current_task(), index);
+}
+
+/// @brief Get the int argument from the stack of the current task
+/// @warning BEWARE: The string is allocated on the kernel heap and must be freed by the caller
+/// @param index position of the argument in the stack
+/// @param max_len maximum length of the string
+static char *get_string_argument(const int index, const int max_len)
+{
+    const void *ptr = get_pointer_argument(index);
+    char *str       = kzalloc(max_len);
+
+    copy_string_from_task(scheduler_get_current_task(), ptr, str, (int)sizeof(str));
+    return (char *)str;
+}
+
 void *sys_getpid(struct interrupt_frame *frame)
 {
     return (void *)(int)scheduler_get_current_task()->process->pid;
@@ -50,16 +78,21 @@ void *sys_getpid(struct interrupt_frame *frame)
 
 void *sys_fork(struct interrupt_frame *frame)
 {
+    ENTER_CRITICAL();
+
     auto const parent          = scheduler_get_current_process();
     auto const child           = process_clone(parent);
     child->task->registers.eax = 0;
 
+    LEAVE_CRITICAL();
     return (void *)(int)child->pid;
 }
 
 // int exec(const char *path, const char *argv[])
 void *sys_exec(struct interrupt_frame *frame)
 {
+    ENTER_CRITICAL();
+
     struct process_info *proc_info = nullptr;
     int *count                     = kmalloc(sizeof(int));
 
@@ -87,16 +120,15 @@ void *sys_exec(struct interrupt_frame *frame)
     task_free(process->task);
 
     process_load_data(path, process);
-    void *program_stack_pointer = kzalloc(USER_PROGRAM_STACK_SIZE);
+    void *program_stack_pointer = kzalloc(USER_STACK_SIZE);
     strncpy(process->file_name, path, sizeof(process->file_name));
     struct task *task = task_create(process);
     process->task     = task;
     process_map_memory(process);
-    process->stack = program_stack_pointer;
+    process->stack = program_stack_pointer; // Physical address of the stack for the process
 
     // scheduler_queue_task(process->task);
     scheduler_set_process(process->pid, process);
-
 
     scheduler_get_processes(&proc_info, count);
 
@@ -105,6 +137,8 @@ void *sys_exec(struct interrupt_frame *frame)
         struct process_info *proc = (proc_info + i);
         kprintf("Process %d: %s, state: %x\n", proc->pid, proc->file_name, proc->state);
     }
+
+    LEAVE_CRITICAL();
 
     schedule();
 
@@ -124,9 +158,10 @@ void *sys_shutdown(struct interrupt_frame *frame)
     return nullptr;
 }
 
+
 void *sys_set_current_directory(struct interrupt_frame *frame)
 {
-    void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 0);
+    const void *path_ptr = get_pointer_argument(0);
     char path[MAX_PATH_LENGTH];
 
     copy_string_from_task(scheduler_get_current_task(), path_ptr, path, sizeof(path));
@@ -140,13 +175,16 @@ void *sys_get_current_directory(struct interrupt_frame *frame)
 
 void *sys_open_dir(struct interrupt_frame *frame)
 {
-    void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 0);
+    const void *path_ptr = get_pointer_argument(0);
+    ASSERT(path_ptr, "Invalid path");
     char path[MAX_PATH_LENGTH];
 
     copy_string_from_task(scheduler_get_current_task(), path_ptr, path, sizeof(path));
 
     struct file_directory *directory = task_virtual_to_physical_address(
         scheduler_get_current_task(), task_peek_stack_item(scheduler_get_current_task(), 1));
+
+    ASSERT(directory, "Invalid directory");
 
     // TODO: Use process_malloc to allocate memory for the directory entries
     return (void *)fs_open_dir((const char *)path, directory);
@@ -173,7 +211,7 @@ void *sys_clear_screen(struct interrupt_frame *frame)
 
 void *sys_stat(struct interrupt_frame *frame)
 {
-    const int fd = (int)task_peek_stack_item(scheduler_get_current_task(), 1);
+    const int fd = get_integer_argument(1);
 
     struct file_stat *stat = task_virtual_to_physical_address(scheduler_get_current_task(),
                                                               task_peek_stack_item(scheduler_get_current_task(), 0));
@@ -197,7 +235,7 @@ void *sys_read(struct interrupt_frame *frame)
 
 void *sys_close(struct interrupt_frame *frame)
 {
-    const int fd = (int)task_peek_stack_item(scheduler_get_current_task(), 0);
+    const int fd = get_integer_argument(0);
 
     const int res = fclose(fd);
     return (void *)res;
@@ -205,12 +243,12 @@ void *sys_close(struct interrupt_frame *frame)
 
 void *sys_open(struct interrupt_frame *frame)
 {
-    void *file_name = task_peek_stack_item(scheduler_get_current_task(), 1);
+    const void *file_name = get_pointer_argument(1);
     char *name[MAX_PATH_LENGTH];
 
     copy_string_from_task(scheduler_get_current_task(), file_name, name, sizeof(name));
 
-    void *mode = task_peek_stack_item(scheduler_get_current_task(), 0);
+    const void *mode = get_pointer_argument(0);
     char mode_str[2];
 
     copy_string_from_task(scheduler_get_current_task(), mode, mode_str, sizeof(mode_str));
@@ -230,11 +268,7 @@ void *sys_exit(struct interrupt_frame *frame)
 
 void *sys_print(struct interrupt_frame *frame)
 {
-    const void *message = task_peek_stack_item(scheduler_get_current_task(), 0);
-    // if (!message) {
-    //     return nullptr;
-    // }
-
+    const void *message = get_pointer_argument(0);
     char buffer[2048];
 
     copy_string_from_task(scheduler_get_current_task(), message, buffer, sizeof(buffer));
@@ -252,16 +286,16 @@ void *sys_getkey(struct interrupt_frame *frame)
 
 void *sys_putchar(struct interrupt_frame *frame)
 {
-    const char c = (char)(int)task_peek_stack_item(scheduler_get_current_task(), 0);
+    const char c = (char)get_integer_argument(0);
     terminal_write_char(c, 0x0F, 0x00);
     return NULL;
 }
 
 void *sys_putchar_color(struct interrupt_frame *frame)
 {
-    const unsigned char backcolor = (unsigned char)(int)task_peek_stack_item(scheduler_get_current_task(), 0);
-    const unsigned char forecolor = (unsigned char)(int)task_peek_stack_item(scheduler_get_current_task(), 1);
-    const char c                  = (char)(int)task_peek_stack_item(scheduler_get_current_task(), 2);
+    const unsigned char backcolor = (unsigned char)get_integer_argument(0);
+    const unsigned char forecolor = (unsigned char)get_integer_argument(1);
+    const char c                  = (char)get_integer_argument(2);
 
     terminal_write_char(c, forecolor, backcolor);
     return nullptr;
@@ -269,28 +303,28 @@ void *sys_putchar_color(struct interrupt_frame *frame)
 
 void *sys_calloc(struct interrupt_frame *frame)
 {
-    const int size  = (int)task_peek_stack_item(scheduler_get_current_task(), 0);
-    const int nmemb = (int)task_peek_stack_item(scheduler_get_current_task(), 1);
+    const int size  = get_integer_argument(0);
+    const int nmemb = get_integer_argument(1);
     return process_calloc(scheduler_get_current_task()->process, nmemb, size);
 }
 
 void *sys_malloc(struct interrupt_frame *frame)
 {
-    const uintptr_t size = (uintptr_t)task_peek_stack_item(scheduler_get_current_task(), 0);
+    const uintptr_t size = (uintptr_t)get_pointer_argument(0);
     return process_malloc(scheduler_get_current_task()->process, size);
 }
 
 void *sys_free(struct interrupt_frame *frame)
 {
-    void *ptr = task_peek_stack_item(scheduler_get_current_task(), 0);
+    void *ptr = get_pointer_argument(0);
     process_free(scheduler_get_current_task()->process, ptr);
     return NULL;
 }
 
 void *sys_wait_pid(struct interrupt_frame *frame)
 {
-    const int pid                  = (int)task_peek_stack_item(scheduler_get_current_task(), 1);
-    const enum PROCESS_STATE state = (int)task_peek_stack_item(scheduler_get_current_task(), 0);
+    const int pid                  = get_integer_argument(1);
+    const enum PROCESS_STATE state = get_integer_argument(0);
     return (void *)process_wait_pid(scheduler_get_current_task()->process, pid, state);
 }
 

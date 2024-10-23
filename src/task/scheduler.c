@@ -178,17 +178,17 @@ void scheduler_save_current_task(const struct interrupt_frame *interrupt_frame)
     task_save_state(task, interrupt_frame);
 }
 
-void scheduler_run_first_task()
-{
-    if (!current_task) {
-        panic("No tasks to run");
-    }
-
-    dbgprintf("Running first ever task %x\n", current_task);
-
-    scheduler_switch_task(task_head);
-    scheduler_run_task_in_user_mode(&task_head->registers);
-}
+// void scheduler_run_first_task()
+// {
+//     if (!current_task) {
+//         panic("No tasks to run");
+//     }
+//
+//     dbgprintf("Running first ever task %x\n", current_task);
+//
+//     scheduler_switch_task(task_head);
+//     scheduler_run_task_in_user_mode(&task_head->registers);
+// }
 
 /// @brief Set the task as the current task and switch to its page directory
 /// @param task the task to run
@@ -211,9 +211,11 @@ int scheduler_switch_current_task_page()
 
 void scheduler_idle_task()
 {
+    // Enable interrupts, otherwise we will never leave the idle task
+    LEAVE_CRITICAL();
     // ReSharper disable once CppDFAEndlessLoop
     while (true) {
-        // kprintf("Idle task\n");
+        kprintf(KYEL "Idle!" KWHT);
         asm("hlt");
     }
 }
@@ -222,28 +224,28 @@ void scheduler_initialize_idle_task()
 {
     idle_task = kzalloc(sizeof(struct task));
     memset(idle_task, 0, sizeof(struct task));
-    idle_task->kernel_state.eip = (uint32_t)&scheduler_idle_task;
-    idle_task->kernel_state.cs  = KERNEL_CODE_SELECTOR;
-    idle_task->kernel_state.eflags |= 0x200; // Enable interrupts
-    idle_task->kernel_state.esp = (uint32_t)kzalloc(4096) + 4096;
+    idle_task->tty                 = 0;
+    idle_task->kernel_state.eip    = (uint32_t)&scheduler_idle_task;
+    idle_task->kernel_state.cs     = KERNEL_CODE_SELECTOR;
+    idle_task->kernel_state.eflags = 0x200; // Enable interrupts
+    // idle_task->kernel_state.esp    = (uint32_t)kzalloc(4096) + 4096;
 
     idle_task->process           = (struct process *)kzalloc(sizeof(struct process));
     idle_task->process->pid      = 0;
     idle_task->process->state    = RUNNING;
     idle_task->process->priority = 0;
     idle_task->process->task     = idle_task;
+    strncpy(idle_task->process->file_name, "idle", 5);
 
     scheduler_set_process(idle_task->process->pid, idle_task->process);
 }
 
 void scheduler_run_task_in_kernel_mode(cpu_state_t state)
 {
-    asm volatile("2:\n"
-                 "mov %1, %%eax\n"
-                 "sti\n"
+    asm volatile("mov %0, %%eax\n"
                  "jmp *%%eax\n"
                  :
-                 : "m"(state.esp), "m"(state.eip)
+                 : "m"(state.eip)
                  : "%eax");
 }
 
@@ -331,7 +333,7 @@ int scheduler_replace(struct process *old, struct process *new)
     return ALL_OK;
 }
 
-void handle_pit_interrupt(int interrupt)
+void handle_pit_interrupt(int interrupt, uint32_t unused)
 {
     milliseconds += 2;
     if (milliseconds >= 10) {

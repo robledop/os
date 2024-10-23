@@ -4,7 +4,8 @@
 #include "serial.h"
 #include "status.h"
 
-int ata_get_sector_size() {
+int ata_get_sector_size()
+{
     return 512;
     // // Identify the drive and get the sector size
     // outb(0x1F6, 0xA0); // Select drive
@@ -39,7 +40,10 @@ int ata_get_sector_size() {
 }
 
 // https://wiki.osdev.org/ATA_read/write_sectors
-int ata_read_sector(const uint32_t lba, const int total, void *buffer) {
+int ata_read_sector(const uint32_t lba, const int total, void *buffer)
+{
+    ENTER_CRITICAL();
+
     dbgprintf("Reading sector %d\n", lba);
 
     outb(0x1F6, (lba >> 24) | 0xE0);
@@ -76,6 +80,8 @@ int ata_read_sector(const uint32_t lba, const int total, void *buffer) {
 
     // Check if anything was read
     dbgprintf("Read: %x\n", *(unsigned short *)buffer);
+
+    LEAVE_CRITICAL();
 
     return 0;
 }

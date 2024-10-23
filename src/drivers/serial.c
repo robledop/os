@@ -1,4 +1,6 @@
 #include "serial.h"
+
+#include <kernel.h>
 #include <stdarg.h>
 #include "io.h"
 #include "memory.h"
@@ -7,6 +9,7 @@
 #define PORT 0x3f8 // COM1
 #define MAX_FMT_STR_SERIAL 100
 static int serial_init_done = 0;
+
 
 void serial_put(char a)
 {
@@ -33,6 +36,7 @@ int serial_printf(const char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL
+    ENTER_CRITICAL();
     va_list args;
 
     char str[MAX_FMT_STR_SERIAL];
@@ -82,6 +86,7 @@ int serial_printf(const char *fmt, ...)
 
     va_end(args);
 
+    LEAVE_CRITICAL();
 #endif
     return written;
 }

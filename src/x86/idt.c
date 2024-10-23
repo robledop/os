@@ -1,6 +1,7 @@
 #include "idt.h"
 
 #include <scheduler.h>
+#include <string.h>
 
 #include "assert.h"
 #include "config.h"
@@ -57,17 +58,20 @@ char *exception_messages[] = {"Division By Zero",
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-void no_interrupt_handler(const int interrupt)
+void no_interrupt_handler(const int interrupt, const uint32_t error_code)
 {
     kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
 }
 
 void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
+    uint32_t error_code;
+    asm volatile("movl %%eax, %0\n" : "=r"(error_code) : : "ebx", "eax");
+
     kernel_page();
     if (interrupt_callbacks[interrupt] != nullptr) {
         scheduler_save_current_task(frame);
-        interrupt_callbacks[interrupt](interrupt);
+        interrupt_callbacks[interrupt](interrupt, error_code);
     }
 
     scheduler_switch_current_task_page();
@@ -92,34 +96,35 @@ void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler)
     desc->offset_2 = (uint32_t)handler >> 16;
 }
 
-void idt_exception_handler(int interrupt)
+void idt_exception_handler(int interrupt, uint32_t error_code)
 {
     if (interrupt == 14) {
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
-        kprintf(KRED "\nException: %x. Page fault at %x" KWHT, interrupt, faulting_address);
+
+        kprintf(KRED "\nException: %x. Page fault at %x\n" KWHT, interrupt, faulting_address);
+        kprintf("Error code: %x\n", error_code);
+        kprintf("P: %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
+        kprintf("W: %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
+        kprintf("U: %x\n", error_code & PAGE_FAULT_USER_MASK ? 1 : 0);
+        kprintf("R: %x\n", error_code & PAGE_FAULT_RESERVED_MASK ? 1 : 0);
+        kprintf("I: %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
+        kprintf("PK: %x\n", error_code & PAGE_FAULT_PK_MASK ? 1 : 0);
+        kprintf("SS: %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
+
     } else if (interrupt == 13) {
-        uint32_t error_code;
-        asm volatile("mov %%cr2, %0" : "=r"(error_code));
         kprintf(KRED "\nGeneral protection fault error code: %x" KWHT, error_code);
     } else {
         kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
     }
 
     int pid = scheduler_get_current_task()->process->pid;
+    char name[MAX_PATH_LENGTH];
+    strncpy(name, scheduler_get_current_task()->process->file_name, sizeof(name));
     process_terminate(scheduler_get_current_task()->process);
-    kprintf("\nThe process with id %d has been terminated.", pid);
+    kprintf("\nThe process %s (%d) has been terminated.", name, pid);
     schedule();
 }
-
-// void idt_clock(int interrupt)
-// {
-//     outb(0x20, 0x20);
-//
-// #ifdef MULTITASKING
-//     schedule();
-// #endif
-// }
 
 void idt_init()
 {

@@ -102,6 +102,7 @@ int printf(const char *fmt, ...)
                 x_offset += strlen(str);
                 break;
 
+            case 'p':
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);

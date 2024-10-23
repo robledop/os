@@ -14,8 +14,8 @@ FILES := $(ASM_OBJS) $(C_OBJS)
 INCLUDES = -I ./src/include
 AS_INCLUDES = -I ./src/include
 AS_HEADERS = config.asm
-STAGE2_FLAGS = -g \
-	-ffreestanding \
+DEBUG_FLAGS = -g
+STAGE2_FLAGS = -ffreestanding \
 	-O0 \
 	-nostdlib \
 	-falign-jumps \
@@ -39,8 +39,7 @@ STAGE2_FLAGS = -g \
 	-pedantic \
 	-Wall
 
-FLAGS = -g \
-	-ffreestanding \
+FLAGS = -ffreestanding \
 	-O0 \
 	-nostdlib \
 	-falign-jumps \
@@ -62,8 +61,8 @@ FLAGS = -g \
 	-Wextra \
 	-std=gnu23 \
 	-pedantic \
-    -fstack-protector \
-	-fsanitize=undefined \
+	 -fstack-protector \
+	 -fsanitize=undefined \
 	-Wall
 
 	# -pedantic-errors \
@@ -92,26 +91,26 @@ all: ./bin/boot.bin ./bin/kernel.bin apps
 # stat --format=%n:%s ./kernel.bin
 
 ./bin/kernel.bin: $(filter-out ./build/src/grub/%, $(FILES))
-	$(LD) -g -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
-	$(CC) $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
+	$(LD) $(DEBUG_FLAGS) -relocatable $(filter-out ./build/grub/%, $(FILES)) -o ./build/kernelfull.o
+	$(CC) $(FLAGS) $(DEBUG_FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin ./build/kernelfull.o
 	./scripts/pad.sh ./bin/kernel.bin 512
 
 ./bin/boot.bin: ./src/boot/boot.asm 
 	$(shell mkdir -p ./build/boot)
-	$(AS) $(AS_INCLUDES) -f bin -g ./src/boot/boot.asm -o ./bin/boot.bin
-	$(AS) $(AS_INCLUDES) -f elf -g ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
-	$(CC) $(STAGE2_FLAGS) -I./src/include -c ./src/boot/stage2.c -o ./build/boot/stage2.o
-	$(LD) -g -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
-	$(CC) $(STAGE2_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
+	$(AS) $(AS_INCLUDES) -f bin $(DEBUG_FLAGS) ./src/boot/boot.asm -o ./bin/boot.bin
+	$(AS) $(AS_INCLUDES) -f elf $(DEBUG_FLAGS) ./src/boot/stage2.asm -o ./build/boot/stage2.asm.o
+	$(CC) $(STAGE2_FLAGS) $(DEBUG_FLAGS) -I./src/include -c ./src/boot/stage2.c -o ./build/boot/stage2.o
+	$(LD) $(DEBUG_FLAGS) -relocatable ./build/boot/stage2.asm.o ./build/boot/stage2.o -o ./build/stage2full.o
+	$(CC) $(STAGE2_FLAGS) $(DEBUG_FLAGS) -T ./src/boot/linker.ld -o ./bin/stage2.bin ./build/stage2full.o
 
 	./scripts/pad.sh ./bin/stage2.bin 512
 
 ./build/%.asm.o: ./src/%.asm
 	./scripts/c_to_nasm.sh ./src/include $(AS_HEADERS)
-	$(AS) $(AS_INCLUDES) -f elf -g $< -o $@
+	$(AS) $(AS_INCLUDES) -f elf $(DEBUG_FLAGS) $< -o $@
 
 ./build/%.o: ./src/%.c
-	$(CC) $(INCLUDES) $(FLAGS) -c $< -o $@
+	$(CC) $(INCLUDES) $(FLAGS) $(DEBUG_FLAGS) -c $< -o $@
 
 .PHONY: grub
 grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
@@ -120,8 +119,8 @@ grub: ./bin/kernel-grub.bin apps ./bin/boot.bin
 	# VBoxManage convertdd ./disk.img ./disk.vdi
 
 ./bin/kernel-grub.bin: $(filter-out ./build/kernel/%.asm.o, $(FILES))
-	$(LD) -g -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o
-	$(CC) $(FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
+	$(LD) $(DEBUG_FLAGS) -relocatable $(filter-out ./build/kernel/%.asm.o, $(FILES)) -o ./build/kernelfull.o
+	$(CC) $(FLAGS) $(DEBUG_FLAGS) -T ./src/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
 
 .PHONY: iso
 iso: grub
