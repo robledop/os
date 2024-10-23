@@ -23,3 +23,5 @@ bool starts_with(const char *pre, const char *str);
 char *strcat(char *dest, const char *src);
 bool str_ends_with(const char *str, const char *suffix);
 char *strdup(const char *s);
+char *strcat(char *dest, const char *src);
+int count_words(const char *input);

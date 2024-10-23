@@ -35,7 +35,6 @@ struct process {
     struct process *children;
     struct task *task;
     enum PROCESS_STATE state;
-    enum PROCESS_STATE wait_state;
     int wait_pid;
     int exit_code;
     struct process_allocation allocations[MAX_PROGRAM_ALLOCATIONS];
@@ -72,7 +71,7 @@ int process_inject_arguments(struct process *process, const struct command_argum
 int process_terminate(struct process *process);
 int process_set_current_directory(struct process *process, const char *directory);
 
-int process_wait_pid(struct process *process, int pid, enum PROCESS_STATE state);
+int process_wait_pid(struct process *process, int pid);
 struct process *find_child_process_by_pid(const struct process *parent, int pid);
 struct process *find_child_process_by_state(const struct process *parent, enum PROCESS_STATE state);
 int process_add_child(struct process *parent, struct process *child);

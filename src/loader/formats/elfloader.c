@@ -212,6 +212,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
         goto out;
     }
     elf_file->in_memory_size = stat.size;
+    strncpy(elf_file->filename, filename, MAX_PATH_LENGTH);
 
     *file_out = elf_file;
 

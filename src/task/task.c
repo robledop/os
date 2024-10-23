@@ -34,7 +34,7 @@ struct task *task_create(struct process *process)
 
     int res = 0;
 
-    auto task = (struct task *)kmalloc(sizeof(struct task));
+    auto task = (struct task *)kzalloc(sizeof(struct task));
     if (!task) {
         dbgprintf("Failed to allocate memory for task\n");
         res = -ENOMEM;
@@ -47,7 +47,6 @@ struct task *task_create(struct process *process)
         goto out;
     }
 
-    scheduler_queue_task(task);
 
 out:
     if (ISERR(res)) {

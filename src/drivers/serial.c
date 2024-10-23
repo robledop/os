@@ -1,6 +1,7 @@
 #include "serial.h"
 
 #include <kernel.h>
+#include <spinlock.h>
 #include <stdarg.h>
 #include "io.h"
 #include "memory.h"
@@ -10,12 +11,15 @@
 #define MAX_FMT_STR_SERIAL 100
 static int serial_init_done = 0;
 
+spinlock_t serial_lock = 0;
 
 void serial_put(char a)
 {
     if (!serial_init_done) {
         return;
     }
+
+
     while ((inb(PORT + 5) & 0x20) == 0) {
     };
 
@@ -36,7 +40,7 @@ int serial_printf(const char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL
-    ENTER_CRITICAL();
+    acquire_lock(&serial_lock);
     va_list args;
 
     char str[MAX_FMT_STR_SERIAL];
@@ -86,7 +90,7 @@ int serial_printf(const char *fmt, ...)
 
     va_end(args);
 
-    LEAVE_CRITICAL();
+    release_lock(&serial_lock);
 #endif
     return written;
 }

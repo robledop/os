@@ -1,7 +1,5 @@
 #include "stdio.h"
 
-void page_fault_demo();
-
 int main(const int argc, char **argv)
 {
     putchar('\n');

@@ -81,13 +81,39 @@ int main(int argc, char **argv)
             continue;
         }
 
+        // const int pid = fork();
+        //
+        // if (pid < 0) {
+        //     printf("Failed to fork\n");
+        // } else if (pid == 0) {
+        //     const int count     = count_words((const char *)buffer);
+        //     const char *command = strtok((char *)buffer, " ");
+        //
+        //     const char *args[count];
+        //     const char *token = strtok(nullptr, " ");
+        //     int i             = 0;
+        //     while (token != nullptr && i < count) {
+        //         args[i] = token;
+        //         token   = strtok(nullptr, " ");
+        //         i++;
+        //     }
+        //
+        //     args[i] = nullptr;
+        //
+        //     exec(command, (const char **)args);
+        //     printf("Failed to exec\n");
+        //     exit();
+        // } else {
+        //     waitpid(pid, nullptr);
+        // }
+
+
         const int pid = create_process((char *)buffer, current_directory);
         if (pid < 0) {
             printf("\nCommand: %s\n", (char *)buffer);
             printf("\nError: %d", pid);
         } else {
-            waitpid(pid, ZOMBIE);
-            // wait(ZOMBIE);
+            waitpid(pid, nullptr);
         }
 
         putchar('\n');

@@ -113,7 +113,7 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
         kprintf("SS: %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
 
     } else if (interrupt == 13) {
-        kprintf(KRED "\nGeneral protection fault error code: %x" KWHT, error_code);
+        kprintf(KRED "\nGeneral protection fault\n" KYEL "Error code:" KWHT " %x" KWHT, error_code);
     } else {
         kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
     }

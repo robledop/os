@@ -17,6 +17,9 @@
  * Undefined behavior sanitizer runtime support.
  */
 
+#include <scheduler.h>
+
+
 #include "kernel.h"
 #include "types.h"
 #include "vga_buffer.h"
@@ -32,12 +35,15 @@ __attribute__((noreturn)) void scram(int, const struct scram_undefined_behavior 
 
 void scram(const int event, const struct scram_undefined_behavior *info)
 {
-    kprintf(KYEL "\nEvent:" KWHT " %d\n", event);
+    kprintf(KYEL "\nCurrent task:" KWHT " %s (%d)\n", scheduler_get_current_task()->process->file_name, scheduler_get_current_task()->process->pid);
+    kprintf(KYEL "Event:" KWHT " %d\n", event);
     kprintf(KYEL "File:" KWHT " %s\n", info->filename);
     kprintf(KYEL "Line:" KWHT " %d\n", info->line);
     kprintf(KYEL "Column:" KWHT " %d\n", info->column);
     kprintf(KYEL "Violation:" KWHT " %s\n", info->violation);
     panic("Undefined behavior detected");
+
+
 
     __builtin_unreachable();
 }

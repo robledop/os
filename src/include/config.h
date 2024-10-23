@@ -43,7 +43,7 @@
 #define KEYBOARD_BUFFER_SIZE 1024
 
 // Multitasking enabled
-#define MULTITASKING
+// #define MULTITASKING
 
 #define KERNEL_LOAD_ADDRESS 0x200000
 

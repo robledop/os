@@ -70,3 +70,16 @@ set_user_mode_segments:
     mov gs, ax
     ret
 
+global acquire_lock
+acquire_lock:
+.retry:
+    mov edi, [esp + 4]
+    lock bts dword [edi],0
+    jc .retry
+    ret
+
+global release_lock
+release_lock:
+    mov edi, [esp + 4]
+    lock btr dword [edi],0
+    ret

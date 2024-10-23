@@ -1,8 +1,10 @@
 #include "syscall.h"
 
 #include <assert.h>
+#include <elfloader.h>
 #include <kernel_heap.h>
 #include <scheduler.h>
+#include <spinlock.h>
 
 #include "file.h"
 #include "idt.h"
@@ -15,6 +17,8 @@
 #include "task.h"
 #include "types.h"
 #include "vga_buffer.h"
+
+spinlock_t syscall_lock = 0;
 
 void register_syscalls()
 {
@@ -43,6 +47,40 @@ void register_syscalls()
     register_syscall(SYSCALL_REBOOT, sys_reboot);
     register_syscall(SYSCALL_SHUTDOWN, sys_shutdown);
 }
+
+struct command_argument *parse_command(char **args)
+{
+    if (args[0] == NULL) {
+        return nullptr;
+    }
+
+    struct command_argument *head = kmalloc(sizeof(struct command_argument));
+    if (head == NULL) {
+        return nullptr;
+    }
+
+    strncpy(head->argument, args[0], sizeof(head->argument));
+    head->next = nullptr;
+
+    struct command_argument *current = head;
+
+    int i = 1;
+    while (args[i] != NULL) {
+        struct command_argument *next = kmalloc(sizeof(struct command_argument));
+        if (next == NULL) {
+            break;
+        }
+
+        strncpy(next->argument, args[i], sizeof(next->argument));
+        next->next    = nullptr;
+        current->next = next;
+        current       = next;
+        i++;
+    }
+
+    return head;
+}
+
 
 /// @brief Get the pointer argument from the stack of the current task
 /// @param index position of the argument in the stack
@@ -85,6 +123,7 @@ void *sys_fork(struct interrupt_frame *frame)
     child->task->registers.eax = 0;
 
     LEAVE_CRITICAL();
+
     return (void *)(int)child->pid;
 }
 
@@ -93,24 +132,37 @@ void *sys_exec(struct interrupt_frame *frame)
 {
     ENTER_CRITICAL();
 
-    struct process_info *proc_info = nullptr;
-    int *count                     = kmalloc(sizeof(int));
+    const void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 1);
 
-    scheduler_get_processes(&proc_info, count);
+    char **args_ptr = task_virtual_to_physical_address(scheduler_get_current_task(),
+                                                       task_peek_stack_item(scheduler_get_current_task(), 0));
 
-    kprintf("\nNumber of processes: %d\n", *count);
-    for (int i = 0; i < *count; i++) {
-        struct process_info *proc = (proc_info + i);
-        kprintf("Process %d: %s, state: %x\n", proc->pid, proc->file_name, proc->state);
+    char path[MAX_PATH_LENGTH] = {0};
+    copy_string_from_task(scheduler_get_current_task(), path_ptr, path, sizeof(path));
+
+    char *args[256] = {nullptr};
+    if (args_ptr) {
+        int argc = 0;
+        for (int i = 0; i < 256; i++) {
+            if (args_ptr[i] == nullptr) {
+                break;
+            }
+            char *arg = kzalloc(256);
+            copy_string_from_task(scheduler_get_current_task(), args_ptr[i], arg, 256);
+            args[i] = arg;
+            argc++;
+        }
     }
 
-    const void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 2);
-    char(*argv_ptr)[]    = (char(*)[])task_virtual_to_physical_address(
-        scheduler_get_current_task(), task_peek_stack_item(scheduler_get_current_task(), 1));
-    int argc = (int)task_peek_stack_item(scheduler_get_current_task(), 0);
-    char path[MAX_PATH_LENGTH];
+    struct command_argument *root_argument = kzalloc(sizeof(struct command_argument));
+    strncpy(root_argument->argument, path, sizeof(root_argument->argument));
+    root_argument->current_directory = kzalloc(MAX_PATH_LENGTH);
+    strncpy(root_argument->current_directory,
+            scheduler_get_current_task()->process->current_directory,
+            sizeof(root_argument->current_directory));
 
-    copy_string_from_task(scheduler_get_current_task(), path_ptr, path, sizeof(path));
+    struct command_argument *arguments = parse_command(args);
+    root_argument->next                = arguments;
 
     struct process *process = scheduler_get_current_task()->process;
     process_unmap_memory(process);
@@ -119,24 +171,30 @@ void *sys_exec(struct interrupt_frame *frame)
     kfree(process->stack);
     task_free(process->task);
 
-    process_load_data(path, process);
+    char full_path[MAX_PATH_LENGTH] = {0};
+    if (istrncmp(path, "0:/", 3) != 0) {
+        strcat(full_path, "0:/bin/");
+        strcat(full_path, path);
+    } else {
+        strcat(full_path, path);
+    }
+
+    int res = process_load_data(full_path, process);
+    if (res < 0) {
+        kprintf("Result: %d\n", res);
+        return (void *)res;
+    }
     void *program_stack_pointer = kzalloc(USER_STACK_SIZE);
-    strncpy(process->file_name, path, sizeof(process->file_name));
+    strncpy(process->file_name, full_path, sizeof(process->file_name));
+    process->stack    = program_stack_pointer; // Physical address of the stack for the process
     struct task *task = task_create(process);
     process->task     = task;
     process_map_memory(process);
-    process->stack = program_stack_pointer; // Physical address of the stack for the process
 
-    // scheduler_queue_task(process->task);
+    process_inject_arguments(process, root_argument);
+
     scheduler_set_process(process->pid, process);
-
-    scheduler_get_processes(&proc_info, count);
-
-    kprintf("\nNumber of processes: %d\n", *count);
-    for (int i = 0; i < *count; i++) {
-        struct process_info *proc = (proc_info + i);
-        kprintf("Process %d: %s, state: %x\n", proc->pid, proc->file_name, proc->state);
-    }
+    scheduler_queue_task(task);
 
     LEAVE_CRITICAL();
 
@@ -257,13 +315,25 @@ void *sys_open(struct interrupt_frame *frame)
     return (void *)(int)fd;
 }
 
-void *sys_exit(struct interrupt_frame *frame)
+__attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
 {
+    ENTER_CRITICAL();
+
     struct process *process = scheduler_get_current_task()->process;
-    const int retval        = process_terminate(process);
+    process_terminate(process);
+
+    LEAVE_CRITICAL();
     schedule();
 
-    return (void *)retval;
+    // This must not return, otherwise we will get a general protection fault
+    // We will only reach this point if the scheduler tries to run a dead task
+    // As a last resort, we will enable interrupts, halt the CPU, and wait for a rescheduling
+    asm volatile("sti");
+    while (1) {
+        asm volatile("hlt");
+    }
+
+    __builtin_unreachable();
 }
 
 void *sys_print(struct interrupt_frame *frame)
@@ -323,9 +393,19 @@ void *sys_free(struct interrupt_frame *frame)
 
 void *sys_wait_pid(struct interrupt_frame *frame)
 {
-    const int pid                  = get_integer_argument(1);
-    const enum PROCESS_STATE state = get_integer_argument(0);
-    return (void *)process_wait_pid(scheduler_get_current_task()->process, pid, state);
+    ENTER_CRITICAL();
+
+    const int pid    = get_integer_argument(1);
+    int *status_ptr  = task_virtual_to_physical_address(scheduler_get_current_task(),
+                                                       task_peek_stack_item(scheduler_get_current_task(), 0));
+    const int status = process_wait_pid(scheduler_get_current_task()->process, pid);
+    if (status_ptr) {
+        *status_ptr = status;
+    }
+
+    LEAVE_CRITICAL();
+
+    return nullptr;
 }
 
 void *sys_create_process(struct interrupt_frame *frame)
@@ -364,10 +444,8 @@ void *sys_create_process(struct interrupt_frame *frame)
     process_add_child(current_process, process);
 
 
-#ifndef MULTITASKING
-    task_switch(process->task);
-    scheduler_run_task_in_user_mode(&process->task->registers);
-#endif
+    // scheduler_switch_task(process->task);
+    // scheduler_run_task_in_user_mode(&process->task->registers);
 
     return (void *)(int)process->pid;
 }

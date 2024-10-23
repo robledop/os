@@ -278,3 +278,35 @@ char *strdup(const char *s)
     strncpy(new, s, len + 1);
     return new;
 }
+
+/// @brief Concatenate two strings
+/// @param dest the destination string
+/// @param src the source string
+/// @return the concatenated string
+char *strcat(char *dest, const char *src)
+{
+    char *d = dest;
+    while (*d != '\0') {
+        d++;
+    }
+    while (*src != '\0') {
+        *d = *src;
+        d++;
+        src++;
+    }
+    *d = '\0';
+    return dest;
+}
+
+int count_words(const char *input)
+{
+    int count   = 0;
+    char *temp        = strdup(input);
+    const char *token = strtok(temp, " ");
+    while (token != nullptr) {
+        count++;
+        token = strtok(nullptr, " ");
+    }
+    kfree(temp);
+    return count;
+}

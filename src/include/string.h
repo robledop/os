@@ -24,3 +24,6 @@ void reverse(char s[]);
 /* Duplicate S, returning an identical malloc'd string.  */
 char *strdup(const char *s);
 char *strtok(char *str, const char *delim);
+
+char *strcat(char *dest, const char *src);
+int count_words(const char *input);

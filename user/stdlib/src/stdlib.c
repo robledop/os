@@ -22,14 +22,14 @@ void free(void *ptr)
     syscall1(SYSCALL_FREE, ptr);
 }
 
-int waitpid(const int pid, enum PROCESS_STATE state)
+int waitpid(const int pid, const int *return_status)
 {
-    return syscall2(SYSCALL_WAIT_PID, pid, state);
+    return syscall2(SYSCALL_WAIT_PID, pid, return_status);
 }
 
-int wait(enum PROCESS_STATE state)
+int wait(const int *return_status)
 {
-    return syscall2(SYSCALL_WAIT_PID, -1, state);
+    return syscall2(SYSCALL_WAIT_PID, -1, return_status);
 }
 
 void reboot()
@@ -47,28 +47,9 @@ int fork()
     return syscall0(SYSCALL_FORK);
 }
 
-int exec(const char *path, const char *arg, ...)
+int exec(const char *path, const char **args)
 {
-    if (arg == NULL) {
-        return syscall3(SYSCALL_EXEC, path, NULL, 0);
-    }
-
-    va_list args;
-    va_start(args, arg);
-
-    char *argv[10];
-    int argc     = 0;
-    argv[argc++] = (char *)arg;
-
-    char *next_arg = va_arg(args, char *);
-    while (next_arg != NULL) {
-        argv[argc++] = next_arg;
-        next_arg     = va_arg(args, char *);
-    }
-
-    va_end(args);
-
-    return syscall3(SYSCALL_EXEC, path, argv, argc);
+    return syscall2(SYSCALL_EXEC, path, args);
 }
 
 int getpid()

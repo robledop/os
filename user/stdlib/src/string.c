@@ -321,3 +321,16 @@ char *strdup(const char *s)
     strncpy(new, s, len + 1);
     return new;
 }
+
+int count_words(const char *input)
+{
+    int count         = 0;
+    char *temp        = strdup(input);
+    const char *token = strtok(temp, " ");
+    while (token != nullptr) {
+        count++;
+        token = strtok(nullptr, " ");
+    }
+    free(temp);
+    return count;
+}

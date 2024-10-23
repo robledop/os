@@ -33,3 +33,4 @@ struct elf32_phdr *elf_pheader(struct elf_header *header);
 struct elf32_phdr *elf_program_header(struct elf_header *header, int index);
 struct elf32_shdr *elf_section(struct elf_header *header, int index);
 void *elf_phdr_phys_address(const struct elf_file *file, const struct elf32_phdr *phdr);
+int elf_process_loaded(struct elf_file *elf_file);

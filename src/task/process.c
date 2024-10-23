@@ -182,7 +182,6 @@ int process_terminate(struct process *process)
     kfree(process->stack);
     task_free(process->task);
 
-    // TODO: Warn the parent process that the child has been terminated
     scheduler_unlink_process(process);
 
     return res;
@@ -547,6 +546,7 @@ int process_load_switch(const char *file_name, struct process **process)
 
     const int res = process_load(file_name, process);
     if (res == 0) {
+        scheduler_queue_task((*process)->task);
         scheduler_set_current_process(*process);
     }
 
@@ -571,67 +571,67 @@ out:
     return res;
 }
 
-struct process *process_create(const char *file_name)
-{
-    int res                     = 0;
-    struct task *task           = nullptr;
-    struct process *proc        = nullptr;
-    void *program_stack_pointer = nullptr;
-
-    proc = kzalloc(sizeof(struct process));
-    if (!proc) {
-        warningf("Failed to allocate memory for process\n");
-        ASSERT(false, "Failed to allocate memory for process");
-        res = -ENOMEM;
-        goto out;
-    }
-
-    res = process_load_data(file_name, proc);
-    if (res < 0) {
-        warningf("Failed to load data for process\n");
-        goto out;
-    }
-
-    program_stack_pointer = kzalloc(USER_STACK_SIZE);
-    if (!program_stack_pointer) {
-        warningf("Failed to allocate memory for program stack\n");
-        ASSERT(false, "Failed to allocate memory for program stack");
-        res = -ENOMEM;
-        goto out;
-    }
-
-    strncpy(proc->file_name, file_name, sizeof(proc->file_name));
-    proc->stack = program_stack_pointer;
-    // proc->pid   = pid;
-
-
-    task = task_create(proc);
-    if (ERROR_I(task) == 0) {
-        warningf("Failed to create task\n");
-        ASSERT(false, "Failed to create task");
-        res = -ENOMEM;
-        goto out;
-    }
-
-    proc->task = task;
-
-    res = process_map_memory(proc);
-    if (res < 0) {
-        warningf("Failed to map memory for process\n");
-        ASSERT(false, "Failed to map memory for process");
-        goto out;
-    }
-
-out:
-    if (ISERR(res)) {
-        if (proc && proc->task) {
-            task_free(proc->task);
-        }
-
-        // TODO: free process data
-    }
-    return proc;
-}
+// struct process *process_create(const char *file_name)
+// {
+//     int res                     = 0;
+//     struct task *task           = nullptr;
+//     struct process *proc        = nullptr;
+//     void *program_stack_pointer = nullptr;
+//
+//     proc = kzalloc(sizeof(struct process));
+//     if (!proc) {
+//         warningf("Failed to allocate memory for process\n");
+//         ASSERT(false, "Failed to allocate memory for process");
+//         res = -ENOMEM;
+//         goto out;
+//     }
+//
+//     res = process_load_data(file_name, proc);
+//     if (res < 0) {
+//         warningf("Failed to load data for process\n");
+//         goto out;
+//     }
+//
+//     program_stack_pointer = kzalloc(USER_STACK_SIZE);
+//     if (!program_stack_pointer) {
+//         warningf("Failed to allocate memory for program stack\n");
+//         ASSERT(false, "Failed to allocate memory for program stack");
+//         res = -ENOMEM;
+//         goto out;
+//     }
+//
+//     strncpy(proc->file_name, file_name, sizeof(proc->file_name));
+//     proc->stack = program_stack_pointer;
+//     // proc->pid   = pid;
+//
+//
+//     task = task_create(proc);
+//     if (ERROR_I(task) == 0) {
+//         warningf("Failed to create task\n");
+//         ASSERT(false, "Failed to create task");
+//         res = -ENOMEM;
+//         goto out;
+//     }
+//
+//     proc->task = task;
+//
+//     res = process_map_memory(proc);
+//     if (res < 0) {
+//         warningf("Failed to map memory for process\n");
+//         ASSERT(false, "Failed to map memory for process");
+//         goto out;
+//     }
+//
+// out:
+//     if (ISERR(res)) {
+//         if (proc && proc->task) {
+//             task_free(proc->task);
+//         }
+//
+//         // TODO: free process data
+//     }
+//     return proc;
+// }
 
 
 int process_load_for_slot(const char *file_name, struct process **process, const uint16_t pid)
@@ -726,7 +726,7 @@ int process_set_current_directory(struct process *process, const char *directory
     return ALL_OK;
 }
 
-int process_wait_pid(struct process *process, const int pid, const enum PROCESS_STATE state)
+int process_wait_pid(struct process *process, const int pid)
 {
     ENTER_CRITICAL();
 
@@ -738,13 +738,12 @@ int process_wait_pid(struct process *process, const int pid, const enum PROCESS_
     struct process *child = nullptr;
 
     if (pid == -1) {
-        child = find_child_process_by_state(process, state);
+        child = find_child_process_by_state(process, ZOMBIE);
         if (child == nullptr) {
-            process->state      = WAITING;
-            process->wait_state = state;
-            process->wait_pid   = pid;
-            schedule();
+            process->state    = WAITING;
+            process->wait_pid = pid;
             LEAVE_CRITICAL();
+            schedule();
             return -1;
         }
     }
@@ -754,38 +753,37 @@ int process_wait_pid(struct process *process, const int pid, const enum PROCESS_
     }
 
     if (child == nullptr) {
+        process->state    = RUNNING;
+        process->wait_pid = 0;
         LEAVE_CRITICAL();
         return -1;
     }
 
-    if (child->state == state) {
-        if (child->state == ZOMBIE || child->state == TERMINATED) {
-            process_remove_child(process, child);
-            // TODO: Unlink the child process when the parent does not wait for it
-            scheduler_unlink_process(child);
-        }
-        const int status = child->exit_code;
+    if (child->state == ZOMBIE || child->state == TERMINATED) {
+        process_remove_child(process, child);
+        scheduler_unlink_process(child);
+        task_free(child->task);
+
+        const int status  = child->exit_code;
+        process->state    = RUNNING;
+        process->wait_pid = 0;
         LEAVE_CRITICAL();
         return status;
     }
 
     // No child has terminated; block the parent process
-    process->state      = WAITING;
-    process->wait_state = state;
-    process->wait_pid   = pid;
-    schedule(); // Context switch to another process
-
+    process->state    = WAITING;
+    process->wait_pid = pid;
     LEAVE_CRITICAL();
-    return -1; // No child to wait for
-}
 
-int process_wait(struct process *process, const enum PROCESS_STATE state)
-{
-    return process_wait_pid(process, -1, state);
+    schedule(); // Context switch to another process
+    return -1;  // No child to wait for
 }
 
 int process_copy_allocations(struct process *dest, const struct process *src)
 {
+    memset(dest->allocations, 0, sizeof(dest->allocations));
+
     for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
         if (src->allocations[i].ptr) {
             void *ptr = process_malloc(dest, src->allocations[i].size);
@@ -812,11 +810,18 @@ void process_copy_file_info(struct process *dest, const struct process *src)
     memcpy(dest->file_name, src->file_name, sizeof(src->file_name));
     dest->file_type = src->file_type;
     if (dest->file_type == PROCESS_FILE_TYPE_ELF) {
-        dest->elf_file                 = kzalloc(sizeof(struct elf_file));
-        dest->elf_file->elf_memory     = kzalloc(src->elf_file->in_memory_size);
+        dest->elf_file             = kzalloc(sizeof(struct elf_file));
+        dest->elf_file->elf_memory = kzalloc(src->elf_file->in_memory_size);
         memcpy(dest->elf_file->elf_memory, src->elf_file->elf_memory, src->elf_file->in_memory_size);
         dest->elf_file->in_memory_size = src->elf_file->in_memory_size;
         strncpy(dest->elf_file->filename, src->elf_file->filename, sizeof(src->elf_file->filename));
+        dest->elf_file->virtual_base_address = src->elf_file->virtual_base_address;
+        dest->elf_file->virtual_end_address  = src->elf_file->virtual_end_address;
+
+        const int res = elf_process_loaded(dest->elf_file);
+        if (res < 0) {
+            panic("Failed to process loaded ELF file");
+        }
 
     } else {
         dest->pointer = kzalloc(src->size);
@@ -850,12 +855,14 @@ struct process *process_clone(struct process *process)
 {
     struct process *clone = kzalloc(sizeof(struct process));
     if (!clone) {
+        panic("Failed to allocate memory for process clone");
         return nullptr;
     }
 
     const int pid = scheduler_get_free_pid();
     if (pid < 0) {
         kfree(clone);
+        panic("No free process slot");
         return nullptr;
     }
 
@@ -865,25 +872,26 @@ struct process *process_clone(struct process *process)
     // This is not super efficient
 
     process_copy_file_info(clone, process);
-    process_copy_stack(clone, process);
     process_copy_task(clone, process);
+    process_copy_stack(clone, process);
     process_copy_arguments(clone, process);
     process_map_memory(clone);
     process_copy_allocations(clone, process);
 
     process_add_child(process, clone);
     scheduler_set_process(clone->pid, clone);
+    scheduler_queue_task(clone->task);
 
     return clone;
 }
 
-struct process *process_replace(const struct process *parent, const char *file_name)
-{
-    struct process *child = process_create(file_name);
-    child->parent         = parent->parent;
-    child->pid            = parent->pid;
-
-    // TODO: Copy file descriptors
-
-    return child;
-}
+// struct process *process_replace(const struct process *parent, const char *file_name)
+// {
+//     struct process *child = process_create(file_name);
+//     child->parent         = parent->parent;
+//     child->pid            = parent->pid;
+//
+//     // TODO: Copy file descriptors
+//
+//     return child;
+// }

@@ -62,6 +62,8 @@ void scheduler_switch_to_any()
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (processes[i] && processes[i]->priority != 0) {
             scheduler_set_current_process(processes[i]);
+            scheduler_switch_task(current_process->task);
+            scheduler_run_task_in_user_mode(&current_process->task->registers);
             return;
         }
     }
@@ -154,6 +156,10 @@ void scheduler_unqueue_task(const struct task *task)
         task->prev->next = task->next;
     }
 
+    if (task->next) {
+        task->next->prev = task->prev;
+    }
+
     if (task == task_head) {
         task_head = task->next;
     }
@@ -177,18 +183,6 @@ void scheduler_save_current_task(const struct interrupt_frame *interrupt_frame)
 
     task_save_state(task, interrupt_frame);
 }
-
-// void scheduler_run_first_task()
-// {
-//     if (!current_task) {
-//         panic("No tasks to run");
-//     }
-//
-//     dbgprintf("Running first ever task %x\n", current_task);
-//
-//     scheduler_switch_task(task_head);
-//     scheduler_run_task_in_user_mode(&task_head->registers);
-// }
 
 /// @brief Set the task as the current task and switch to its page directory
 /// @param task the task to run
@@ -256,8 +250,9 @@ void schedule()
     if (!next) {
         // No tasks to run, restart the shell
         kprintf("\nRestarting the shell");
-        pic_acknowledge();
-        start_shell(0);
+        // pic_acknowledge();
+        scheduler_switch_to_any();
+        // start_shell(0);
         return;
     }
 
@@ -271,9 +266,8 @@ void schedule()
             next->process->parent->wait_pid  = 0;
         }
 
-        scheduler_unqueue_task(next);
-        scheduler_unlink_process(next->process);
-        pic_acknowledge();
+        process_terminate(next->process);
+        // pic_acknowledge();
         return;
     }
 
@@ -283,7 +277,7 @@ void schedule()
     if (process->state == WAITING) {
         struct process *child;
         if (process->wait_pid == -1) {
-            child = find_child_process_by_state(process, process->wait_state);
+            child = find_child_process_by_state(process, ZOMBIE);
         } else {
             child = find_child_process_by_pid(process, process->wait_pid);
             if (!child) {
@@ -292,26 +286,27 @@ void schedule()
                 process->wait_pid  = 0;
             }
         }
-        if (child && child->state == process->wait_state) {
+        if (child && child->state == ZOMBIE) {
             process->state     = RUNNING;
             process->exit_code = child->exit_code;
             process->wait_pid  = 0;
 
             if (child->state == TERMINATED || child->state == ZOMBIE) {
                 process_remove_child(process, child);
-                scheduler_unlink_process(child);
+                // scheduler_unlink_process(child);
+                process_terminate(child);
             }
         } else {
             if (child) {
                 // If the task is waiting and the child is still running, switch to the child task
-                pic_acknowledge();
+                // pic_acknowledge();
                 scheduler_switch_task(child->task);
                 scheduler_run_task_in_user_mode(&child->task->registers);
             } else {
                 // Try to find another runnable task, if none, run the idle task
                 next = scheduler_get_runnable_task();
                 if (next == nullptr) {
-                    pic_acknowledge();
+                    // pic_acknowledge();
                     scheduler_run_task_in_kernel_mode(idle_task->kernel_state);
                     return;
                 }
@@ -319,7 +314,7 @@ void schedule()
         }
     }
 
-    pic_acknowledge();
+    // pic_acknowledge();
     scheduler_switch_task(next);
     scheduler_run_task_in_user_mode(&next->registers);
 }
@@ -335,12 +330,12 @@ int scheduler_replace(struct process *old, struct process *new)
 
 void handle_pit_interrupt(int interrupt, uint32_t unused)
 {
+    pic_acknowledge();
     milliseconds += 2;
     if (milliseconds >= 10) {
         milliseconds = 0;
         schedule();
     }
-    pic_acknowledge();
 }
 
 int scheduler_init()
@@ -365,11 +360,10 @@ int scheduler_get_processes(struct process_info **proc_info, int *count)
     for (int i = 0; i < *count; i++) {
         if (processes[i]) {
             struct process_info info = {
-                .pid        = processes[i]->pid,
-                .priority   = processes[i]->priority,
-                .state      = processes[i]->state,
-                .wait_state = processes[i]->wait_state,
-                .exit_code  = processes[i]->exit_code,
+                .pid       = processes[i]->pid,
+                .priority  = processes[i]->priority,
+                .state     = processes[i]->state,
+                .exit_code = processes[i]->exit_code,
             };
             strncpy(info.file_name, processes[i]->file_name, MAX_PATH_LENGTH);
             memcpy(*proc_info + i, &info, sizeof(struct process_info));
