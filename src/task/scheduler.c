@@ -20,6 +20,7 @@ struct task *current_task = nullptr;
 struct task *task_tail    = nullptr;
 struct task *task_head    = nullptr;
 struct task *idle_task;
+void scheduler_idle_task();
 
 struct process *scheduler_get_current_process()
 {
@@ -181,7 +182,11 @@ void scheduler_save_current_task(const struct interrupt_frame *interrupt_frame)
         panic("No current task");
     }
 
-    task_save_state(task, interrupt_frame);
+    if (interrupt_frame->cs == KERNEL_CODE_SELECTOR) {
+        task_save_state(idle_task, interrupt_frame);
+    } else {
+        task_save_state(task, interrupt_frame);
+    }
 }
 
 /// @brief Set the task as the current task and switch to its page directory
@@ -190,6 +195,7 @@ void scheduler_save_current_task(const struct interrupt_frame *interrupt_frame)
 int scheduler_switch_task(struct task *task)
 {
     current_task = task;
+    set_user_mode_segments();
     paging_switch_directory(task->page_directory);
     return ALL_OK;
 }
@@ -203,121 +209,22 @@ int scheduler_switch_current_task_page()
     return ALL_OK;
 }
 
-void scheduler_idle_task()
+
+void scheduler_run_task_in_kernel_mode(uint32_t eip)
 {
-    // Enable interrupts, otherwise we will never leave the idle task
-    LEAVE_CRITICAL();
-    // ReSharper disable once CppDFAEndlessLoop
-    while (true) {
-        kprintf(KYEL "Idle!" KWHT);
-        asm("hlt");
-    }
-}
+    kernel_page();
 
-void scheduler_initialize_idle_task()
-{
-    idle_task = kzalloc(sizeof(struct task));
-    memset(idle_task, 0, sizeof(struct task));
-    idle_task->tty                 = 0;
-    idle_task->kernel_state.eip    = (uint32_t)&scheduler_idle_task;
-    idle_task->kernel_state.cs     = KERNEL_CODE_SELECTOR;
-    idle_task->kernel_state.eflags = 0x200; // Enable interrupts
-    // idle_task->kernel_state.esp    = (uint32_t)kzalloc(4096) + 4096;
-
-    idle_task->process           = (struct process *)kzalloc(sizeof(struct process));
-    idle_task->process->pid      = 0;
-    idle_task->process->state    = RUNNING;
-    idle_task->process->priority = 0;
-    idle_task->process->task     = idle_task;
-    strncpy(idle_task->process->file_name, "idle", 5);
-
-    scheduler_set_process(idle_task->process->pid, idle_task->process);
-}
-
-void scheduler_run_task_in_kernel_mode(cpu_state_t state)
-{
+    // TODO: HACK. Need a proper way of restoring the stack. 180 is the value needed right now, but that will certainly
+    // change. This must not be hardcoded
     asm volatile("mov %0, %%eax\n"
+                 "sti\n"
+                 "addl $180, %%esp\n"
                  "jmp *%%eax\n"
                  :
-                 : "m"(state.eip)
+                 : "m"(eip)
                  : "%eax");
 }
 
-/// @brief Gets the next task and runs it
-void schedule()
-{
-    struct task *next = scheduler_get_next_task();
-    if (!next) {
-        // No tasks to run, restart the shell
-        kprintf("\nRestarting the shell");
-        // pic_acknowledge();
-        scheduler_switch_to_any();
-        // start_shell(0);
-        return;
-    }
-
-    // If the task is terminated or a zombie, remove it from the scheduler
-    if (next->process->state == TERMINATED || next->process->state == ZOMBIE) {
-        // If the task is a child process, signal the parent that the child has exited
-        if (next->process->parent && next->process->parent->state == WAITING &&
-            (next->process->parent->wait_pid == next->process->pid || next->process->parent->wait_pid == -1)) {
-            next->process->parent->state     = RUNNING;
-            next->process->parent->exit_code = next->process->exit_code;
-            next->process->parent->wait_pid  = 0;
-        }
-
-        process_terminate(next->process);
-        // pic_acknowledge();
-        return;
-    }
-
-    auto const process = next->process;
-
-    // TODO: Add a way for the child process to signal to the parent that it has exited
-    if (process->state == WAITING) {
-        struct process *child;
-        if (process->wait_pid == -1) {
-            child = find_child_process_by_state(process, ZOMBIE);
-        } else {
-            child = find_child_process_by_pid(process, process->wait_pid);
-            if (!child) {
-                process->state     = RUNNING;
-                process->exit_code = 0;
-                process->wait_pid  = 0;
-            }
-        }
-        if (child && child->state == ZOMBIE) {
-            process->state     = RUNNING;
-            process->exit_code = child->exit_code;
-            process->wait_pid  = 0;
-
-            if (child->state == TERMINATED || child->state == ZOMBIE) {
-                process_remove_child(process, child);
-                // scheduler_unlink_process(child);
-                process_terminate(child);
-            }
-        } else {
-            if (child) {
-                // If the task is waiting and the child is still running, switch to the child task
-                // pic_acknowledge();
-                scheduler_switch_task(child->task);
-                scheduler_run_task_in_user_mode(&child->task->registers);
-            } else {
-                // Try to find another runnable task, if none, run the idle task
-                next = scheduler_get_runnable_task();
-                if (next == nullptr) {
-                    // pic_acknowledge();
-                    scheduler_run_task_in_kernel_mode(idle_task->kernel_state);
-                    return;
-                }
-            }
-        }
-    }
-
-    // pic_acknowledge();
-    scheduler_switch_task(next);
-    scheduler_run_task_in_user_mode(&next->registers);
-}
 
 int scheduler_replace(struct process *old, struct process *new)
 {
@@ -336,6 +243,38 @@ void handle_pit_interrupt(int interrupt, uint32_t unused)
         milliseconds = 0;
         schedule();
     }
+}
+
+__attribute__((noreturn)) void scheduler_idle_task()
+{
+    asm("sti");
+    // ReSharper disable once CppDFAEndlessLoop
+    while (true) {
+        // kprintf(KYEL "Idle!" KWHT);
+        asm("hlt");
+    }
+}
+
+void scheduler_initialize_idle_task()
+{
+    idle_task = kzalloc(sizeof(struct task));
+    memset(idle_task, 0, sizeof(struct task));
+    idle_task->tty          = 0;
+    idle_task->registers.ip = (uint32_t)&scheduler_idle_task;
+    idle_task->registers.cs = KERNEL_CODE_SELECTOR;
+    // idle_task->registers.flags = 0x200; // Enable interrupts
+    // idle_task->registers.ebp   = (uint32_t)kzalloc(4096) + 4096;
+    // idle_task->registers.ss    = KERNEL_DATA_SELECTOR;
+    // idle_task->registers.esp   = idle_task->registers.esp - 4;
+
+    idle_task->process           = (struct process *)kzalloc(sizeof(struct process));
+    idle_task->process->pid      = 0;
+    idle_task->process->state    = RUNNING;
+    idle_task->process->priority = 0;
+    idle_task->process->task     = idle_task;
+    strncpy(idle_task->process->file_name, "idle", 5);
+
+    scheduler_set_process(idle_task->process->pid, idle_task->process);
 }
 
 int scheduler_init()
@@ -371,4 +310,92 @@ int scheduler_get_processes(struct process_info **proc_info, int *count)
     }
 
     return 0;
+}
+
+/// @brief Gets the next task and runs it
+void schedule()
+{
+    struct task *next = scheduler_get_next_task();
+
+    if (!next) {
+        // No tasks to run, restart the shell
+        kprintf("\nRestarting the shell");
+        scheduler_switch_to_any();
+        return;
+    }
+
+    // If the task is terminated or a zombie, remove it from the scheduler
+    if (next->process->state == TERMINATED || next->process->state == ZOMBIE) {
+        // If the task is a child process, signal the parent that the child has exited
+        if (next->process->parent && next->process->parent->state == WAITING &&
+            (next->process->parent->wait_pid == next->process->pid || next->process->parent->wait_pid == -1)) {
+            next->process->parent->state     = RUNNING;
+            next->process->parent->exit_code = next->process->exit_code;
+            next->process->parent->wait_pid  = 0;
+        }
+
+        process_terminate(next->process);
+        return;
+    }
+
+    struct process *process = next->process;
+
+    if (process->state == SLEEPING) {
+        if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
+            process->state  = WAITING;
+            process->signal = NONE;
+        } else if (process->signal == SIGWAKEUP) {
+            process->state  = RUNNING;
+            process->signal = NONE;
+        } else {
+            next = scheduler_get_runnable_task();
+            if (next == nullptr) {
+                scheduler_run_task_in_kernel_mode(idle_task->registers.ip);
+                return;
+            }
+        }
+    }
+
+    process = next->process;
+
+    if (process->state == WAITING) {
+        struct process *child;
+        if (process->wait_pid == -1) {
+            child = find_child_process_by_state(process, ZOMBIE);
+        } else {
+            child = find_child_process_by_pid(process, process->wait_pid);
+            if (!child) {
+                process->state     = RUNNING;
+                process->exit_code = 0;
+                process->wait_pid  = 0;
+            }
+        }
+        if (child && child->state == ZOMBIE) {
+            process->state     = RUNNING;
+            process->exit_code = child->exit_code;
+            process->wait_pid  = 0;
+
+            if (child->state == TERMINATED || child->state == ZOMBIE) {
+                process_remove_child(process, child);
+                process_terminate(child);
+            }
+        } else {
+            if (child) {
+                // If the task is waiting and the child is still running, switch to the child task
+                scheduler_switch_task(child->task);
+                scheduler_run_task_in_user_mode(&child->task->registers);
+            } else {
+                // Try to find another runnable task, if none, run the idle task
+                next = scheduler_get_runnable_task();
+                if (next == nullptr) {
+                    scheduler_run_task_in_kernel_mode(idle_task->registers.ip);
+                    return;
+                }
+            }
+        }
+    }
+
+
+    scheduler_switch_task(next);
+    scheduler_run_task_in_user_mode(&next->registers);
 }

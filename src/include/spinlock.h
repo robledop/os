@@ -1,16 +1,16 @@
-)#pragma once
+#pragma once
 
 #include "types.h"
 
 typedef uint32_t spinlock_t;
 
-#define lock(lk, code)                                                                                                  \
+#define lock(lk, code)                                                                                                 \
     {                                                                                                                  \
-        acquire_lock(&lk);                                                                                              \
+        acquire_lock(&lk);                                                                                             \
         code;                                                                                                          \
-        release_lock(&lk);                                                                                              \
+        release_lock(&lk);                                                                                             \
     }
 
-// defined in task/task.asm
-void release_lock(spinlock_t *lock);
-void acquire_lock(spinlock_t *lock);
+void spinlock_init(spinlock_t *lock);
+void spin_lock(spinlock_t *lock);
+void spin_unlock(spinlock_t *lock);

@@ -1,9 +1,6 @@
 #include "stdlib.h"
-
 #include <os.h>
-#include <stdarg.h>
 #include <string.h>
-
 #include "../../../src/include/syscall.h"
 #include "syscall.h"
 
@@ -12,9 +9,12 @@ void *malloc(size_t size)
     return (void *)syscall1(SYSCALL_MALLOC, size);
 }
 
-void *calloc(const int nmemb, const int size)
+/// @brief Allocate memory for an array of elements and set the memory to zero
+/// @param number_of_items number of elements
+/// @param size size of each element
+void *calloc(const int number_of_items, const int size)
 {
-    return (void *)syscall2(SYSCALL_CALLOC, nmemb, size);
+    return (void *)syscall2(SYSCALL_CALLOC, number_of_items, size);
 }
 
 void free(void *ptr)
@@ -57,17 +57,17 @@ int getpid()
     return syscall0(SYSCALL_GET_PID);
 }
 
-int create_process(const char *command, const char *current_directory)
+int create_process(const char *path, const char *current_directory)
 {
     char buffer[1024];
-    strncpy(buffer, command, sizeof(buffer));
+    strncpy(buffer, path, sizeof(buffer));
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
     if (root_command_argument == NULL) {
         return -1;
     }
 
     if (root_command_argument->current_directory == NULL) {
-        root_command_argument->current_directory = malloc(MAX_PATH_LENGTH);
+        root_command_argument->current_directory = calloc(1, MAX_PATH_LENGTH);
     }
 
     strncpy(root_command_argument->current_directory, current_directory, MAX_PATH_LENGTH);

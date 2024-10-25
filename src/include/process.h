@@ -6,7 +6,8 @@
 #define PROCESS_FILE_TYPE_ELF 0
 #define PROCESS_FILE_TYPE_BINARY 1
 typedef unsigned char PROCESS_FILE_TYPE;
-enum PROCESS_STATE { RUNNING, ZOMBIE, WAITING, TERMINATED };
+enum PROCESS_STATE { RUNNING, ZOMBIE, WAITING, TERMINATED, SLEEPING };
+enum PROCESS_SIGNAL { NONE, SIGKILL, SIGSTOP, SIGCONT, SIGTERM, SIGWAKEUP };
 
 struct command_argument {
     char argument[512];
@@ -35,6 +36,7 @@ struct process {
     struct process *children;
     struct task *task;
     enum PROCESS_STATE state;
+    enum PROCESS_SIGNAL signal;
     int wait_pid;
     int exit_code;
     struct process_allocation allocations[MAX_PROGRAM_ALLOCATIONS];

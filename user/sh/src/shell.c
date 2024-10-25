@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     pass = 0;
 
     for (int i = 0; i < 256; i++) {
-        command_history[i] = malloc(256);
+        command_history[i] = calloc(1, 256);
     }
 
     // ReSharper disable once CppDFAEndlessLoop
@@ -299,7 +299,7 @@ void change_directory(char *args, char *current_directory)
 
 bool directory_exists(const char *path)
 {
-    struct file_directory *directory = malloc(sizeof(struct file_directory));
+    struct file_directory *directory = calloc(1, sizeof(struct file_directory));
     char current_directory[MAX_PATH_LENGTH];
     const char *current_dir = get_current_directory();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);

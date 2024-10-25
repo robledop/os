@@ -4,11 +4,9 @@ section .text
 
 %include "config.asm"
 
-global restore_general_purpose_registers
-global scheduler_run_task_in_user_mode
-global set_user_mode_segments
 
 ; void scheduler_run_task_in_user_mode(struct register* registers)
+global scheduler_run_task_in_user_mode
 scheduler_run_task_in_user_mode:
     mov ebp, esp
 
@@ -31,6 +29,7 @@ scheduler_run_task_in_user_mode:
     push dword [ebx + 28]
 
     ; setup segment registers
+;    call set_user_mode_segments
     mov ax, [ebx + 44]
     mov ds, ax
     mov es, ax
@@ -45,6 +44,7 @@ scheduler_run_task_in_user_mode:
     iretd
 
 ; void restore_general_purpose_registers(struct registers* regs)
+global restore_general_purpose_registers
 restore_general_purpose_registers:
     push ebp
 
@@ -62,6 +62,7 @@ restore_general_purpose_registers:
     ret
 
 ; void set_user_mode_registers()
+global set_user_mode_segments
 set_user_mode_segments:
     mov ax, USER_DATA_SELECTOR
     mov ds, ax

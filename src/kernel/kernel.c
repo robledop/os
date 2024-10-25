@@ -31,7 +31,7 @@ void schedule_idle_task();
 #endif
 
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
-int __cli_count               = 0;
+int __cli_count             = 0;
 
 extern struct page_directory *kernel_page_directory;
 
@@ -62,13 +62,15 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     ENTER_CRITICAL();
 
     init_serial();
+    gdt_init(stack_ptr);
+    vga_buffer_init();
     print(""); // BUG: Without this, the terminal gets all messed up, but only when using my bootloader
     terminal_clear();
-    // kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
+    kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
+    kprintf("Size of registers: %d\n", sizeof(struct registers));
     char *cpu = cpu_string();
     kprintf(KCYN "CPU: %s\n", cpu);
     cpu_print_info();
-    gdt_init(stack_ptr);
     kernel_heap_init();
     paging_init();
     idt_init();

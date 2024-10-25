@@ -13,6 +13,7 @@
 
 #define VIDEO_MEMORY 0xB8000
 
+void vga_buffer_init();
 void print(const char *str);
 void terminal_clear();
 void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor);

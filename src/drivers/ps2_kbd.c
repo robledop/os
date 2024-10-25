@@ -1,5 +1,9 @@
 #include "ps2_kbd.h"
+
+#include <kernel_heap.h>
 #include <scheduler.h>
+#include <string.h>
+
 #include "idt.h"
 #include "io.h"
 #include "kernel.h"
@@ -7,11 +11,6 @@
 
 int ps2_keyboard_init();
 void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused);
-
-struct keyboard ps2_keyboard = {
-    .name = {"ps2"},
-    .init = ps2_keyboard_init,
-};
 
 #define PS2_CAPSLOCK 0x3A
 
@@ -89,32 +88,25 @@ int ps2_keyboard_init()
 void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
 {
     ENTER_CRITICAL();
-    kernel_page();
+    // kernel_page();
 
     const uchar c = keyboard_get_char();
     if (c > 0) {
         keyboard_push(c);
     }
-    scheduler_switch_current_task_page();
+    // scheduler_switch_current_task_page();
+    if (scheduler_get_current_task()->process->state == SLEEPING) {
+        scheduler_get_current_task()->process->signal = SIGWAKEUP;
+    }
     LEAVE_CRITICAL();
 }
 
 struct keyboard *ps2_init()
 {
-    return &ps2_keyboard;
-}
+    struct keyboard *kbd = kzalloc(sizeof(struct keyboard));
+    strncpy(kbd->name, "ps2", sizeof(kbd->name));
+    kbd->init = ps2_keyboard_init;
 
-// void keyboard_interrupt_handler() {
-//     uint8_t scancode = read_scancode();
-//     if (is_console_switch_key(scancode)) {
-//         int console_number = get_console_number_from_scancode(scancode);
-//         switch_console(console_number);
-//     } else {
-//         Console *console = &consoles[active_console];
-//         char key = translate_scancode(scancode);
-//         if (key) {
-//             console->input_buffer[console->input_buffer_tail++] = key;
-//             console->input_buffer_tail %= INPUT_BUFFER_SIZE;
-//         }
-//     }
-// }
+
+    return kbd;
+}

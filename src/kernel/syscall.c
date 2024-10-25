@@ -18,10 +18,12 @@
 #include "types.h"
 #include "vga_buffer.h"
 
-spinlock_t syscall_lock = 0;
+spinlock_t syscall_lock;
 
 void register_syscalls()
 {
+    spinlock_init(&syscall_lock);
+
     register_syscall(SYSCALL_EXIT, sys_exit);
     register_syscall(SYSCALL_PRINT, sys_print);
     register_syscall(SYSCALL_GETKEY, sys_getkey);
@@ -116,13 +118,13 @@ void *sys_getpid(struct interrupt_frame *frame)
 
 void *sys_fork(struct interrupt_frame *frame)
 {
-    ENTER_CRITICAL();
+    spin_lock(&syscall_lock);
 
     auto const parent          = scheduler_get_current_process();
     auto const child           = process_clone(parent);
     child->task->registers.eax = 0;
 
-    LEAVE_CRITICAL();
+    spin_unlock(&syscall_lock);
 
     return (void *)(int)child->pid;
 }
@@ -130,7 +132,7 @@ void *sys_fork(struct interrupt_frame *frame)
 // int exec(const char *path, const char *argv[])
 void *sys_exec(struct interrupt_frame *frame)
 {
-    ENTER_CRITICAL();
+    spin_lock(&syscall_lock);
 
     const void *path_ptr = task_peek_stack_item(scheduler_get_current_task(), 1);
 
@@ -196,7 +198,7 @@ void *sys_exec(struct interrupt_frame *frame)
     scheduler_set_process(process->pid, process);
     scheduler_queue_task(task);
 
-    LEAVE_CRITICAL();
+    spin_unlock(&syscall_lock);
 
     schedule();
 
@@ -317,13 +319,12 @@ void *sys_open(struct interrupt_frame *frame)
 
 __attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
 {
-    ENTER_CRITICAL();
-
     struct process *process = scheduler_get_current_task()->process;
     process_terminate(process);
 
-    LEAVE_CRITICAL();
     schedule();
+
+    panic("Trying to schedule a dead task");
 
     // This must not return, otherwise we will get a general protection fault
     // We will only reach this point if the scheduler tries to run a dead task
@@ -351,6 +352,10 @@ void *sys_print(struct interrupt_frame *frame)
 void *sys_getkey(struct interrupt_frame *frame)
 {
     const uchar c = keyboard_pop();
+    if (c == 0) {
+        scheduler_get_current_task()->process->state = SLEEPING;
+        // schedule();
+    }
     return (void *)(int)c;
 }
 

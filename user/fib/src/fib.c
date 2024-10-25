@@ -15,6 +15,7 @@ int main(const int argc, char **argv)
     printf("Calculating fibonacci of 43 using recursion.\n");
     uint64_t result = fib(43);
     printf("Result: %d\n", result);
+
     // uint64_t a = 0, b = 1, c, i, n = 100;
     // for (i = 0; i < n; i++) {
     //     if (i <= 1) {
@@ -29,4 +30,3 @@ int main(const int argc, char **argv)
 
     return 0;
 }
-

@@ -11,7 +11,7 @@
 #define MAX_FMT_STR_SERIAL 100
 static int serial_init_done = 0;
 
-spinlock_t serial_lock = 0;
+spinlock_t serial_lock;
 
 void serial_put(char a)
 {
@@ -40,7 +40,9 @@ int serial_printf(const char *fmt, ...)
 {
     int written = 0;
 #ifdef DEBUG_SERIAL
-    acquire_lock(&serial_lock);
+    spin_lock(&serial_lock);
+    // ENTER_CRITICAL();
+
     va_list args;
 
     char str[MAX_FMT_STR_SERIAL];
@@ -90,7 +92,9 @@ int serial_printf(const char *fmt, ...)
 
     va_end(args);
 
-    release_lock(&serial_lock);
+    // LEAVE_CRITICAL();
+    spin_unlock(&serial_lock);
+
 #endif
     return written;
 }
@@ -98,6 +102,7 @@ int serial_printf(const char *fmt, ...)
 void init_serial()
 {
 #ifdef DEBUG_SERIAL
+    spinlock_init(&serial_lock);
 
     // https://stackoverflow.com/questions/69481715/initialize-serial-port-with-x86-assembly
     outb(PORT + 1, 0x00); // Disable all interrupts

@@ -44,7 +44,7 @@ struct page_directory *paging_create_directory(const uint8_t flags)
 
 void paging_free_directory(struct page_directory *page_directory)
 {
-    if (!page_directory) {
+    if (!page_directory || !page_directory->directory_entry) {
         warningf("Page directory is null\n");
         return;
     }

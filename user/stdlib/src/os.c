@@ -1,8 +1,10 @@
 #include "os.h"
 #include <stdlib.h>
+#include "../../../src/include/memory.h"
 #include "string.h"
 
-struct command_argument *os_parse_command(const char *command, const int max) {
+struct command_argument *os_parse_command(const char *command, const int max)
+{
     struct command_argument *head = nullptr;
     char scommand[1025];
     if (max >= (int)sizeof(scommand)) {
@@ -16,7 +18,7 @@ struct command_argument *os_parse_command(const char *command, const int max) {
         return head;
     }
 
-    head = malloc(sizeof(struct command_argument));
+    head = calloc(1, sizeof(struct command_argument));
     if (head == NULL) {
         return nullptr;
     }
@@ -28,7 +30,7 @@ struct command_argument *os_parse_command(const char *command, const int max) {
     token                            = strtok(nullptr, " ");
 
     while (token != NULL) {
-        struct command_argument *next = malloc(sizeof(struct command_argument));
+        struct command_argument *next = calloc(1, sizeof(struct command_argument));
         if (next == NULL) {
             break;
         }
@@ -44,7 +46,8 @@ struct command_argument *os_parse_command(const char *command, const int max) {
 }
 
 
-void os_terminal_readline(unsigned char *out, const int max, const bool output_while_typing) {
+void os_terminal_readline(unsigned char *out, const int max, const bool output_while_typing)
+{
     int i = 0;
     for (; i < max - 1; i++) {
         const unsigned char key = getkey();

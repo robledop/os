@@ -28,13 +28,12 @@ struct registers {
     uint32_t ss;
 };
 
-struct process;
 struct interrupt_frame;
 
 struct task {
     struct page_directory *page_directory;
     struct registers registers;
-    cpu_state_t kernel_state;
+    // struct registers kernel_state;
     struct process *process;
     struct task *next;
     struct task *prev;

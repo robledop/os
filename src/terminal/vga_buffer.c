@@ -1,4 +1,6 @@
 #include "vga_buffer.h"
+
+#include <spinlock.h>
 #include <stdarg.h>
 #include "assert.h"
 #include "config.h"
@@ -21,7 +23,10 @@ uint8_t backcolor = 0x00; // Default cyan
 static int cursor_y;
 static int cursor_x;
 
-void enable_cursor(const uint8_t cursor_start, const uint8_t cursor_end) {
+spinlock_t vga_lock;
+
+void enable_cursor(const uint8_t cursor_start, const uint8_t cursor_end)
+{
     outb(0x3D4, 0x0A);
     outb(0x3D5, (inb(0x3D5) & 0xC0) | cursor_start);
 
@@ -29,7 +34,8 @@ void enable_cursor(const uint8_t cursor_start, const uint8_t cursor_end) {
     outb(0x3D5, (inb(0x3D5) & 0xE0) | cursor_end);
 }
 
-void update_cursor(const int row, const int col) {
+void update_cursor(const int row, const int col)
+{
     const uint16_t position = (row * VGA_WIDTH) + col;
 
     outb(0x3D4, 0x0F);
@@ -38,7 +44,8 @@ void update_cursor(const int row, const int col) {
     outb(0x3D5, (position >> 8) & 0xFF);
 }
 
-static void write_character(const uchar c, const uchar fcolor, const uchar bcolor, const int x, const int y) {
+static void write_character(const uchar c, const uchar fcolor, const uchar bcolor, const int x, const int y)
+{
     ASSERT(x < VGA_WIDTH, "X is out of bounds");
     ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
     ASSERT(fcolor != 0x00, "Foreground color is black");
@@ -76,9 +83,11 @@ static void write_character(const uchar c, const uchar fcolor, const uchar bcolo
     // const uint16_t attrib    = (bcolor << 4) | (fcolor & 0x0F);
     // volatile uint16_t *where = (volatile uint16_t *)consoles[active_console].framebuffer + (y * VGA_WIDTH + x);
     // *where                   = c | (attrib << 8);
+
 }
 
-uint16_t get_cursor_position(void) {
+uint16_t get_cursor_position(void)
+{
     uint16_t pos = 0;
     outb(0x3D4, 0x0F);
     pos |= inb(0x3D5);
@@ -87,7 +96,8 @@ uint16_t get_cursor_position(void) {
     return pos;
 }
 
-void scroll_screen() {
+void scroll_screen()
+{
     auto const video_memory = (uchar *)VIDEO_MEMORY;
     // auto const video_memory = (uchar *)consoles[active_console].framebuffer;
 
@@ -106,7 +116,8 @@ void scroll_screen() {
     update_cursor(cursor_y, cursor_x);
 }
 
-void terminal_write_char(const char c, const uint8_t fcolor, const uint8_t bcolor) {
+void terminal_write_char(const char c, const uint8_t fcolor, const uint8_t bcolor)
+{
     forecolor = fcolor;
     backcolor = bcolor;
 
@@ -151,7 +162,8 @@ void terminal_write_char(const char c, const uint8_t fcolor, const uint8_t bcolo
     update_cursor(cursor_y, cursor_x);
 }
 
-void print(const char *str) {
+void print(const char *str)
+{
     if (forecolor == 0x00 && backcolor == 0x00) {
         forecolor = 0x0F;
         backcolor = 0x00;
@@ -163,7 +175,8 @@ void print(const char *str) {
     }
 }
 
-void ksprintf(const char *str, int max) {
+void ksprintf(const char *str, int max)
+{
     const size_t len = strnlen(str, max);
     for (size_t i = 0; i < len; i++) {
         terminal_write_char(str[i], forecolor, backcolor);
@@ -171,7 +184,8 @@ void ksprintf(const char *str, int max) {
 }
 
 // BUG: There seems to be a bug that prevents more than 3 arguments from being printed
-void kprintf(const char *fmt, ...) {
+void kprintf(const char *fmt, ...)
+{
     ASSERT(forecolor != 0x00, "Foreground color is black");
 
     va_list args;
@@ -337,9 +351,12 @@ void kprintf(const char *fmt, ...) {
     }
 
     va_end(args);
+
 }
 
-void terminal_clear() {
+void terminal_clear()
+{
+    // spin_lock(&vga_lock);
     cursor_x = 0;
     cursor_y = 0;
     for (int y = 0; y < VGA_HEIGHT; y++) {
@@ -349,4 +366,14 @@ void terminal_clear() {
     }
 
     enable_cursor(14, 15);
+
+    // spin_unlock(&vga_lock);
+}
+
+void vga_buffer_init()
+{
+    cursor_x = 0;
+    cursor_y = 0;
+    spinlock_init(&vga_lock);
+    terminal_clear();
 }

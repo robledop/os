@@ -337,5 +337,7 @@ int getkey_blocking()
         key = getkey();
     }
 
+    __sync_synchronize();
+
     return key;
 }

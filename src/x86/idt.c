@@ -102,21 +102,20 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
 
-        kprintf(KRED "\nException: %x. Page fault at %x\n" KWHT, interrupt, faulting_address);
-        kprintf("Error code: %x\n", error_code);
-        kprintf("P: %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
-        kprintf("W: %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
-        kprintf("U: %x\n", error_code & PAGE_FAULT_USER_MASK ? 1 : 0);
-        kprintf("R: %x\n", error_code & PAGE_FAULT_RESERVED_MASK ? 1 : 0);
-        kprintf("I: %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
-        kprintf("PK: %x\n", error_code & PAGE_FAULT_PK_MASK ? 1 : 0);
-        kprintf("SS: %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
-
-    } else if (interrupt == 13) {
-        kprintf(KRED "\nGeneral protection fault\n" KYEL "Error code:" KWHT " %x" KWHT, error_code);
-    } else {
-        kprintf(KRED "\n%s\n" KWHT, exception_messages[interrupt]);
+        kprintf(KRED "\nFaulting address:" KWHT " %x\n", faulting_address);
+        kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
+        kprintf(KYEL "P:" KWHT " %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
+        kprintf(KYEL "W:" KWHT " %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
+        kprintf(KYEL "U:" KWHT " %x\n", error_code & PAGE_FAULT_USER_MASK ? 1 : 0);
+        kprintf(KYEL "R:" KWHT " %x\n", error_code & PAGE_FAULT_RESERVED_MASK ? 1 : 0);
+        kprintf(KYEL "I:" KWHT " %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
+        kprintf(KYEL "PK:" KWHT " %x\n", error_code & PAGE_FAULT_PK_MASK ? 1 : 0);
+        kprintf(KYEL "SS:" KWHT " %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
+    } else if (EXCEPTION_HAS_ERROR_CODE(interrupt)) {
+        kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
     }
+
+    kprintf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
 
     int pid = scheduler_get_current_task()->process->pid;
     char name[MAX_PATH_LENGTH];

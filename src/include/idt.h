@@ -77,3 +77,8 @@ int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION i
 // SS: 0 = The fault was not caused by SGX.
 // SS: 1 = The fault was caused by SGX.
 #define PAGE_FAULT_SGX_MASK 0x4000
+
+/// @brief Checks if the interrupt has an error code
+#define EXCEPTION_HAS_ERROR_CODE(interrupt)                                                                            \
+    ((interrupt == 8) || (interrupt == 10) || (interrupt == 11) || (interrupt == 12) || (interrupt == 13) ||           \
+     (interrupt == 14) || (interrupt == 17) || (interrupt == 18) || (interrupt == 19))

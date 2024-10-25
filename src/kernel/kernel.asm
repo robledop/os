@@ -50,11 +50,6 @@ set_kernel_mode_segments:
     mov fs, ax
     ret
 
-  ; divide by zero
-cause_problem:
-    mov eax, 0
-    div eax
-
 
 section .bss
     align 16
