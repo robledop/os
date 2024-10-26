@@ -129,7 +129,7 @@ iso: grub
 
 .PHONY: qemu
 qemu: all
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -d int -D qemu.log -nographic
 
 .PHONY: grub
 qemu_grub: grub 

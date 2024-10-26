@@ -12,7 +12,13 @@
 
 #include "../../user/stdlib/include/string.h"
 
-uint32_t milliseconds                           = 0;
+// How often the PIT should interrupt
+#define PIT_INTERVAL 1 // 1ms
+// How often the scheduler should run
+#define TIME_SLICE 10 // 10ms
+
+// Milliseconds since boot
+uint32_t jiffies                                = 0;
 struct process *current_process                 = nullptr;
 static struct process *processes[MAX_PROCESSES] = {nullptr};
 
@@ -237,9 +243,15 @@ int scheduler_replace(struct process *old, struct process *new)
 
 void handle_pit_interrupt(int interrupt, uint32_t unused)
 {
+    static uint32_t milliseconds = 0;
+
     pic_acknowledge();
-    milliseconds += 2;
-    if (milliseconds >= 10) {
+    jiffies++;
+    // if(jiffies % 60000 == 0) {
+    //     kprintf(KCYN "\nOne minute has passed. Total uptime: %d seconds\n" KWHT, jiffies / 1000);
+    // }
+    milliseconds += PIT_INTERVAL;
+    if (milliseconds >= TIME_SLICE) {
         milliseconds = 0;
         schedule();
     }
@@ -280,7 +292,7 @@ void scheduler_initialize_idle_task()
 int scheduler_init()
 {
     scheduler_initialize_idle_task();
-    pit_set_interval(2);
+    pit_set_interval(PIT_INTERVAL);
     return idt_register_interrupt_callback(0x20, handle_pit_interrupt);
 }
 

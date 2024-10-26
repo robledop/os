@@ -41,7 +41,6 @@ int serial_printf(const char *fmt, ...)
     int written = 0;
 #ifdef DEBUG_SERIAL
     spin_lock(&serial_lock);
-    // ENTER_CRITICAL();
 
     va_list args;
 
@@ -92,7 +91,6 @@ int serial_printf(const char *fmt, ...)
 
     va_end(args);
 
-    // LEAVE_CRITICAL();
     spin_unlock(&serial_lock);
 
 #endif
