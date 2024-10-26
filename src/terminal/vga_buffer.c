@@ -49,7 +49,6 @@ static void write_character(const uchar c, const uchar fcolor, const uchar bcolo
     ASSERT(x < VGA_WIDTH, "X is out of bounds");
     ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
     ASSERT(fcolor != 0x00, "Foreground color is black");
-    spin_lock(&vga_lock);
 
     // Left arrow key
     if (c == 228) {
@@ -81,7 +80,6 @@ static void write_character(const uchar c, const uchar fcolor, const uchar bcolo
     volatile uint16_t *where = (volatile uint16_t *)VIDEO_MEMORY + (y * VGA_WIDTH + x);
     *where                   = c | (attrib << 8);
 
-    spin_unlock(&vga_lock);
 }
 
 uint16_t get_cursor_position(void)
@@ -185,6 +183,7 @@ void ksprintf(const char *str, int max)
 void kprintf(const char *fmt, ...)
 {
     ASSERT(forecolor != 0x00, "Foreground color is black");
+    // ENTER_CRITICAL();
 
     va_list args;
 
@@ -350,6 +349,7 @@ void kprintf(const char *fmt, ...)
 
     va_end(args);
 
+    // LEAVE_CRITICAL();
 }
 
 void terminal_clear()

@@ -88,13 +88,12 @@ int ps2_keyboard_init()
 void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
 {
     ENTER_CRITICAL();
-    // kernel_page();
 
     const uchar c = keyboard_get_char();
-    if (c > 0) {
+    // Delete key
+    if (c > 0 && c != 233) {
         keyboard_push(c);
     }
-    // scheduler_switch_current_task_page();
     if (scheduler_get_current_task()->process->state == SLEEPING) {
         scheduler_get_current_task()->process->signal = SIGWAKEUP;
     }

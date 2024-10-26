@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define DEBUG_SERIAL
+// #define DEBUG_SERIAL
 #define DEBUG_WARNINGS
 
 #ifdef DEBUG_SERIAL

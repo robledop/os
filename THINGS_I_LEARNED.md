@@ -1,4 +1,4 @@
-# grep
+# qemu
 
 We can tell qemu to log all interrupts by adding the following line to the qemu command:
 

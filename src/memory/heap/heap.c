@@ -207,7 +207,7 @@ uint32_t heap_address_to_block(const struct heap *heap, void *address)
 
 void *heap_malloc(const struct heap *heap, const size_t size)
 {
-    dbgprintf("[KERNEL] Allocating %d bytes\n", size);
+    // dbgprintf("[KERNEL] Allocating %d bytes\n", size);
     const size_t aligned_size    = heap_align_value_to_upper(size);
     const uint32_t blocks_needed = aligned_size / HEAP_BLOCK_SIZE;
 

@@ -67,8 +67,10 @@ int main(int argc, char **argv)
         uchar buffer[1024] = {0};
         shell_terminal_readline(buffer, sizeof(buffer), true);
 
-        strncpy(command_history[history_index], (char *)buffer, sizeof(buffer));
-        history_index++;
+        if (strlen((char *)buffer) != 0) {
+            strncpy(command_history[history_index], (char *)buffer, sizeof(buffer));
+            history_index++;
+        }
 
         const int command_index = cmd_lookup((char *)buffer);
         if (command_index != -1) {
