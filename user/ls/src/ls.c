@@ -5,7 +5,8 @@
 
 void print_results(const struct file_directory *directory);
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     struct file_directory *directory = malloc(sizeof(struct file_directory));
     if (directory == NULL) {
         printf("\nFailed to allocate memory for directory");
@@ -39,8 +40,9 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void print_results(const struct file_directory *directory) {
-    printf("\n Entries in directory: %d\n", directory->entry_count);
+void print_results(const struct file_directory *directory)
+{
+    printf( "\n Entries in directory: %d\n", directory->entry_count);
 
     printf(KMAG " Name");
 
@@ -60,9 +62,9 @@ void print_results(const struct file_directory *directory) {
         printf(" ");
     }
 
-    printf("Attributes" KWHT);
+    printf("Attributes"  KWHT);
 
-    printf(KWHT "\n");
+    printf("\n");
 
     for (int i = 0; i < directory->entry_count; i++) {
         struct directory_entry entry;
@@ -102,7 +104,12 @@ void print_results(const struct file_directory *directory) {
             printf(KWHT " ");
         }
 
-        printf("%d-%d-%d %d:%d:%d ", created_year, created_month, created_day, created_hour, created_minute,
+        printf("%d-%d-%d %d:%d:%d ",
+               created_year,
+               created_month,
+               created_day,
+               created_hour,
+               created_minute,
                created_second);
 
         if (!entry.is_directory) {

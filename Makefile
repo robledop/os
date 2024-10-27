@@ -79,12 +79,13 @@ endif
 .PHONY: all
 # Build that uses my own 2-stage bootloader
 all: ./bin/boot.bin ./bin/kernel.bin apps FORCE
+	./scripts/c_to_nasm.sh ./src/include $(AS_HEADERS)
 	rm -rf ./bin/disk.img
 	dd if=/dev/zero of=./bin/disk.img bs=512 count=65536
 	mkfs.vfat -R 512 -c -F 16 -S 512 ./bin/disk.img
 	dd if=./bin/boot.bin of=./bin/disk.img bs=512 count=1 seek=0 conv=notrunc
 	dd if=./bin/stage2.bin of=./bin/disk.img bs=512 count=1 seek=1 conv=notrunc
-	dd if=./bin/kernel.bin of=./bin/disk.img bs=512 count=316 seek=2 conv=notrunc
+	dd if=./bin/kernel.bin of=./bin/disk.img bs=512 count=510 seek=2 conv=notrunc
 	sudo mount -t vfat ./bin/disk.img /mnt/d
 	./scripts/generate-files.sh
 	sudo cp -r ./rootfs/. /mnt/d/
@@ -136,11 +137,11 @@ iso: grub FORCE
 
 .PHONY: qemu_debug
 qemu_debug: all FORCE
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 128 -daemonize -serial file:serial.log -d int -D qemu.log -nographic
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 128 -daemonize -serial file:serial.log -d int -D qemu.log
 
 .PHONY: qemu
 qemu: all FORCE
-	qemu-system-i386 -boot d -hda ./bin/disk.img -m 128 -daemonize -serial stdio
+	qemu-system-i386 -boot d -hda ./bin/disk.img -m 128 -serial stdio
 
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE

@@ -66,8 +66,8 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     vga_buffer_init();
     print(""); // BUG: Without this, the terminal gets all messed up, but only when using my bootloader
     terminal_clear();
-    kprintf(KCYN "Kernel stack base: %x\n", stack_ptr);
-    kprintf("Size of registers: %d\n", sizeof(struct registers));
+
+    kprintf(KRESET KYEL "Kernel stack base: %x\n", stack_ptr);
     char *cpu = cpu_string();
     kprintf(KCYN "CPU: %s\n", cpu);
     cpu_print_info();

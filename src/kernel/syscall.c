@@ -359,7 +359,7 @@ void *sys_print(struct interrupt_frame *frame)
 
     copy_string_from_task(scheduler_get_current_task(), message, buffer, sizeof(buffer));
 
-    kprintf("%s", buffer);
+    kprintf(buffer);
 
     return NULL;
 }
@@ -377,17 +377,17 @@ void *sys_getkey(struct interrupt_frame *frame)
 void *sys_putchar(struct interrupt_frame *frame)
 {
     const char c = (char)get_integer_argument(0);
-    terminal_write_char(c, 0x0F, 0x00);
+    terminal_putchar(c, DEFAULT_ATTRIBUTE, -1, -1);
     return NULL;
 }
 
 void *sys_putchar_color(struct interrupt_frame *frame)
 {
-    const unsigned char backcolor = (unsigned char)get_integer_argument(0);
-    const unsigned char forecolor = (unsigned char)get_integer_argument(1);
-    const char c                  = (char)get_integer_argument(2);
+    const uint8_t attribute = (unsigned char)get_integer_argument(0);
+    const char c                  = (char)get_integer_argument(1);
 
-    terminal_write_char(c, forecolor, backcolor);
+    terminal_putchar(c, attribute, -1, -1);
+    // terminal_write_char(c, forecolor, backcolor);
     return nullptr;
 }
 

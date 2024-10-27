@@ -9,7 +9,10 @@ int main(const int argc, char **argv)
         return 1;
     }
     const uint32_t sleep_time = atoi(argv[1]);
+    printf("\n");
     sleep(sleep_time);
+
+    printf("Done");
 
     return 0;
 }

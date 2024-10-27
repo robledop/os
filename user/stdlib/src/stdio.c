@@ -2,7 +2,6 @@
 #include <stdarg.h>
 #include "../../../src/include/syscall.h"
 #include "memory.h"
-#include "os.h"
 #include "string.h"
 #include "syscall.h"
 
@@ -40,9 +39,9 @@ void clear_screen()
     syscall0(SYSCALL_CLEAR_SCREEN);
 }
 
-void putchar_color(const char c, const unsigned char forecolor, const unsigned char backcolor)
+void putchar_color(const char c, const uint8_t attribute)
 {
-    os_putchar_color(c, forecolor, backcolor);
+    syscall2(SYSCALL_PUTCHAR_COLOR, (int)c, (int)attribute);
 }
 
 int fstat(int fd, struct file_stat *stat)
@@ -75,11 +74,32 @@ int print(const char *str)
     return syscall1(SYSCALL_PRINT, str);
 }
 
+uint8_t attribute = 0x07;
+
+int ansi_to_vga_foreground[] = {
+    0x00, // Black
+    0x04, // Red
+    0x02, // Green
+    0x0E, // Yellow (Brown in VGA)
+    0x01, // Blue
+    0x05, // Magenta
+    0x03, // Cyan
+    0x07  // White (Light Grey in VGA)
+};
+
+int ansi_to_vga_background[] = {
+    0x00, // Black
+    0x40, // Red
+    0x20, // Green
+    0xE0, // Yellow (Brown in VGA)
+    0x10, // Blue
+    0x50, // Magenta
+    0x30, // Cyan
+    0x70  // White (Light Grey in VGA)
+};
+
 int printf(const char *fmt, ...)
 {
-    static unsigned char forecolor = 0x0F; // Default white
-    static unsigned char backcolor = 0x00; // Default black
-
     va_list args;
 
     int x_offset = 0;
@@ -97,7 +117,6 @@ int printf(const char *fmt, ...)
             case 'd':
                 num = va_arg(args, int);
                 strncpy(str, itoa(num), MAX_FMT_STR);
-                // str = itoa(num);
                 print(str);
                 x_offset += strlen(str);
                 break;
@@ -119,7 +138,7 @@ int printf(const char *fmt, ...)
 
             case 'c':
                 const char char_arg = (char)va_arg(args, int);
-                putchar_color(char_arg, forecolor, backcolor);
+                putchar_color(char_arg, attribute);
                 x_offset++;
                 break;
 
@@ -128,119 +147,77 @@ int printf(const char *fmt, ...)
             }
             fmt++;
             break;
-        case '\033':
-            // Handle ANSI escape sequences
-            fmt++;
-            if (*fmt != '[') {
-                break;
-            }
-            fmt++;
-            int param1 = 0;
-            while (*fmt >= '0' && *fmt <= '9') {
-                param1 = param1 * 10 + (*fmt - '0');
+        case '\033': // Handle ANSI escape sequences
+            {
                 fmt++;
-            }
-            if (*fmt == ';') {
-                fmt++;
-                int param2 = 0;
-                while (*fmt >= '0' && *fmt <= '9') {
-                    param2 = param2 * 10 + (*fmt - '0');
-                    fmt++;
-                }
-                if (*fmt == 'm') {
-                    switch (param1) {
-                    case 30:
-                        forecolor = 0x00;
-                        break; // Black
-                    case 31:
-                        forecolor = 0x04;
-                        break; // Red
-                    case 32:
-                        forecolor = 0x02;
-                        break; // Green
-                    case 33:
-                        forecolor = 0x0E;
-                        break; // Yellow
-                    case 34:
-                        forecolor = 0x01;
-                        break; // Blue
-                    case 35:
-                        forecolor = 0x05;
-                        break; // Magenta
-                    case 36:
-                        forecolor = 0x03;
-                        break; // Cyan
-                    case 37:
-                        forecolor = 0x0F;
-                        break; // White
-                    default:
-                        break;
-                    }
-                    switch (param2) {
-                    case 40:
-                        backcolor = 0x00;
-                        break; // Black
-                    case 41:
-                        backcolor = 0x04;
-                        break; // Red
-                    case 42:
-                        backcolor = 0x02;
-                        break; // Green
-                    case 43:
-                        backcolor = 0x0E;
-                        break; // Yellow
-                    case 44:
-                        backcolor = 0x01;
-                        break; // Blue
-                    case 45:
-                        backcolor = 0x05;
-                        break; // Magenta
-                    case 46:
-                        backcolor = 0x03;
-                        break; // Cyan
-                    case 47:
-                        backcolor = 0x0F;
-                        break; // White
-                    default:
-                        break;
-                    }
-                    // Apply the colors to the next characters
-                    putchar_color(' ', forecolor, backcolor);
-                }
-            } else if (*fmt == 'm') {
-                switch (param1) {
-                case 30:
-                    forecolor = 0x00;
-                    break; // Black
-                case 31:
-                    forecolor = 0x04;
-                    break; // Red
-                case 32:
-                    forecolor = 0x02;
-                    break; // Green
-                case 33:
-                    forecolor = 0x0E;
-                    break; // Yellow
-                case 34:
-                    forecolor = 0x01;
-                    break; // Blue
-                case 35:
-                    forecolor = 0x05;
-                    break; // Magenta
-                case 36:
-                    forecolor = 0x03;
-                    break; // Cyan
-                case 37:
-                    forecolor = 0x0F;
-                    break; // White
-                default:
+                if (*fmt != '[') {
                     break;
+                }
+                fmt++;
+                static int blinking = 0;
+                static bool bold    = false;
+                int params[10]      = {0};
+                int param_count     = 0;
+                while (true) {
+                    int param = 0;
+                    while (*fmt >= '0' && *fmt <= '9') {
+                        param = param * 10 + (*fmt - '0');
+                        fmt++;
+                    }
+                    params[param_count++] = param;
+                    if (*fmt == ';') {
+                        fmt++;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (*fmt == 'm') {
+                    for (int i = 0; i < param_count; i++) {
+                        switch (params[i]) {
+                        case 0:
+                            attribute = 0x07;
+                            blinking  = 0;
+                            bold      = false;
+                            break;
+                        case 1:
+                            bold = 1;
+                            break;
+                        case 5:
+                            blinking = 1;
+                            break;
+                        case 22:
+                            bold = true;
+                            break;
+                        case 25:
+                            blinking = 0;
+                            break;
+
+                        default:
+                            {
+                                int forecolor = 0x07;
+                                int backcolor = 0x00;
+                                if (params[i] >= 30 && params[i] <= 37) {
+                                    const int color_index = params[i] - 30;
+                                    forecolor             = ansi_to_vga_foreground[color_index];
+                                    forecolor             = bold ? forecolor | 0x08 : forecolor;
+                                } else if (params[i] >= 40 && params[i] <= 47) {
+                                    const int color_index = params[i] - 40;
+                                    backcolor             = ansi_to_vga_foreground[color_index]; // Use the same mapping
+                                }
+
+                                attribute = ((blinking & 1) << 7) | ((backcolor & 0x07) << 4) | (forecolor & 0x0F);
+                                // attribute = (backcolor << 4) | (forecolor & 0x0F);
+                            }
+                            break;
+                        }
+                    }
                 }
             }
             break;
 
         default:
-            putchar_color(*fmt, forecolor, backcolor);
+            putchar_color(*fmt, attribute);
         }
         fmt++;
     }

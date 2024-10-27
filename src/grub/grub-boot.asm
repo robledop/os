@@ -46,6 +46,8 @@ _start:
 ;    out 0x21, al
     ; finished
 
+
+
 	extern kernel_main
 	call kernel_main
 

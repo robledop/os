@@ -48,6 +48,7 @@ struct page_directory {
 struct page_directory *paging_create_directory(uint8_t flags);
 void paging_free_directory(struct page_directory *page_directory);
 void paging_switch_directory(const struct page_directory *directory);
+// Defined in paging.asm
 void enable_paging();
 uint32_t *paging_get_directory(const struct page_directory *directory);
 

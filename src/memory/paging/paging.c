@@ -9,6 +9,7 @@
 struct page_directory *kernel_page_directory = nullptr;
 
 static uint32_t *current_directory = nullptr;
+// Defined in paging.asm
 void paging_load_directory(uint32_t *directory);
 
 bool paging_is_video_memory(const uint32_t address)
@@ -24,7 +25,12 @@ struct page_directory *paging_create_directory(const uint8_t flags)
               (flags & PAGING_DIRECTORY_ENTRY_SUPERVISOR) >> 2);
 
     uint32_t *directory_entry = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_DIRECTORY);
-    uint32_t offset           = 0;
+    if (!directory_entry) {
+        panic("Failed to allocate page directory\n");
+        return nullptr;
+    }
+
+    uint32_t offset = 0;
     for (size_t i = 0; i < PAGING_ENTRIES_PER_TABLE; i++) {
         // The table is freed in paging_free_directory
         // ReSharper disable once CppDFAMemoryLeak
@@ -37,8 +43,15 @@ struct page_directory *paging_create_directory(const uint8_t flags)
     }
 
     struct page_directory *directory = kzalloc(sizeof(struct page_directory));
-    directory->directory_entry       = directory_entry;
+    if (!directory) {
+        panic("Failed to allocate page directory\n");
+        // ReSharper disable once CppDFAMemoryLeak
+        return nullptr;
+    }
+
+    directory->directory_entry = directory_entry;
     dbgprintf("Page directory allocated at %x\n", directory->directory_entry);
+    // ReSharper disable once CppDFAMemoryLeak
     return directory;
 }
 

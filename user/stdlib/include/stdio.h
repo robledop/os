@@ -1,15 +1,17 @@
 #pragma once
 
 #include "types.h"
+#include "../../../src/include/termcolors.h"
 
-#define KNRM "\x1B[0m"
-#define KRED "\x1B[31m"
-#define KGRN "\x1B[32m"
-#define KYEL "\x1B[33m"
-#define KBLU "\x1B[34m"
-#define KMAG "\x1B[35m"
-#define KCYN "\x1B[36m"
-#define KWHT "\x1B[37m"
+// #define KNRM "\x1B[0m"
+// #define KRED "\x1B[31m"
+// #define KGRN "\x1B[32m"
+// #define KYEL "\x1B[33m"
+// #define KBLU "\x1B[34m"
+// #define KMAG "\x1B[35m"
+// #define KCYN "\x1B[36m"
+// #define KWHT "\x1B[37m"
+// #define KGRY "\x1B[30m"
 
 typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
@@ -67,7 +69,7 @@ struct file_stat {
 };
 
 void putchar(unsigned char c);
-int printf(const char *format, ...);
+int printf(const char *fmt, ...);
 int print(const char *str);
 int fopen(const char *name, const char *mode);
 int fclose(int fd);

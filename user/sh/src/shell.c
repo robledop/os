@@ -39,7 +39,7 @@ static uint32_t pass = 0;
 void stack_overflow() // NOLINT(*-no-recursion)
 {
     char a = 0;
-    printf("%d | Stack address: %p | Stack usage: %d KiB | Max: %d KiB\n",
+    printf(KWHT "%d | Stack address: %p | Stack usage: %d KiB | Max: %d KiB\n",
            ++pass,
            &a,
            ((uint32_t)USER_STACK_TOP - (uint32_t)&a) / 1024,
@@ -52,7 +52,7 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 int main(int argc, char **argv)
 {
-    printf(KWHT "\nUser mode shell started\n");
+    printf(KRESET KWHT "\nUser mode shell started\n");
     pass = 0;
 
     for (int i = 0; i < 256; i++) {
