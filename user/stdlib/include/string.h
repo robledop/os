@@ -18,6 +18,7 @@ char tolower(char s1);
 int itohex(unsigned int n, char s[]);
 void reverse(char s[]);
 char *itoa(int i);
+uint32_t atoi(const char *str);
 char *strtok(char *str, const char *delimiters);
 bool starts_with(const char *pre, const char *str);
 char *strcat(char *dest, const char *src);

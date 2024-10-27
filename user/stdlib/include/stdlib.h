@@ -14,3 +14,4 @@ int fork();
 int exec(const char *path, const char **arg);
 int getpid();
 int create_process(const char *command, const char *current_directory);
+void sleep(const uint32_t milliseconds);

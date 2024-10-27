@@ -296,6 +296,11 @@ int scheduler_init()
     return idt_register_interrupt_callback(0x20, handle_pit_interrupt);
 }
 
+uint32_t scheduler_get_jiffies()
+{
+    return jiffies;
+}
+
 int scheduler_get_processes(struct process_info **proc_info, int *count)
 {
     // Count the number of processes
@@ -324,6 +329,29 @@ int scheduler_get_processes(struct process_info **proc_info, int *count)
     return 0;
 }
 
+void scheduler_check_sleeping(struct process *process, struct task **next)
+{
+    if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
+        process->state  = WAITING;
+        process->signal = NONE;
+    } else if (process->signal == SIGWAKEUP) {
+        process->state  = RUNNING;
+        process->signal = NONE;
+    } else if (process->sleep_until <= jiffies) {
+        process->signal      = SIGWAKEUP;
+        process->signal      = NONE;
+        process->sleep_until = -1;
+    } else {
+        auto const runnable = scheduler_get_runnable_task();
+        if (runnable) {
+            *next = runnable;
+        }
+        if (runnable == nullptr) {
+            scheduler_run_task_in_kernel_mode(idle_task->registers.ip);
+        }
+    }
+}
+
 /// @brief Gets the next task and runs it
 void schedule()
 {
@@ -350,22 +378,14 @@ void schedule()
         return;
     }
 
+    if (current_task->process->state == SLEEPING) {
+        scheduler_check_sleeping(current_task->process, &next);
+    }
+
     struct process *process = next->process;
 
     if (process->state == SLEEPING) {
-        if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
-            process->state  = WAITING;
-            process->signal = NONE;
-        } else if (process->signal == SIGWAKEUP) {
-            process->state  = RUNNING;
-            process->signal = NONE;
-        } else {
-            next = scheduler_get_runnable_task();
-            if (next == nullptr) {
-                scheduler_run_task_in_kernel_mode(idle_task->registers.ip);
-                return;
-            }
-        }
+        scheduler_check_sleeping(process, &next);
     }
 
     process = next->process;
@@ -382,6 +402,7 @@ void schedule()
                 process->wait_pid  = 0;
             }
         }
+
         if (child && child->state == ZOMBIE) {
             process->state     = RUNNING;
             process->exit_code = child->exit_code;
@@ -391,18 +412,21 @@ void schedule()
                 process_remove_child(process, child);
                 process_terminate(child);
             }
-        } else {
-            if (child) {
-                // If the task is waiting and the child is still running, switch to the child task
+        } else if (child && child->state == RUNNING) {
+            scheduler_switch_task(child->task);
+            scheduler_run_task_in_user_mode(&child->task->registers);
+        } else if (child && child->state == SLEEPING) {
+            scheduler_check_sleeping(child, &next);
+            if (child->state == RUNNING) {
                 scheduler_switch_task(child->task);
                 scheduler_run_task_in_user_mode(&child->task->registers);
-            } else {
-                // Try to find another runnable task, if none, run the idle task
-                next = scheduler_get_runnable_task();
-                if (next == nullptr) {
-                    scheduler_run_task_in_kernel_mode(idle_task->registers.ip);
-                    return;
-                }
+            }
+        } else {
+            // Try to find another runnable task, if none, run the idle task
+            next = scheduler_get_runnable_task();
+            if (next == nullptr) {
+                scheduler_run_task_in_kernel_mode(idle_task->registers.ip);
+                return;
             }
         }
     }

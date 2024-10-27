@@ -74,3 +74,8 @@ int create_process(const char *path, const char *current_directory)
 
     return syscall1(SYSCALL_CREATE_PROCESS, root_command_argument);
 }
+
+void sleep(const uint32_t milliseconds)
+{
+    syscall1(SYSCALL_SLEEP, milliseconds);
+}

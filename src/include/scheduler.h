@@ -33,6 +33,7 @@ void scheduler_run_task_in_user_mode(struct registers *registers);
 void set_user_mode_segments();
 int scheduler_switch_current_task_page();
 int scheduler_replace(struct process *old, struct process *new);
+uint32_t scheduler_get_jiffies();
 int scheduler_init();
 
 

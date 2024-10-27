@@ -7,6 +7,7 @@ int main(const int argc, char **argv)
 
     const int rc = fork();
 
+
     if (rc < 0) {
         printf("Fork failed\n");
     } else if (rc == 0) {

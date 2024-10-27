@@ -138,7 +138,7 @@ iso: grub FORCE
 qemu_debug: all FORCE
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 128 -daemonize -serial file:serial.log -d int -D qemu.log -nographic
 
-.PHONY: qemu_debug
+.PHONY: qemu
 qemu: all FORCE
 	qemu-system-i386 -boot d -hda ./bin/disk.img -m 128 -daemonize -serial stdio
 
@@ -146,6 +146,7 @@ qemu: all FORCE
 qemu_grub_debug: grub FORCE
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
+.PHONY: qemu_grub
 qemu_grub: grub FORCE
 	qemu-system-i386 -boot d -hda ./disk.img -m 128 -serial stdio -display gtk,zoom-to-fit=on
 

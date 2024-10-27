@@ -25,6 +25,7 @@ enum SysCalls {
     SYSCALL_WAIT_PID,
     SYSCALL_REBOOT,
     SYSCALL_SHUTDOWN,
+    SYSCALL_SLEEP,
 };
 
 void register_syscalls();
@@ -55,3 +56,4 @@ void *sys_calloc(struct interrupt_frame *frame);
 void *sys_fork(struct interrupt_frame *frame);
 void *sys_exec(struct interrupt_frame *frame);
 void *sys_getpid(struct interrupt_frame *frame);
+void *sys_sleep(struct interrupt_frame *frame);

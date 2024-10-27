@@ -48,6 +48,7 @@ void register_syscalls()
     register_syscall(SYSCALL_WAIT_PID, sys_wait_pid);
     register_syscall(SYSCALL_REBOOT, sys_reboot);
     register_syscall(SYSCALL_SHUTDOWN, sys_shutdown);
+    register_syscall(SYSCALL_SLEEP, sys_sleep);
 }
 
 struct command_argument *parse_command(char **args)
@@ -109,6 +110,20 @@ static char *get_string_argument(const int index, const int max_len)
 
     copy_string_from_task(scheduler_get_current_task(), ptr, str, (int)sizeof(str));
     return (char *)str;
+}
+
+
+void *sys_sleep(struct interrupt_frame *frame)
+{
+    const int time                                     = get_integer_argument(0);
+    const uint32_t jiffies                             = scheduler_get_jiffies();
+    const uint32_t end                                 = jiffies + time;
+    scheduler_get_current_task()->process->state       = SLEEPING;
+    scheduler_get_current_task()->process->sleep_until = end;
+
+    schedule();
+
+    return nullptr;
 }
 
 void *sys_getpid(struct interrupt_frame *frame)

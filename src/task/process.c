@@ -546,6 +546,7 @@ int process_load_switch(const char *file_name, struct process **process)
 
     const int res = process_load(file_name, process);
     if (res == 0) {
+        (*process)->sleep_until = -1;
         scheduler_queue_task((*process)->task);
         scheduler_set_current_process(*process);
     }

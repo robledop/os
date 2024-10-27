@@ -39,6 +39,7 @@ struct process {
     enum PROCESS_SIGNAL signal;
     int wait_pid;
     int exit_code;
+    uint32_t sleep_until;
     struct process_allocation allocations[MAX_PROGRAM_ALLOCATIONS];
     PROCESS_FILE_TYPE file_type;
     union {

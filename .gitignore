@@ -1,6 +1,7 @@
 build/
 bin/
 mnt/
+rootfs/testdir/
 *.bin
 *.o
 *.a
