@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <debug.h>
 #include <config.h>
 #include <idt.h>
 #include <kernel_heap.h>

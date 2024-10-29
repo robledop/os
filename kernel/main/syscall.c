@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <debug.h>
 #include <elfloader.h>
 #include <file.h>
 #include <idt.h>

@@ -1,3 +1,4 @@
+#include <debug.h>
 #include <disk.h>
 #include <file.h>
 #include <gdt.h>
@@ -33,6 +34,7 @@ extern struct page_directory *kernel_page_directory;
 __attribute__((noreturn)) void panic(const char *msg)
 {
     kprintf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
+    debug_callstack();
 
     while (1) {
         asm volatile("hlt");
@@ -101,8 +103,9 @@ void start_shell(const int console)
     }
 
     process->thread->tty = console;
-    process->priority  = 1;
+    process->priority    = 1;
 
+    // TODO: Save kernel state and switch to user mode
     schedule();
 }
 
@@ -119,6 +122,7 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
     }
 
     kprintf("Bootloader: %s\n", mbd->boot_loader_name);
+
 
     /* Loop through the memory map and display the values */
     for (unsigned int i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {

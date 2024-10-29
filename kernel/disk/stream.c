@@ -1,10 +1,11 @@
 #include "stream.h"
-#include "assert.h"
+#include "debug.h"
 #include "disk.h"
 #include "kernel_heap.h"
 #include "serial.h"
 
-struct disk_stream *disk_stream_create(const int disk_index) {
+struct disk_stream *disk_stream_create(const int disk_index)
+{
     dbgprintf("Creating disk stream for disk %d\n", disk_index);
     struct disk *disk = disk_get(disk_index);
     if (!disk) {
@@ -18,12 +19,14 @@ struct disk_stream *disk_stream_create(const int disk_index) {
     return stream;
 }
 
-int disk_stream_seek(struct disk_stream *stream, const uint32_t position) {
+int disk_stream_seek(struct disk_stream *stream, const uint32_t position)
+{
     stream->position = position;
     return 0;
 }
 
-int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size) { // NOLINT(*-no-recursion)
+int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size)
+{ // NOLINT(*-no-recursion)
     ASSERT(stream->disk->sector_size > 0, "Invalid sector size");
     dbgprintf("Reading %d bytes from disk stream\n", size);
     const uint32_t sector = stream->position / stream->disk->sector_size;
@@ -60,4 +63,7 @@ int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size)
     return res;
 }
 
-void disk_stream_close(struct disk_stream *stream) { kfree(stream); }
+void disk_stream_close(struct disk_stream *stream)
+{
+    kfree(stream);
+}

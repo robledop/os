@@ -2,7 +2,7 @@
 
 #include <scheduler.h>
 
-#include "assert.h"
+#include "debug.h"
 #include "ps2_kbd.h"
 #include "serial.h"
 #include "status.h"

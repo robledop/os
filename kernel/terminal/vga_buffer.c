@@ -2,9 +2,9 @@
 
 #include <spinlock.h>
 #include <stdarg.h>
-#include "assert.h"
 #include "config.h"
 #include "console.h"
+#include "debug.h"
 #include "io.h"
 #include "memory.h"
 #include "string.h"
@@ -224,6 +224,7 @@ void kprintf(const char *fmt, ...)
                 x_offset += strlen(str);
                 break;
 
+            case 'p':
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);

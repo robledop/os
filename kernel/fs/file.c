@@ -1,5 +1,5 @@
 #include "file.h"
-#include "assert.h"
+#include "debug.h"
 #include "config.h"
 #include "disk.h"
 #include "fat16.h"

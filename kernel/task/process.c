@@ -1,7 +1,7 @@
 #include "process.h"
 
 #include <idt.h>
-#include "assert.h"
+#include "debug.h"
 #include "elfloader.h"
 #include "file.h"
 #include "kernel.h"
@@ -681,6 +681,7 @@ int process_wait_pid(struct process *process, const int pid)
             process->state    = WAITING;
             process->wait_pid = pid;
             LEAVE_CRITICAL();
+            // TODO: Save thread state
             schedule();
             return -1;
         }
@@ -714,6 +715,7 @@ int process_wait_pid(struct process *process, const int pid)
     process->wait_pid = pid;
     LEAVE_CRITICAL();
 
+    // TODO: Save thread state
     schedule(); // Context switch to another process
     return -1;  // No child to wait for
 }

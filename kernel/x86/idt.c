@@ -3,7 +3,7 @@
 #include <scheduler.h>
 #include <string.h>
 
-#include "assert.h"
+#include "debug.h"
 #include "config.h"
 #include "io.h"
 #include "kernel.h"

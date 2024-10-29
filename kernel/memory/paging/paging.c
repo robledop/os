@@ -1,5 +1,5 @@
 #include "paging.h"
-#include "assert.h"
+#include "debug.h"
 #include "kernel_heap.h"
 #include "serial.h"
 #include "status.h"

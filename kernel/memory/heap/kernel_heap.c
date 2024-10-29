@@ -1,5 +1,5 @@
 #include "kernel_heap.h"
-#include "assert.h"
+#include "debug.h"
 #include "config.h"
 #include "heap.h"
 #include "kernel.h"

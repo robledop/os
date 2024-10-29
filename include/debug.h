@@ -22,3 +22,5 @@
 #else
 #define ASSERT(condition, message)
 #endif
+
+void debug_callstack(void);

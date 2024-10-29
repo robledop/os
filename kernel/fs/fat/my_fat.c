@@ -7,7 +7,7 @@
 #include "kernel_heap.h"
 #include "serial.h"
 #include "disk.h"
-#include "assert.h"
+#include "debug.h"
 
 extern struct disk disk;
 FAT16_BPB bpb;
