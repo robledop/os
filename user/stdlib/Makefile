@@ -7,7 +7,7 @@ C_FILES := $(wildcard $(addsuffix /*.c, $(SRC_DIRS)))
 ASM_OBJS := $(ASM_FILES:./src/%.asm=./build/%.asm.o)
 C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
-INCLUDES = -I./include
+INCLUDES = -I../../include
 FLAGS = -g \
 	-O0 \
 	-nostdlib \
@@ -29,8 +29,10 @@ FLAGS = -g \
 	-Iinc \
 	-Wall
 
-all: $(FILES)
-	ar rcs libstdlib.a $(FILES)
+FLAGS += -D__USER__
+
+all: $(FILES) ./build/memory.o ./build/string.o
+	ar rcs libstdlib.a $(FILES) ./build/memory.o ./build/string.o
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -38,5 +40,12 @@ all: $(FILES)
 ./build/%.o: ./src/%.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
+# Files shared with the kernel
+./build/memory.o: ../../kernel/memory/memory.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+
+./build/string.o: ../../kernel/string/string.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+
 clean:
-	rm -rf ./build  ./stdlib.elf
+	rm -rf ./build  ./libstdlib.a

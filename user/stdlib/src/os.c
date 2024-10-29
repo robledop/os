@@ -1,7 +1,6 @@
-#include "os.h"
+#include <os.h>
 #include <stdlib.h>
-#include "../../../src/include/memory.h"
-#include "string.h"
+#include <string.h>
 
 struct command_argument *os_parse_command(const char *command, const int max)
 {

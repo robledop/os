@@ -4,7 +4,7 @@ current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 # By default, the output file is the name of the directory
 OUTPUT = $(current_dir)
 
-INCLUDES = -I./ -I./include -I../stdlib/include
+INCLUDES = -I./ -I../../include
 
 $(shell mkdir -p build)
 SRC_DIRS := $(shell find ./src -type d)
@@ -36,6 +36,8 @@ FLAGS = -g \
 	-nodefaultlibs \
 	-Iinc \
 	-Wall
+
+FLAGS += -D__USER__
 
 all: $(FILES)
 	i686-elf-gcc -g -T ./linker.ld -o ../../rootfs/bin/$(OUTPUT) -ffreestanding -O0 -nostdlib -fpic -g $(FILES) ../stdlib/libstdlib.a

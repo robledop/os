@@ -1,7 +1,8 @@
-#include "os.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <os.h>
+#include <status.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main(const int argc, char **argv)
 {
@@ -11,7 +12,7 @@ int main(const int argc, char **argv)
 
     if (argc < 2) {
         printf("\nUsage: cat <file>");
-        return -1;
+        return -EINVARG;
     }
 
     char full_path[MAX_PATH_LENGTH];
@@ -30,6 +31,7 @@ int main(const int argc, char **argv)
 
     if (fd <= 0) {
         printf("\nFailed to open file: %s", full_path);
+        printf("\nError: %s (%d)", get_error_message(fd), fd);
         return fd;
     }
 
@@ -37,6 +39,7 @@ int main(const int argc, char **argv)
     int res = fstat(fd, &stat);
     if (res < 0) {
         printf("\nFailed to get file stat. File: %s", full_path);
+        printf("\nError: %s", get_error_message(res));
         return res;
     }
 
@@ -44,6 +47,7 @@ int main(const int argc, char **argv)
     res          = fread((void *)buffer, stat.size, 1, fd);
     if (res < 0) {
         printf("\nFailed to read file: %s", full_path);
+        printf("\nError: %s", get_error_message(res));
         return res;
     }
     buffer[stat.size] = 0x00;

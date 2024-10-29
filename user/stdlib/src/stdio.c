@@ -1,9 +1,9 @@
 #include "stdio.h"
+#include <memory.h>
 #include <stdarg.h>
-#include "../../../src/include/syscall.h"
-#include "memory.h"
-#include "string.h"
-#include "syscall.h"
+#include <stdlib.h>
+#include <string.h>
+#include <syscall.h>
 
 #define MAX_FMT_STR 10240
 
@@ -116,7 +116,9 @@ int printf(const char *fmt, ...)
             case 'i':
             case 'd':
                 num = va_arg(args, int);
-                strncpy(str, itoa(num), MAX_FMT_STR);
+                char num_str[12];
+                itoa(num, num_str);
+                strncpy(str, num_str, MAX_FMT_STR);
                 print(str);
                 x_offset += strlen(str);
                 break;
@@ -234,6 +236,7 @@ int printf(const char *fmt, ...)
 /// @code
 /// struct file_directory *directory = malloc(sizeof(struct file_directory));
 /// int res = opendir(directory, "pah/to/directory");
+/// \endcode
 int opendir(struct file_directory *directory, const char *path)
 {
     return syscall2(SYSCALL_OPEN_DIR, directory, path);
@@ -253,6 +256,7 @@ int opendir(struct file_directory *directory, const char *path)
 ///     printf("\n%s", entry.name);
 /// }
 /// free(directory);
+/// \endcode
 int readdir(const struct file_directory *directory, struct directory_entry *entry_out, const int index)
 {
     const struct fat_directory_entry *entry = directory->entries + (index * sizeof(struct fat_directory_entry));

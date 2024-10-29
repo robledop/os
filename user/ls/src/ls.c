@@ -1,7 +1,7 @@
-#include "status.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <status.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void print_results(const struct file_directory *directory);
 
@@ -10,7 +10,7 @@ int main(int argc, char **argv)
     struct file_directory *directory = malloc(sizeof(struct file_directory));
     if (directory == NULL) {
         printf("\nFailed to allocate memory for directory");
-        return -1;
+        return -ENOMEM;
     }
 
     const char *current_directory = get_current_directory();
@@ -26,14 +26,8 @@ int main(int argc, char **argv)
     case ALL_OK:
         print_results(directory);
         break;
-    case -ENOENT:
-        printf("\nNo such file or directory");
-        return 0;
-    case -EBADPATH:
-        printf("\nInvalid path: %s", argv[1]);
-        return 0;
     default:
-        printf("\nError: %d", res);
+        printf("\nError: %s", get_error_message(res));
         return 0;
     }
 
@@ -42,7 +36,7 @@ int main(int argc, char **argv)
 
 void print_results(const struct file_directory *directory)
 {
-    printf( "\n Entries in directory: %d\n", directory->entry_count);
+    printf(KRESET "\n Entries in directory: %d\n", directory->entry_count);
 
     printf(KMAG " Name");
 
@@ -62,7 +56,7 @@ void print_results(const struct file_directory *directory)
         printf(" ");
     }
 
-    printf("Attributes"  KWHT);
+    printf("Attributes" KWHT);
 
     printf("\n");
 

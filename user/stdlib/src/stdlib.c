@@ -1,8 +1,8 @@
 #include "stdlib.h"
 #include <os.h>
+#include <status.h>
 #include <string.h>
-#include "../../../src/include/syscall.h"
-#include "syscall.h"
+#include <syscall.h>
 
 void *malloc(size_t size)
 {
@@ -63,7 +63,7 @@ int create_process(const char *path, const char *current_directory)
     strncpy(buffer, path, sizeof(buffer));
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
     if (root_command_argument == NULL) {
-        return -1;
+        return -EBADPATH;
     }
 
     if (root_command_argument->current_directory == NULL) {
@@ -78,4 +78,9 @@ int create_process(const char *path, const char *current_directory)
 void sleep(const uint32_t milliseconds)
 {
     syscall1(SYSCALL_SLEEP, milliseconds);
+}
+
+void yield()
+{
+    syscall0(SYSCALL_YIELD);
 }

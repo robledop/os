@@ -1,10 +1,10 @@
 #include "shell.h"
-#include "../../../src/include/types.h"
-#include "os.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "types.h"
+#include <os.h>
+#include <status.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <types.h>
 
 void stack_overflow();
 bool directory_exists(const char *path);
@@ -12,7 +12,6 @@ void shell_terminal_readline(uchar *out, int max, bool output_while_typing);
 void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
-
 
 #define USER_STACK_SIZE (1024 * 512)
 #define USER_STACK_TOP 0x3FF000
@@ -113,7 +112,7 @@ int main(int argc, char **argv)
         const int pid = create_process((char *)buffer, current_directory);
         if (pid < 0) {
             printf("\nCommand: %s\n", (char *)buffer);
-            printf("\nError: %d", pid);
+            printf("Error: %s", get_error_message(pid));
         } else {
             waitpid(pid, nullptr);
         }

@@ -3,7 +3,7 @@
 
 int main(const int argc, char **argv)
 {
-    printf(KYEL "\nBefore forking, (pid:%d)\n", getpid());
+    printf(KRESET KYEL "\nBefore forking, (pid:%d)\n", getpid());
 
     const int rc = fork();
 
@@ -17,8 +17,8 @@ int main(const int argc, char **argv)
 
         printf("This should not be printed\n");
     } else {
-        wait(nullptr);
-        printf(KYEL "\nAfter forking. Parent of %d (pid:%d)\n", rc, getpid());
+        waitpid(rc, nullptr);
+        printf(KYEL "\nAfter forking. Parent of %d (pid:%d)", rc, getpid());
     }
     exit();
 

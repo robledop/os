@@ -13,7 +13,7 @@ C_FILES := $(wildcard $(addsuffix /*.c, $(SRC_DIRS)))
 ASM_OBJS := $(ASM_FILES:./src/%.asm=./build/%.asm.o)
 C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
-INCLUDES = -I./ -I../stdlib/include
+INCLUDES = -I./ -I../../include
 FLAGS = -g \
 	-ffreestanding \
 	-O0 \
@@ -36,7 +36,9 @@ FLAGS = -g \
 	-Iinc \
 	-Wall
 
-all: $(FILES)
+FLAGS += -D__USER__
+
+all: $(FILES) ../stdlib/libstdlib.a
 	i686-elf-gcc -g -T ./linker.ld -o ../../rootfs/bin/$(OUTPUT) -ffreestanding -O0 -nostdlib -fpic -g $(FILES) ../stdlib/libstdlib.a
 
 ./build/%.asm.o: ./src/%.asm
