@@ -1,6 +1,6 @@
 #include "kernel_heap.h"
-#include "debug.h"
 #include "config.h"
+#include "debug.h"
 #include "heap.h"
 #include "kernel.h"
 #include "memory.h"
@@ -40,6 +40,11 @@ void *kzalloc(const size_t size)
     }
     memset(ptr, 0x00, size);
     return ptr;
+}
+
+void *krealloc(void *ptr, const size_t size)
+{
+    return heap_realloc(&kernel_heap, ptr, size);
 }
 
 void kfree(void *ptr)

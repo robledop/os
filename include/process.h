@@ -72,7 +72,7 @@ void *process_calloc(struct process *process, size_t nmemb, size_t size);
 void process_free(struct process *process, void *ptr);
 void process_get_arguments(struct process *process, int *argc, char ***argv);
 int process_inject_arguments(struct process *process, const struct command_argument *root_argument);
-int process_terminate(struct process *process);
+int process_zombify(struct process *process);
 int process_set_current_directory(struct process *process, const char *directory);
 
 int process_wait_pid(struct process *process, int pid);

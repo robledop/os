@@ -161,7 +161,9 @@ int process_free_program_data(const struct process *process)
     return res;
 }
 
-int process_terminate(struct process *process)
+/// @brief Turn the process into a zombie and deallocates its resources
+/// The process remains in the process list until the parent process reads the exit code
+int process_zombify(struct process *process)
 {
     process->state = ZOMBIE;
 
@@ -181,6 +183,7 @@ int process_terminate(struct process *process)
 
     kfree(process->stack);
     thread_free(process->thread);
+    paging_free_directory(process->page_directory);
 
     scheduler_unlink_process(process);
 

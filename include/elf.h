@@ -18,6 +18,7 @@
 #define PT_SHLIB 5
 #define PT_PHDR 6
 
+// Section header types
 #define SHT_NULL 0
 #define SHT_PROGBITS 1
 #define SHT_SYMTAB 2
@@ -61,8 +62,8 @@ typedef int32_t elf32_sword;
 typedef uint32_t elf32_addr;
 typedef int32_t elf32_off;
 
-struct elf32_phdr
-{
+/// @brief Program header
+struct elf32_phdr {
     elf32_word p_type;
     elf32_off p_offset;
     elf32_addr p_vaddr;
@@ -73,8 +74,8 @@ struct elf32_phdr
     elf32_word p_align;
 } __attribute__((packed));
 
-struct elf32_shdr
-{
+/// @brief Section header
+struct elf32_shdr {
     elf32_word sh_name;
     elf32_word sh_type;
     elf32_word sh_flags;
@@ -87,8 +88,7 @@ struct elf32_shdr
     elf32_word sh_entsize;
 } __attribute__((packed));
 
-struct elf_header
-{
+struct elf_header {
     unsigned char e_ident[EI_NIDENT];
     elf32_half e_type;
     elf32_half e_machine;
@@ -105,19 +105,18 @@ struct elf_header
     elf32_half e_shstrndx;
 } __attribute__((packed));
 
-struct elf32_dyn
-{
+/// @brief Dynamic section entry
+struct elf32_dyn {
     elf32_sword d_tag;
-    union
-    {
+    union {
         elf32_word d_val;
         elf32_addr d_ptr;
     } d_un;
 
 } __attribute__((packed));
 
-struct elf32_sym
-{
+/// @brief Symbol table entry
+struct elf32_sym {
     elf32_word st_name;
     elf32_addr st_value;
     elf32_word st_size;

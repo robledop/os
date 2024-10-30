@@ -3,8 +3,8 @@
 #include <scheduler.h>
 #include <string.h>
 
-#include "debug.h"
 #include "config.h"
+#include "debug.h"
 #include "io.h"
 #include "kernel.h"
 #include "memory.h"
@@ -101,8 +101,12 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
     if (interrupt == 14) {
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
-
         kprintf(KRED "\nFaulting address:" KWHT " %x\n", faulting_address);
+        auto symbol = debug_symbol_lookup(faulting_address);
+        if (symbol.name) {
+            kprintf(KRED "Symbol:" KWHT " %s (%x)\n", symbol.name, symbol.address);
+        }
+
         kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
         kprintf(KYEL "P:" KWHT " %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
         kprintf(KYEL "W:" KWHT " %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
@@ -120,7 +124,7 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
     int pid = scheduler_get_current_thread()->process->pid;
     char name[MAX_PATH_LENGTH];
     strncpy(name, scheduler_get_current_thread()->process->file_name, sizeof(name));
-    process_terminate(scheduler_get_current_thread()->process);
+    process_zombify(scheduler_get_current_thread()->process);
     kprintf("\nThe process %s (%d) has been terminated.", name, pid);
     schedule();
 }
@@ -179,9 +183,8 @@ void register_syscall(const int command, const SYSCALL_HANDLER_FUNCTION handler)
 
 void *handle_syscall(const int syscall, struct interrupt_frame *frame)
 {
-
     if (syscall < 0 || syscall >= MAX_SYSCALLS) {
-        dbgprintf("Invalid command: %d\n", syscall);
+        warningf("Invalid command: %d\n", syscall);
         kprintf("Invalid command: %d\n", syscall);
         ASSERT(false, "Invalid command");
         return NULL;
@@ -189,7 +192,7 @@ void *handle_syscall(const int syscall, struct interrupt_frame *frame)
 
     const SYSCALL_HANDLER_FUNCTION handler = syscalls[syscall];
     if (!handler) {
-        dbgprintf("No handler for command: %d\n", syscall);
+        warningf("No handler for command: %d\n", syscall);
         ASSERT(false, "No handler for command");
         return NULL;
     }

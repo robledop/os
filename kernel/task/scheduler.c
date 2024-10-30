@@ -1,5 +1,5 @@
-#include <debug.h>
 #include <config.h>
+#include <debug.h>
 #include <idt.h>
 #include <kernel_heap.h>
 #include <memory.h>
@@ -14,7 +14,7 @@
 // How often the PIT should interrupt
 #define PIT_INTERVAL 1 // 1ms
 // How often the scheduler should run
-#define TIME_SLICE 10 // 10ms
+#define TIME_SLICE 100 // 100ms
 
 // Milliseconds since boot
 uint32_t jiffies                                = 0;
@@ -69,7 +69,6 @@ void scheduler_switch_to_any()
         if (processes[i] && processes[i]->priority != 0) {
             scheduler_set_current_process(processes[i]);
             scheduler_switch_thread(current_process->thread);
-            scheduler_run_thread_in_user_mode(&current_process->thread->registers);
             return;
         }
     }
@@ -106,7 +105,7 @@ struct thread *scheduler_get_current_thread()
 int scheduler_get_thread_count()
 {
     const struct thread *thread = thread_head;
-    int count                 = 0;
+    int count                   = 0;
     while (thread) {
         count++;
         thread = thread->next;
@@ -151,7 +150,7 @@ void scheduler_queue_thread(struct thread *thread)
         current_thread = thread;
     } else {
         thread_tail->next = thread;
-        thread->prev        = thread_tail;
+        thread->prev      = thread_tail;
         thread_tail       = thread;
     }
 }
@@ -194,14 +193,14 @@ void scheduler_save_current_thread(const struct interrupt_frame *interrupt_frame
     }
 }
 
-/// @brief Set the thread as the current thread and switch to its page directory
+/// @brief Set the thread as the current thread, switch to its page directory, and run it
 /// @param thread the thread to run
 /// @return ALL_OK on success, error code otherwise
 int scheduler_switch_thread(struct thread *thread)
 {
     current_thread = thread;
-    set_user_mode_segments();
     paging_switch_directory(thread->process->page_directory);
+    thread_switch(&thread->registers);
     return ALL_OK;
 }
 
@@ -233,7 +232,7 @@ void scheduler_run_thread_in_kernel_mode(uint32_t eip)
 
 int scheduler_replace(struct process *old, struct process *new)
 {
-    process_terminate(old);
+    process_zombify(old);
 
     processes[old->pid] = new;
 
@@ -329,12 +328,11 @@ void scheduler_check_sleeping(struct process *process, struct thread **next)
     if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
         process->state  = WAITING;
         process->signal = NONE;
-    } else if (process->signal == SIGWAKEUP) {
+    } else if (process->signal == SIGWAKEUP && (int)process->sleep_until == -1) {
         process->state  = RUNNING;
         process->signal = NONE;
     } else if (process->sleep_until <= jiffies) {
         process->signal      = SIGWAKEUP;
-        process->signal      = NONE;
         process->sleep_until = -1;
     } else {
         auto const runnable = scheduler_get_runnable_thread();
@@ -369,7 +367,7 @@ void schedule()
             next->process->parent->wait_pid  = 0;
         }
 
-        process_terminate(next->process);
+        process_zombify(next->process);
         return;
     }
 
@@ -405,16 +403,14 @@ void schedule()
 
             if (child->state == TERMINATED || child->state == ZOMBIE) {
                 process_remove_child(process, child);
-                process_terminate(child);
+                kfree(child);
             }
         } else if (child && child->state == RUNNING) {
             scheduler_switch_thread(child->thread);
-            scheduler_run_thread_in_user_mode(&child->thread->registers);
         } else if (child && child->state == SLEEPING) {
             scheduler_check_sleeping(child, &next);
             if (child->state == RUNNING) {
                 scheduler_switch_thread(child->thread);
-                scheduler_run_thread_in_user_mode(&child->thread->registers);
             }
         } else {
             // Try to find another runnable thread, if none, run the idle thread
@@ -426,7 +422,5 @@ void schedule()
         }
     }
 
-
     scheduler_switch_thread(next);
-    scheduler_run_thread_in_user_mode(&next->registers);
 }

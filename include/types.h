@@ -10,6 +10,8 @@ typedef unsigned long long uint64_t;
 typedef unsigned long long size_t;
 typedef unsigned int uintptr_t;
 typedef unsigned char uchar;
+typedef char int8_t;
+typedef short int16_t;
 typedef int int32_t;
 #define bool _Bool
 #define NULL ((void *)0)

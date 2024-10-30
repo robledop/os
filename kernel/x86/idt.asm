@@ -23,11 +23,11 @@ idt_load:
 %macro interrupt 1
     global int%1
     int%1:
-        ; Interrupts that push an error code onto the stack
+        ; List of interrupts that push an error code onto the stack
         %if (%1 = 8) || (%1 = 10) || (%1 = 11) || (%1 = 12) || (%1 = 13) || (%1 = 14) || (%1 = 17) || (%1 = 18) || (%1 = 19)
             ; Interrupt pushes error code
             ; Pop error code into EAX
-            ; The C function will need to fetch the error code from EAX, not the stack
+            ; The interrupt handler (C) will need to fetch the error code from EAX, not the stack
             pop eax
             pushad
         %else
@@ -37,9 +37,9 @@ idt_load:
             xor eax, eax
         %endif
 
-        push esp                        ; pass the stack pointer as the second argument. The contains the interrupt frame
+        push esp                        ; pass the stack pointer as the second argument. It contains the interrupt frame
         push dword %1                   ; pass the interrupt number as the first argument
-        call interrupt_handler          ; void idt_exception_handler(int interrupt, uint32_t error_code)
+        call interrupt_handler          ; void void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
         add esp, 8
         popad
         iret
@@ -62,7 +62,7 @@ isr80h_wrapper:
     ; push the stack pointer
     push esp
 
-    ; eax will contain the syscall
+    ; eax will contain the syscall id
     push eax
     call syscall_handler
     mov dword[tmp_response], eax

@@ -205,13 +205,44 @@ uint32_t heap_address_to_block(const struct heap *heap, void *address)
     return ((uint32_t)address - (uint32_t)heap->start) / HEAP_BLOCK_SIZE;
 }
 
+uint32_t heap_number_of_blocks(const struct heap *heap, void *ptr)
+{
+    const uint32_t start_block     = heap_address_to_block(heap, ptr);
+    const struct heap_table *table = heap->table;
+    uint32_t blocks                = 1;
+
+    for (size_t i = start_block; i < table->total; i++) {
+        const HEAP_BLOCK_TABLE_ENTRY entry = table->entries[i];
+        if (!(entry & HEAP_BLOCK_HAS_NEXT)) {
+            break;
+        }
+        blocks++;
+    }
+
+    return blocks;
+}
+
 void *heap_malloc(const struct heap *heap, const size_t size)
 {
-    // dbgprintf("[KERNEL] Allocating %d bytes\n", size);
     const size_t aligned_size    = heap_align_value_to_upper(size);
     const uint32_t blocks_needed = aligned_size / HEAP_BLOCK_SIZE;
 
     return heap_malloc_blocks(heap, blocks_needed);
+}
+
+void *heap_realloc(const struct heap *heap, void *ptr, const size_t size)
+{
+    const size_t aligned_size    = heap_align_value_to_upper(size);
+    const uint32_t blocks_needed = aligned_size / HEAP_BLOCK_SIZE;
+    void *new_ptr                = heap_malloc_blocks(heap, blocks_needed);
+
+    const uint32_t old_blocks = heap_number_of_blocks(heap, ptr);
+
+    memcpy(new_ptr, ptr, old_blocks * HEAP_BLOCK_SIZE);
+
+    heap_mark_blocks_free(heap, heap_address_to_block(heap, ptr));
+
+    return new_ptr;
 }
 
 void heap_free(const struct heap *heap, void *ptr)

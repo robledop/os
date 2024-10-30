@@ -28,8 +28,7 @@ struct thread *scheduler_get_current_thread();
 void scheduler_save_current_thread(const struct interrupt_frame *interrupt_frame);
 int scheduler_switch_thread(struct thread *thread);
 
-/// @brief Save registers and run the task in user mode
-void scheduler_run_thread_in_user_mode(struct registers *registers);
+/// @brief Save registers and run the thread in user mode
 void set_user_mode_segments();
 int scheduler_switch_current_thread_page();
 int scheduler_replace(struct process *old, struct process *new);

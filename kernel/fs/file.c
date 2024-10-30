@@ -1,6 +1,6 @@
 #include "file.h"
-#include "debug.h"
 #include "config.h"
+#include "debug.h"
 #include "disk.h"
 #include "fat16.h"
 #include "kernel.h"

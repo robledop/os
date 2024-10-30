@@ -1,5 +1,6 @@
 #include <debug.h>
 #include <disk.h>
+#include <elf.h>
 #include <file.h>
 #include <gdt.h>
 #include <idt.h>
@@ -14,6 +15,7 @@
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
+#include <string.h>
 #include <syscall.h>
 #include <thread.h>
 #include <vga_buffer.h>
@@ -57,12 +59,11 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     asm("mov %%esp, %0" : "=r"(stack_ptr));
 
     ENTER_CRITICAL();
+    init_symbols(mbd);
 
+    vga_buffer_init();
     init_serial();
     gdt_init(stack_ptr);
-    vga_buffer_init();
-    print(""); // BUG: Without this, the terminal gets all messed up, but only when using my bootloader
-    terminal_clear();
 
     kprintf(KRESET KYEL "Kernel stack base: %x\n", stack_ptr);
     char *cpu = cpu_string();

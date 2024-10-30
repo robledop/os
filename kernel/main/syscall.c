@@ -340,7 +340,7 @@ void *sys_open(struct interrupt_frame *frame)
 __attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
 {
     struct process *process = scheduler_get_current_thread()->process;
-    process_terminate(process);
+    process_zombify(process);
 
     schedule();
 
@@ -387,6 +387,7 @@ void *sys_putchar(struct interrupt_frame *frame)
 
 void *sys_putchar_color(struct interrupt_frame *frame)
 {
+    // scheduler_save_current_thread(frame);
     const uint8_t attribute = (unsigned char)get_integer_argument(0);
     const char c            = (char)get_integer_argument(1);
 
@@ -466,10 +467,6 @@ void *sys_create_process(struct interrupt_frame *frame)
     process->state                  = RUNNING;
     process->priority               = 1;
     process_add_child(current_process, process);
-
-
-    // scheduler_switch_task(process->task);
-    // scheduler_run_task_in_user_mode(&process->task->registers);
 
     return (void *)(int)process->pid;
 }

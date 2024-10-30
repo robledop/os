@@ -38,7 +38,7 @@ void serial_write(const char *str)
 int serial_printf(const char *fmt, ...)
 {
     int written = 0;
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) || defined(DEBUG_WARNINGS)
     // spin_lock(&serial_lock);
     // ENTER_CRITICAL();
 
@@ -100,7 +100,7 @@ int serial_printf(const char *fmt, ...)
 
 void init_serial()
 {
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) || defined(DEBUG_WARNINGS)
     spinlock_init(&serial_lock);
 
     // https://stackoverflow.com/questions/69481715/initialize-serial-port-with-x86-assembly

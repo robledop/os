@@ -1,5 +1,6 @@
 #include "thread.h"
 
+#include <debug.h>
 #include <scheduler.h>
 
 #include "elfloader.h"
@@ -20,7 +21,6 @@ int thread_free(struct thread *thread)
         return -EINVARG;
     }
 
-    paging_free_directory(thread->process->page_directory);
     scheduler_unqueue_thread(thread);
 
     kfree(thread);
@@ -189,4 +189,65 @@ void thread_copy_registers(struct thread *dest, const struct thread *src)
     dest->registers.flags = src->registers.flags;
     dest->registers.esp   = src->registers.esp;
     dest->registers.ss    = src->registers.ss;
+}
+struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame)
+{
+    const struct registers registers = {
+        .edi   = frame->edi,
+        .esi   = frame->esi,
+        .ebp   = frame->ebp,
+        .ebx   = frame->ebx,
+        .edx   = frame->edx,
+        .ecx   = frame->ecx,
+        .eax   = frame->eax,
+        .ip    = frame->ip,
+        .cs    = frame->cs,
+        .flags = frame->flags,
+        .esp   = frame->esp,
+        .ss    = frame->ss,
+    };
+
+    return registers;
+}
+
+struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers)
+{
+    const struct interrupt_frame frame = {
+        .edi   = registers->edi,
+        .esi   = registers->esi,
+        .ebp   = registers->ebp,
+        .ebx   = registers->ebx,
+        .edx   = registers->edx,
+        .ecx   = registers->ecx,
+        .eax   = registers->eax,
+        .ip    = registers->ip,
+        .cs    = registers->cs,
+        .flags = registers->flags,
+        .esp   = registers->esp,
+        .ss    = registers->ss,
+    };
+
+    return frame;
+}
+
+struct registers thread_load_current_registers()
+{
+    struct registers registers;
+    asm volatile("movl %0, %%edi\n\t"
+                 "movl %1, %%esi\n\t"
+                 "movl %2, %%ebp\n\t"
+                 "movl %3, %%ebx\n\t"
+                 "movl %4, %%edx\n\t"
+                 "movl %5, %%ecx\n\t"
+                 "movl %6, %%eax\n\t"
+                 :
+                 : "m"(registers.edi),
+                   "m"(registers.esi),
+                   "m"(registers.ebp),
+                   "m"(registers.ebx),
+                   "m"(registers.edx),
+                   "m"(registers.ecx),
+                   "m"(registers.eax)
+                 : "memory");
+    return registers;
 }

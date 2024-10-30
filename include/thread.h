@@ -5,6 +5,7 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
+#include <idt.h>
 #include "paging.h"
 #include "process.h"
 
@@ -33,7 +34,6 @@ struct registers {
     uint32_t ss;
 };
 
-struct interrupt_frame;
 
 struct thread {
     struct registers registers;
@@ -51,5 +51,8 @@ int copy_string_from_thread(const struct thread *thread, const void *virtual, vo
 void *thread_peek_stack_item(const struct thread *task, int index);
 void *thread_virtual_to_physical_address(const struct thread *task, void *virtual_address);
 int thread_page_thread(const struct thread *thread);
-void thread_save_state(struct thread *task, const struct interrupt_frame *frame);
+void thread_save_state(struct thread *thread, const struct interrupt_frame *frame);
 void thread_copy_registers(struct thread *dest, const struct thread *src);
+struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame);
+struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers);
+void thread_switch(struct registers *registers);

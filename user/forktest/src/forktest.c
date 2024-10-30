@@ -7,7 +7,6 @@ int main(const int argc, char **argv)
 
     const int rc = fork();
 
-
     if (rc < 0) {
         printf("Fork failed\n");
     } else if (rc == 0) {
@@ -20,7 +19,7 @@ int main(const int argc, char **argv)
         waitpid(rc, nullptr);
         printf(KYEL "\nAfter forking. Parent of %d (pid:%d)", rc, getpid());
     }
-    exit();
+    // exit();
 
     return 0;
 }
