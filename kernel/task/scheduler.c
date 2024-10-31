@@ -61,22 +61,40 @@ void scheduler_set_current_process(struct process *process)
     current_process = process;
 }
 
-/// @brief Switch to any process that is in the RUNNING state.
+bool scheduler_is_shell_running()
+{
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (processes[i] && strncmp(processes[i]->file_name, "0:/bin/sh", strlen("0:/bin/sh")) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/// @brief Switch to any process
 /// If no process is found, start the shell.
 void scheduler_switch_to_any()
 {
+    // BUG: This function runs threads that are not in the RUNNING state
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i] && processes[i]->priority != 0) {
+        if (processes[i] && processes[i]->priority != 0 && processes[i]->state != ZOMBIE) {
             scheduler_set_current_process(processes[i]);
             scheduler_switch_thread(current_process->thread);
             return;
         }
     }
 
-    start_shell(0);
+    if (!scheduler_is_shell_running()) {
+        kprintf("\nRestarting the shell");
+        start_shell(0);
+    } else {
+        // BUG: This never gets called
+        scheduler_run_thread_in_kernel_mode(idle_thread->registers.ip);
+    }
 }
 
-// TODO: Unlink the child process when the parent does not wait for it
+
 void scheduler_unlink_process(const struct process *process)
 {
     processes[process->pid] = nullptr;
@@ -323,7 +341,7 @@ int scheduler_get_processes(struct process_info **proc_info, int *count)
     return 0;
 }
 
-void scheduler_check_sleeping(struct process *process, struct thread **next)
+void scheduler_check_sleeping(struct process *process)
 {
     if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
         process->state  = WAITING;
@@ -334,54 +352,36 @@ void scheduler_check_sleeping(struct process *process, struct thread **next)
     } else if (process->sleep_until <= jiffies) {
         process->signal      = SIGWAKEUP;
         process->sleep_until = -1;
-    } else {
-        auto const runnable = scheduler_get_runnable_thread();
-        if (runnable) {
-            *next = runnable;
+    }
+    // } else {
+    //     auto const runnable = scheduler_get_runnable_thread();
+    //     if (runnable) {
+    //         *next = runnable;
+    //     }
+    //     if (runnable == nullptr) {
+    //         scheduler_run_thread_in_kernel_mode(idle_thread->registers.ip);
+    //     }
+    // }
+}
+
+void scheduler_handle_zombie_child_thread(struct thread **next)
+{
+    if ((*next)->process->state == ZOMBIE) {
+        // If the thread is a child process, signal the parent that the child has exited
+        if ((*next)->process->parent && (*next)->process->parent->state == WAITING &&
+            ((*next)->process->parent->wait_pid == (*next)->process->pid || (*next)->process->parent->wait_pid == -1)) {
+            (*next)->process->parent->state     = RUNNING;
+            (*next)->process->parent->exit_code = (*next)->process->exit_code;
+            (*next)->process->parent->wait_pid  = 0;
         }
-        if (runnable == nullptr) {
-            scheduler_run_thread_in_kernel_mode(idle_thread->registers.ip);
-        }
+
+        *next = scheduler_get_next_thread();
     }
 }
 
-/// @brief Gets the next thread and runs it
-void schedule()
+void scheduler_handle_waiting_thread(const struct thread *next)
 {
-    struct thread *next = scheduler_get_next_thread();
-
-    if (!next) {
-        // No threads to run, restart the shell
-        kprintf("\nRestarting the shell");
-        scheduler_switch_to_any();
-        return;
-    }
-
-    // If the thread is terminated or a zombie, remove it from the scheduler
-    if (next->process->state == TERMINATED || next->process->state == ZOMBIE) {
-        // If the thread is a child process, signal the parent that the child has exited
-        if (next->process->parent && next->process->parent->state == WAITING &&
-            (next->process->parent->wait_pid == next->process->pid || next->process->parent->wait_pid == -1)) {
-            next->process->parent->state     = RUNNING;
-            next->process->parent->exit_code = next->process->exit_code;
-            next->process->parent->wait_pid  = 0;
-        }
-
-        process_zombify(next->process);
-        return;
-    }
-
-    if (current_thread->process->state == SLEEPING) {
-        scheduler_check_sleeping(current_thread->process, &next);
-    }
-
-    struct process *process = next->process;
-
-    if (process->state == SLEEPING) {
-        scheduler_check_sleeping(process, &next);
-    }
-
-    process = next->process;
+    auto const process = next->process;
 
     if (process->state == WAITING) {
         struct process *child;
@@ -401,26 +401,51 @@ void schedule()
             process->exit_code = child->exit_code;
             process->wait_pid  = 0;
 
-            if (child->state == TERMINATED || child->state == ZOMBIE) {
+            if (child->state == ZOMBIE) {
                 process_remove_child(process, child);
                 kfree(child);
             }
         } else if (child && child->state == RUNNING) {
             scheduler_switch_thread(child->thread);
         } else if (child && child->state == SLEEPING) {
-            scheduler_check_sleeping(child, &next);
+            scheduler_check_sleeping(child);
             if (child->state == RUNNING) {
                 scheduler_switch_thread(child->thread);
             }
-        } else {
-            // Try to find another runnable thread, if none, run the idle thread
-            next = scheduler_get_runnable_thread();
-            if (next == nullptr) {
-                scheduler_run_thread_in_kernel_mode(idle_thread->registers.ip);
-                return;
-            }
+        }
+    }
+}
+
+/// @brief Gets the next thread and runs it
+void schedule()
+{
+    // If the current thread is sleeping, check if it should wake up.
+    if (current_thread->process->state == SLEEPING) {
+        scheduler_check_sleeping(current_thread->process);
+    }
+
+    auto next = scheduler_get_next_thread();
+    scheduler_handle_zombie_child_thread(&next);
+
+    struct process *process = next->process;
+
+    // If the next thread is sleeping, check if it should wake up.
+    if (process->state == SLEEPING) {
+        scheduler_check_sleeping(process);
+    }
+
+    // If the next thread is waiting, check their children
+    scheduler_handle_waiting_thread(next);
+
+    // If the next thread is not running, find a runnable thread
+    // If no runnable thread is found, run the idle thread
+    if (!next || next->process->state != RUNNING) {
+        next = scheduler_get_runnable_thread();
+        if (!next) {
+            scheduler_run_thread_in_kernel_mode(idle_thread->registers.ip);
         }
     }
 
+    // If the next thread is in the RUNNING state, switch to it
     scheduler_switch_thread(next);
 }

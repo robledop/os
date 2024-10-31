@@ -701,7 +701,7 @@ int process_wait_pid(struct process *process, const int pid)
         return -1;
     }
 
-    if (child->state == ZOMBIE || child->state == TERMINATED) {
+    if (child->state == ZOMBIE) {
         process_remove_child(process, child);
         scheduler_unlink_process(child);
         thread_free(child->thread);

@@ -76,6 +76,27 @@ My hobby operating system.
     - ⬜ brk
     - ⬜ sbrk
     - ⬜ mmap
+    - ⬜ munmap
     - ✅ print
     - ✅ getkey
     - ✅ open_dir
+    - ⬜ dup
+    - ⬜ dup2
+    - ⬜ pipe
+    - ⬜ ioctl
+    - ⬜ readdir
+    - ⬜ closedir
+    - ⬜ signal
+    - ⬜ sigaction
+    - ⬜ fcntl
+    - ⬜ socket
+    - ⬜ connect
+    - ⬜ bind
+    - ⬜ listen
+    - ⬜ accept
+    - ⬜ gettimeoftheday
+    - ⬜ clock_gettime
+    - ⬜ nanosleep
+    - ⬜ time
+    - ⬜ errno
+    - ⬜ pthread_create

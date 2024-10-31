@@ -36,4 +36,5 @@ uint32_t scheduler_get_jiffies();
 int scheduler_init();
 
 
+void scheduler_run_thread_in_kernel_mode(uint32_t eip);
 int scheduler_get_processes(struct process_info **proc_info, int *count);
