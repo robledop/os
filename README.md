@@ -52,6 +52,7 @@ My hobby operating system.
 
 <details>
 <summary>Syscalls</summary>
+
 - ✅ fork
 - ✅ exec
 - ✅ create_process
@@ -102,4 +103,5 @@ My hobby operating system.
 - ⬜ time
 - ⬜ errno
 - ⬜ pthread_create
+
 </details>
