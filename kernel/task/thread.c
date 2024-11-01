@@ -137,7 +137,6 @@ int thread_init(struct thread *thread, struct process *process)
     thread->registers.cs  = USER_CODE_SELECTOR;
     thread->registers.esp = USER_STACK_TOP;
 
-
     dbgprintf("Thread %x initialized\n", thread);
     dbgprintf("Thread %x page directory %x\n", thread, thread->page_directory->directory_entry);
     dbgprintf("Thread %x registers ip %x\n", thread, thread->registers.ip);

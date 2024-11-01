@@ -135,7 +135,7 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
     strncpy(name, scheduler_get_current_thread()->process->file_name, sizeof(name));
     process_zombify(scheduler_get_current_thread()->process);
     kprintf("\nThe process %s (%d) has been terminated.", name, pid);
-    schedule();
+    // schedule();
 }
 
 void idt_init()

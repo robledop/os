@@ -646,6 +646,8 @@ int process_load_for_slot(const char *file_name, struct process **process, const
         goto out;
     }
 
+    proc->state = RUNNING;
+
     *process = proc;
 
     scheduler_set_process(pid, proc);
@@ -833,6 +835,7 @@ struct process *process_clone(struct process *process)
     process_add_child(process, clone);
     scheduler_set_process(clone->pid, clone);
     scheduler_queue_thread(clone->thread);
+    clone->state = RUNNING;
 
     return clone;
 }

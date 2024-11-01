@@ -115,6 +115,9 @@ int scheduler_get_free_pid()
 /// The current thread is the first thread in the thread list
 struct thread *scheduler_get_current_thread()
 {
+    if (list_empty(&thread_list)) {
+        start_shell(0);
+    }
     return list_entry(list_front(&thread_list), struct thread, elem);
 }
 
@@ -406,6 +409,7 @@ void scheduler_check_waiting_thread(const struct thread *next)
     }
 }
 
+/// Move the first thread in the thread list to the end of the queue
 void scheduler_rotate()
 {
     ENTER_CRITICAL();
@@ -435,8 +439,6 @@ void schedule()
         start_shell(0);
         return;
     }
-
-    ASSERT(next->process->page_directory);
 
     // TODO: There's duplicate code here
     // If the next thread is a zombie, and its parent is also a zombie (or non-existent), free the parent and the child
@@ -480,6 +482,7 @@ void schedule()
         list_push_front(&thread_list, &next->elem);
     }
 
+    ASSERT(next->process->page_directory);
     // If the next thread is in the RUNNING state, switch to it
     scheduler_switch_thread(next);
 }

@@ -7,6 +7,7 @@
 #define PROCESS_FILE_TYPE_BINARY 1
 typedef unsigned char PROCESS_FILE_TYPE;
 enum PROCESS_STATE {
+    EMPTY,
     /// The process is ready to run
     RUNNING,
     /// The process has been deallocated, but the parent process has not yet waited for it

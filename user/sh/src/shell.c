@@ -1,11 +1,11 @@
 #include "shell.h"
+#include <config.h>
 #include <os.h>
 #include <status.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <types.h>
-#include <config.h>
 
 // @brief Generate a stack overflow to test the stack guard page
 void stack_overflow();
@@ -37,11 +37,14 @@ static uint32_t pass = 0;
 void stack_overflow() // NOLINT(*-no-recursion)
 {
     char a = 0;
-    printf(KWHT "%d | Stack address: %p | Stack usage: %d KiB | Max: %d KiB\n",
-           ++pass,
-           &a,
-           ((uint32_t)USER_STACK_TOP - (uint32_t)&a) / 1024,
-           USER_STACK_SIZE / 1024);
+    if (a) {
+    }
+    putchar('.');
+    // printf(KWHT "%d | Stack address: %p | Stack usage: %d KiB | Max: %d KiB\n",
+    //        ++pass,
+    //        &a,
+    //        ((uint32_t)USER_STACK_TOP - (uint32_t)&a) / 1024,
+    //        USER_STACK_SIZE / 1024);
 
     // ReSharper disable once CppDFAInfiniteRecursion
     stack_overflow();

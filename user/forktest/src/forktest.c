@@ -20,22 +20,23 @@ int main(const int argc, char **argv)
         printf(KYEL "\nAfter forking. Parent of %d (pid:%d)", rc, getpid());
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         const char *current_directory = get_current_directory();
-        printf("create_process: %d\n", i);
-        const int pid = create_process((char *)"sleep 100", current_directory);
+        printf("\ncreate_process: %d", i);
+        const int pid = create_process((char *)"sleep 1", current_directory);
         if (pid < 0) {
         } else {
             waitpid(pid, nullptr);
         }
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         const int r = fork();
         if (r < 0) {
             print("Fork failed\n");
         } else if (r == 0) {
             printf("Forked child %d (pid:%d)\n", i, getpid());
+            exit();
         } else {
             waitpid(r, nullptr);
             printf("Parent of %d (pid:%d)\n", i, getpid());

@@ -85,7 +85,7 @@ int ps2_keyboard_init()
 
 void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
 {
-    ENTER_CRITICAL();
+    // ENTER_CRITICAL();
 
     const uchar c = keyboard_get_char();
     // Delete key
@@ -95,7 +95,7 @@ void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
     if (scheduler_get_current_thread()->process->state == SLEEPING) {
        scheduler_get_current_thread()->process->signal = SIGWAKEUP;
     }
-    LEAVE_CRITICAL();
+    // LEAVE_CRITICAL();
 }
 
 struct keyboard *ps2_init()
