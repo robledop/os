@@ -17,9 +17,9 @@ void debug_callstack(void)
     stack_frame_t *stack;
     asm volatile("movl %%ebp, %0" : "=r"(stack));
     kprintf("Stack trace:\n");
-    while (stack->eip != 0) {
-        auto symbol = debug_symbol_lookup(stack->eip);
-        kprintf("\t<%p> [%s + %d]\n",
+    while (stack && stack->eip != 0) {
+        auto symbol = debug_function_symbol_lookup(stack->eip);
+        kprintf("\t%p [%s + %d]\n",
                 stack->eip,
                 (symbol.name == NULL) ? "[unknown]" : symbol.name,
                 stack->eip - symbol.address);
@@ -27,7 +27,7 @@ void debug_callstack(void)
     }
 }
 
-struct symbol debug_symbol_lookup(const elf32_addr address)
+struct symbol debug_function_symbol_lookup(const elf32_addr address)
 {
     if (!symtab_section_header) {
         return (struct symbol){0, NULL};
@@ -86,4 +86,18 @@ void init_symbols(const multiboot_info_t *mbd)
             break;
         }
     }
+}
+
+void assert(const char *snippet, const char *file, int line, const char *message, ...)
+{
+    kprintf("assert failed %s:%d %s\n", file, line, snippet);
+
+    if (*message) {
+        va_list arg;
+        va_start(arg, message);
+        const char *data = va_arg(arg, char *);
+        kprintf(data, arg);
+        panic(message);
+    }
+    panic("Assertion failed");
 }

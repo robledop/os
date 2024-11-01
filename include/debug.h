@@ -9,6 +9,8 @@
 #include "scheduler.h"
 #include "vga_buffer.h"
 
+#include <stdarg.h>
+
 #define DEBUG_ASSERT
 
 struct symbol {
@@ -16,15 +18,25 @@ struct symbol {
     char *name;
 };
 
+
 #ifdef DEBUG_ASSERT
-#define ASSERT(condition, message)                                                                                     \
-    if (!(condition)) {                                                                                                \
-        kprintf(KRED "Assertion failed in" KYEL " %s" KRED " on line" KYEL " %d." KRED " Process:" KYEL " %s" KWHT,    \
-                __FILE__,                                                                                              \
-                __LINE__,                                                                                              \
-                scheduler_get_current_thread()->process->file_name);                                                   \
-        panic(message);                                                                                                \
-    }
+
+void assert(const char *snippet, const char *file, int line, const char *message, ...);
+
+#define ASSERT(cond, ...)                                                                                              \
+    if (!(cond))                                                                                                       \
+    assert(#cond, __FILE__, __LINE__, #__VA_ARGS__ __VA_OPT__(, )##__VA_ARGS__)
+
+
+// #define ASSERT(condition, message)
+//     if (!(condition)) {
+//         kprintf(KRED "Assertion failed in" KYEL " %s" KRED " on line" KYEL " %d." KRED " Process:" KYEL " %s" KWHT,
+//                 __FILE__,
+//                 __LINE__,
+//                 scheduler_get_current_thread()->process->file_name);
+//         panic(message);
+//     }
+
 #else
 #define ASSERT(condition, message)
 #endif
@@ -33,4 +45,4 @@ struct symbol {
 
 void debug_callstack(void);
 void init_symbols(const multiboot_info_t *mbd);
-struct symbol debug_symbol_lookup(elf32_addr address);
+struct symbol debug_function_symbol_lookup(elf32_addr address);
