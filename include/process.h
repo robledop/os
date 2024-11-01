@@ -6,7 +6,16 @@
 #define PROCESS_FILE_TYPE_ELF 0
 #define PROCESS_FILE_TYPE_BINARY 1
 typedef unsigned char PROCESS_FILE_TYPE;
-enum PROCESS_STATE { RUNNING, ZOMBIE, WAITING, SLEEPING };
+enum PROCESS_STATE {
+    /// The process is ready to run
+    RUNNING,
+    /// The process has been deallocated, but the parent process has not yet waited for it
+    ZOMBIE,
+    /// The process is waiting for a child process to exit
+    WAITING,
+    /// The process is waiting for a signal
+    SLEEPING
+};
 enum PROCESS_SIGNAL { NONE, SIGKILL, SIGSTOP, SIGCONT, SIGTERM, SIGWAKEUP };
 
 struct command_argument {
@@ -34,6 +43,7 @@ struct process {
     struct process *parent;
     // TODO: Abstract this into a separate data structure for linked lists
     struct process *next;
+    struct list_elem elem;
     struct process *children;
     struct thread *thread;
     enum PROCESS_STATE state;
@@ -64,7 +74,7 @@ struct process {
     // TODO: Add file descriptors
 };
 
-int process_load_switch(const char *file_name, struct process **process);
+int process_load_enqueue(const char *file_name, struct process **process);
 int process_load(const char *file_name, struct process **process);
 int process_load_for_slot(const char *file_name, struct process **process, uint16_t pid);
 void *process_malloc(struct process *process, size_t size);

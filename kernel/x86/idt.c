@@ -58,13 +58,17 @@ char *exception_messages[] = {"Division By Zero",
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-void no_interrupt_handler(const int interrupt, const uint32_t error_code)
+void no_interrupt_handler(const int interrupt, const uint32_t unused)
 {
     kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
+    outb(0x20, 0x20);
 }
 
 void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
+    // The error code is pushed onto the stack by the CPU when an exception occurs.
+    // The interrupt stub at idt.asm then pops the error code from the stack and pushes it into the eax register.
+    // After that, this function is called, and now we can access the error code from the eax register.
     uint32_t error_code;
     asm volatile("movl %%eax, %0\n" : "=r"(error_code) : : "ebx", "eax");
 
@@ -101,18 +105,22 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
     if (interrupt == 14) {
         uint32_t faulting_address;
         asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
-        kprintf(KRED "\nFaulting address:" KWHT " %x\n", faulting_address);
-        auto symbol = debug_symbol_lookup(faulting_address);
-        if (symbol.name) {
-            kprintf(KRED "Symbol:" KWHT " %s (%x)\n", symbol.name, symbol.address);
+        kprintf(KYEL "\nFaulting address:" KWHT " %x\n", faulting_address);
+
+        // If the faulting address is not in the user space, try to find the closest function symbol
+        if (!(error_code & PAGE_FAULT_USER_MASK)) {
+            auto symbol = debug_function_symbol_lookup(faulting_address);
+            if (symbol.name) {
+                kprintf(KYEL "Closest function symbol:" KWHT " %s (%x)\n", symbol.name, symbol.address);
+            }
         }
 
         kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
-        kprintf(KYEL "P:" KWHT " %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
-        kprintf(KYEL "W:" KWHT " %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
-        kprintf(KYEL "U:" KWHT " %x\n", error_code & PAGE_FAULT_USER_MASK ? 1 : 0);
-        kprintf(KYEL "R:" KWHT " %x\n", error_code & PAGE_FAULT_RESERVED_MASK ? 1 : 0);
-        kprintf(KYEL "I:" KWHT " %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
+        kprintf(KYEL "P:" KWHT "  %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
+        kprintf(KYEL "W:" KWHT "  %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
+        kprintf(KYEL "U:" KWHT "  %x\n", error_code & PAGE_FAULT_USER_MASK ? 1 : 0);
+        kprintf(KYEL "R:" KWHT "  %x\n", error_code & PAGE_FAULT_RESERVED_MASK ? 1 : 0);
+        kprintf(KYEL "I:" KWHT "  %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
         kprintf(KYEL "PK:" KWHT " %x\n", error_code & PAGE_FAULT_PK_MASK ? 1 : 0);
         kprintf(KYEL "SS:" KWHT " %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
     } else if (EXCEPTION_HAS_ERROR_CODE(interrupt)) {
@@ -120,6 +128,7 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
     }
 
     kprintf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
+    debug_callstack();
 
     int pid = scheduler_get_current_thread()->process->pid;
     char name[MAX_PATH_LENGTH];

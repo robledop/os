@@ -76,7 +76,15 @@ void paging_free_directory(struct page_directory *page_directory)
 
 void paging_switch_directory(const struct page_directory *directory)
 {
-    ASSERT(directory->directory_entry != nullptr, "Page directory is null");
+    if (!directory) {
+        panic("Page directory is null");
+        return;
+    }
+
+    if (!directory->directory_entry) {
+        panic("Page directory entry is null");
+        return;
+    }
 
     if (current_directory == directory->directory_entry) {
         return;

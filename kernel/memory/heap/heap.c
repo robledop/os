@@ -172,14 +172,13 @@ void *heap_malloc_blocks(const struct heap *heap, const uint32_t blocks_needed)
     // If no free blocks were found, return
     if (start_block < 0) {
         warningf("Failed to find free blocks\n");
-        goto out;
+        return address;
     }
 
     address = heap_block_to_address(heap, start_block);
 
     heap_mark_blocks_taken(heap, start_block, blocks_needed);
 
-out:
     return address;
 }
 

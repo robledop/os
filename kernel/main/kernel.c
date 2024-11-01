@@ -93,7 +93,7 @@ void start_shell(const int console)
 {
     dbgprintf("Loading shell\n");
     struct process *process = nullptr;
-    int res                 = process_load_switch("0:/bin/sh", &process);
+    int res                 = process_load_enqueue("0:/bin/sh", &process);
     if (res < 0) {
         panic("Failed to load shell");
     }

@@ -17,3 +17,5 @@ typedef int int32_t;
 #define NULL ((void *)0)
 #define true 1
 #define false 0
+
+#define offsetof(TYPE, MEMBER) ((uint32_t) &((TYPE *) 0)->MEMBER)

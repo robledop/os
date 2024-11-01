@@ -61,6 +61,7 @@ void keyboard_push(const uchar c)
     }
 
     const int real_index                 = keyboard_get_tail_index(process);
+
     process->keyboard.buffer[real_index] = c;
     process->keyboard.tail               = (process->keyboard.tail + 1) % KEYBOARD_BUFFER_SIZE;
 }
@@ -68,7 +69,7 @@ void keyboard_push(const uchar c)
 uchar keyboard_pop()
 {
     if (!scheduler_get_current_thread()) {
-        warningf("No current threataskd\n");
+        warningf("No current thread\n");
         return 0;
     }
 

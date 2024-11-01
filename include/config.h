@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 // config.asm is generated from config.h using the script c_to_nasm.sh
 // This file must only contain #ifndef, #define and #endif
@@ -42,9 +41,4 @@
 #define MAX_SYSCALLS 1024
 #define KEYBOARD_BUFFER_SIZE 1024
 
-// Multitasking enabled
-// #define MULTITASKING
-
 #define KERNEL_LOAD_ADDRESS 0x200000
-
-#endif

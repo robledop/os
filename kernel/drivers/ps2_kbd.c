@@ -93,7 +93,7 @@ void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
         keyboard_push(c);
     }
     if (scheduler_get_current_thread()->process->state == SLEEPING) {
-        scheduler_get_current_thread()->process->signal = SIGWAKEUP;
+       scheduler_get_current_thread()->process->signal = SIGWAKEUP;
     }
     LEAVE_CRITICAL();
 }

@@ -14,14 +14,15 @@ struct process_info {
 };
 
 struct process *scheduler_set_process(const int pid, struct process *process);
-void scheduler_set_current_process(struct process *process);
 void scheduler_switch_to_any();
 struct process *scheduler_get_process(const int pid);
 struct process *scheduler_get_current_process();
 void scheduler_unlink_process(const struct process *process);
 int scheduler_get_free_pid();
-void scheduler_unqueue_thread(const struct thread *thread);
+void scheduler_unqueue_thread(struct thread *thread);
 void scheduler_queue_thread(struct thread *thread);
+void scheduler_add_to_zombie_list(struct process *thread);
+void scheduler_remove_from_zombie_list(struct process *thread);
 void schedule();
 void scheduler_run_first_thread();
 struct thread *scheduler_get_current_thread();

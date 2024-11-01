@@ -61,6 +61,8 @@ out:
 /// @param thread the thread to switch to
 int thread_page_thread(const struct thread *thread)
 {
+    ASSERT(thread->process->state != ZOMBIE, "Trying to switch to a zombie thread");
+
     set_user_mode_segments();
     paging_switch_directory(thread->process->page_directory);
 

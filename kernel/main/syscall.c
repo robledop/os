@@ -149,6 +149,7 @@ void *sys_fork(struct interrupt_frame *frame)
     return (void *)(int)child->pid;
 }
 
+// TODO: Simplify this
 // int exec(const char *path, const char *argv[])
 void *sys_exec(struct interrupt_frame *frame)
 {
@@ -186,12 +187,23 @@ void *sys_exec(struct interrupt_frame *frame)
     struct command_argument *arguments = parse_command(args);
     root_argument->next                = arguments;
 
+    // Free the arguments
+    for (int i = 0; i < 256; i++) {
+        if (args[i] == nullptr) {
+            break;
+        }
+        kfree(args[i]);
+    }
+
     struct process *process = scheduler_get_current_thread()->process;
-    process_unmap_memory(process);
     process_free_allocations(process);
     process_free_program_data(process);
     kfree(process->stack);
+    process->stack = nullptr;
+    paging_free_directory(process->page_directory);
     thread_free(process->thread);
+    process->thread = nullptr;
+    process_unmap_memory(process);
 
     char full_path[MAX_PATH_LENGTH] = {0};
     if (istrncmp(path, "0:/", 3) != 0) {
@@ -341,6 +353,10 @@ __attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
 {
     struct process *process = scheduler_get_current_thread()->process;
     process_zombify(process);
+    if (!process->parent) {
+        kfree(process);
+        process = nullptr;
+    }
 
     schedule();
 
@@ -360,6 +376,11 @@ __attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
 void *sys_print(struct interrupt_frame *frame)
 {
     const void *message = get_pointer_argument(0);
+    if (!message) {
+        warningf("message is null\n");
+        return NULL;
+    }
+
     char buffer[2048];
 
     copy_string_from_thread(scheduler_get_current_thread(), message, buffer, sizeof(buffer));
@@ -450,7 +471,7 @@ void *sys_create_process(struct interrupt_frame *frame)
     strncpy(path + 7, program_name, sizeof(path) - 3);
 
     struct process *process = nullptr;
-    int res                 = process_load_switch(path, &process);
+    int res                 = process_load_enqueue(path, &process);
     if (res < 0) {
         warningf("Failed to load process %s\n", program_name);
         return ERROR(res);

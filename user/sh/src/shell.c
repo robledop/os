@@ -5,17 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <types.h>
+#include <config.h>
 
+// @brief Generate a stack overflow to test the stack guard page
 void stack_overflow();
 bool directory_exists(const char *path);
 void shell_terminal_readline(uchar *out, int max, bool output_while_typing);
 void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
-
-#define USER_STACK_SIZE (1024 * 512)
-#define USER_STACK_TOP 0x3FF000
-#define USER_STACK_BOTTOM (USER_STACK_TOP - USER_STACK_SIZE)
 
 char *command_history[256];
 uint8_t history_index = 0;
@@ -34,7 +32,8 @@ int number_of_commands = sizeof(commands) / sizeof(struct cmd);
 
 #pragma GCC diagnostic ignored "-Winfinite-recursion"
 static uint32_t pass = 0;
-// Generate a stack overflow
+
+// Generate a stack overflow to test the stack guard page
 void stack_overflow() // NOLINT(*-no-recursion)
 {
     char a = 0;

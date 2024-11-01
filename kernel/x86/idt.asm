@@ -65,12 +65,12 @@ isr80h_wrapper:
     ; eax will contain the syscall id
     push eax
     call syscall_handler
-    mov dword[tmp_response], eax
+    mov dword[tmp_response], eax ; saves the response of the system call
     add esp, 8
 
     ; pops the general purpose registers from the stack
     popad
-    mov eax, [tmp_response]
+    mov eax, [tmp_response] ; restores the response of the system call
     iretd
 
 section .data

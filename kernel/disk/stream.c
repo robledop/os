@@ -1,8 +1,8 @@
-#include "stream.h"
-#include "debug.h"
-#include "disk.h"
-#include "kernel_heap.h"
-#include "serial.h"
+#include <stream.h>
+#include <debug.h>
+#include <disk.h>
+#include <kernel_heap.h>
+#include <serial.h>
 
 struct disk_stream *disk_stream_create(const int disk_index)
 {

@@ -1,6 +1,8 @@
 #include "process.h"
 
 #include <idt.h>
+#include <spinlock.h>
+
 #include "debug.h"
 #include "elfloader.h"
 #include "file.h"
@@ -14,6 +16,8 @@
 #include "string.h"
 #include "thread.h"
 #include "vga_buffer.h"
+
+spinlock_t process_lock = 0;
 
 int process_get_child_count(const struct process *process)
 {
@@ -165,6 +169,7 @@ int process_free_program_data(const struct process *process)
 /// The process remains in the process list until the parent process reads the exit code
 int process_zombify(struct process *process)
 {
+    ENTER_CRITICAL();
     process->state = ZOMBIE;
 
     int res = process_free_allocations(process);
@@ -182,11 +187,16 @@ int process_zombify(struct process *process)
     }
 
     kfree(process->stack);
+    process->stack = nullptr;
     thread_free(process->thread);
+    process->thread = nullptr;
     paging_free_directory(process->page_directory);
+    process->page_directory = nullptr;
 
     scheduler_unlink_process(process);
+    scheduler_add_to_zombie_list(process);
 
+    LEAVE_CRITICAL();
     return res;
 }
 
@@ -543,7 +553,7 @@ int process_unmap_memory(const struct process *process)
 }
 
 
-int process_load_switch(const char *file_name, struct process **process)
+int process_load_enqueue(const char *file_name, struct process **process)
 {
     dbgprintf("Loading and switching process %s\n", file_name);
 
@@ -551,7 +561,6 @@ int process_load_switch(const char *file_name, struct process **process)
     if (res == 0) {
         (*process)->sleep_until = -1;
         scheduler_queue_thread((*process)->thread);
-        scheduler_set_current_process(*process);
     }
 
     return res;
