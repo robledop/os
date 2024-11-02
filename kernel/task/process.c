@@ -169,13 +169,14 @@ int process_free_program_data(const struct process *process)
 /// The process remains in the process list until the parent process reads the exit code
 int process_zombify(struct process *process)
 {
-    ENTER_CRITICAL();
+    enter_critical();
     process->state = ZOMBIE;
 
     int res = process_free_allocations(process);
     if (res < 0) {
         warningf("Failed to terminate allocations for process %d\n", process->pid);
         ASSERT(false, "Failed to terminate allocations for process");
+        leave_critical();
         return res;
     }
 
@@ -183,6 +184,7 @@ int process_zombify(struct process *process)
     if (res < 0) {
         warningf("Failed to free program data for process %d\n", process->pid);
         ASSERT(false, "Failed to free program data for process");
+        leave_critical();
         return res;
     }
 
@@ -196,7 +198,7 @@ int process_zombify(struct process *process)
     scheduler_unlink_process(process);
     scheduler_add_to_zombie_list(process);
 
-    LEAVE_CRITICAL();
+    leave_critical();
     return res;
 }
 
@@ -680,10 +682,7 @@ int process_set_current_directory(struct process *process, const char *directory
 
 int process_wait_pid(struct process *process, const int pid)
 {
-    ENTER_CRITICAL();
-
     if (process_get_child_count(process) == 0) {
-        LEAVE_CRITICAL();
         return -1;
     }
 
@@ -694,7 +693,6 @@ int process_wait_pid(struct process *process, const int pid)
         if (child == nullptr) {
             process->state    = WAITING;
             process->wait_pid = pid;
-            LEAVE_CRITICAL();
             // TODO: Save thread state
             schedule();
             return -1;
@@ -708,7 +706,6 @@ int process_wait_pid(struct process *process, const int pid)
     if (child == nullptr) {
         process->state    = RUNNING;
         process->wait_pid = 0;
-        LEAVE_CRITICAL();
         return -1;
     }
 
@@ -720,14 +717,12 @@ int process_wait_pid(struct process *process, const int pid)
         const int status  = child->exit_code;
         process->state    = RUNNING;
         process->wait_pid = 0;
-        LEAVE_CRITICAL();
         return status;
     }
 
     // No child has terminated; block the parent process
     process->state    = WAITING;
     process->wait_pid = pid;
-    LEAVE_CRITICAL();
 
     // TODO: Save thread state
     schedule(); // Context switch to another process

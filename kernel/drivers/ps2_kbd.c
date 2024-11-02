@@ -8,7 +8,7 @@
 #include <string.h>
 
 int ps2_keyboard_init();
-void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused);
+void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused, const struct interrupt_frame* frame);
 
 #define PS2_CAPSLOCK 0x3A
 
@@ -28,19 +28,21 @@ void kbd_led_handling(const unsigned char ledstatus)
 // Taken from xv6
 uchar keyboard_get_char()
 {
-    ENTER_CRITICAL();
+    enter_critical();
 
     static unsigned int shift;
     static uchar *charcode[4] = {normalmap, shiftmap, ctlmap, ctlmap};
 
     const unsigned int st = inb(KBD_STATUS_PORT);
     if ((st & KBD_DATA_IN_BUFFER) == 0) {
+        leave_critical();
         return -1;
     }
     unsigned int data = inb(KBD_DATA_PORT);
 
     if (data == 0xE0) {
         shift |= E0ESC;
+        leave_critical();
         return 0;
     }
     if (data & 0x80) {
@@ -48,6 +50,7 @@ uchar keyboard_get_char()
         // key_released = true;
         data = (shift & E0ESC ? data : data & 0x7F);
         shift &= ~(shiftcode[data] | E0ESC);
+        leave_critical();
         return 0;
     }
     if (shift & E0ESC) {
@@ -67,7 +70,7 @@ uchar keyboard_get_char()
         }
     }
 
-    LEAVE_CRITICAL();
+    leave_critical();
     return c;
 }
 
@@ -83,9 +86,9 @@ int ps2_keyboard_init()
     return 0;
 }
 
-void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
+void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused, const struct interrupt_frame *frame)
 {
-    // ENTER_CRITICAL();
+    enter_critical();
 
     const uchar c = keyboard_get_char();
     // Delete key
@@ -93,9 +96,10 @@ void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused)
         keyboard_push(c);
     }
     if (scheduler_get_current_thread()->process->state == SLEEPING) {
-       scheduler_get_current_thread()->process->signal = SIGWAKEUP;
+        scheduler_get_current_thread()->process->signal = SIGWAKEUP;
     }
-    // LEAVE_CRITICAL();
+
+    leave_critical();
 }
 
 struct keyboard *ps2_init()

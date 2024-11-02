@@ -43,6 +43,6 @@ void assert(const char *snippet, const char *file, int line, const char *message
 
 #define FUNCTION_SYMBOL 0x02
 
-void debug_callstack(void);
+void debug_stats(void);
 void init_symbols(const multiboot_info_t *mbd);
 struct symbol debug_function_symbol_lookup(elf32_addr address);

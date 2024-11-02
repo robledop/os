@@ -34,7 +34,7 @@ void register_syscalls();
 
 struct interrupt_frame;
 
-__attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame);
+[[noreturn]] void *sys_exit(struct interrupt_frame *frame);
 void *sys_print(struct interrupt_frame *frame);
 void *sys_getkey(struct interrupt_frame *frame);
 void *sys_putchar(struct interrupt_frame *frame);

@@ -1,5 +1,6 @@
 #include <debug.h>
 #include <string.h>
+#include <x86.h>
 
 typedef struct stack_frame {
     struct stack_frame *ebp;
@@ -12,12 +13,33 @@ static struct elf32_shdr *elf_section_headers;
 
 /// @brief Prints the call stack, as a list of function addresses
 /// gdb or addr2line can be used to translate these into function names
-void debug_callstack(void)
+void debug_stats(void)
 {
+    kprintf("Registers:\n");
+    uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp;
+    asm volatile("movl %%eax, %0" : "=r"(eax));
+    asm volatile("movl %%ebx, %0" : "=r"(ebx));
+    asm volatile("movl %%ecx, %0" : "=r"(ecx));
+    asm volatile("movl %%edx, %0" : "=r"(edx));
+    asm volatile("movl %%esi, %0" : "=r"(esi));
+    asm volatile("movl %%edi, %0" : "=r"(edi));
+    asm volatile("movl %%ebp, %0" : "=r"(ebp));
+    asm volatile("movl %%esp, %0" : "=r"(esp));
+    kprintf("\tEAX: %p", eax);
+    kprintf("\tEBX: %p", ebx);
+    kprintf("\tECX: %p", ecx);
+    kprintf("\tEDX: %p", edx);
+    kprintf("\tESI: %p\n", esi);
+    kprintf("\tEDI: %p", edi);
+    kprintf("\tEBP: %p", ebp);
+    kprintf("\tESP: %p", esp);
+    kprintf("\tEFLAGS: %p (IF: %d) \n", read_eflags(), read_eflags() & EFLAGS_IF);
+
     stack_frame_t *stack;
     asm volatile("movl %%ebp, %0" : "=r"(stack));
     kprintf("Stack trace:\n");
-    while (stack && stack->eip != 0) {
+    int max = 10;
+    while (stack && stack->eip != 0 && max-- > 0) {
         auto symbol = debug_function_symbol_lookup(stack->eip);
         kprintf("\t%p [%s + %d]\n",
                 stack->eip,

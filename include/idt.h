@@ -8,6 +8,15 @@
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 
+enum interrupt_type {
+    // 32-bit interrupt gate
+    // Interrupt gates are used for hardware interrupts. They clear the IF flag, so the processor will not be interrupted
+    interrupt_gate,
+    // 32-bit trap gate
+    // Trap gates are used for exceptions. They do not clear the IF flag, so the processor can be interrupted
+    trap_gate,
+};
+
 struct idt_desc {
     uint16_t offset_1; // offset bits 0..15
     uint16_t selector; // a code segment selector in GDT or LDT
@@ -42,7 +51,7 @@ void idt_init();
 // void disable_interrupts();
 
 typedef void *(*SYSCALL_HANDLER_FUNCTION)(struct interrupt_frame *frame);
-typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt, uint32_t error_code);
+typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt, uint32_t error_code, const struct interrupt_frame *frame);
 
 void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler);
 int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback);

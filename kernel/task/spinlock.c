@@ -1,6 +1,7 @@
 #include "spinlock.h"
 
 #include <kernel.h>
+#include <x86.h>
 
 void spinlock_init(spinlock_t *lock)
 {
@@ -9,14 +10,14 @@ void spinlock_init(spinlock_t *lock)
 
 void spin_lock(spinlock_t *lock)
 {
-    ENTER_CRITICAL();
+    enter_critical();
     while (1) {
         if (!__atomic_load_n(lock, __ATOMIC_RELAXED)) {
             if (!__atomic_test_and_set(lock, __ATOMIC_ACQUIRE)) {
                 return;
             }
         }
-        asm volatile("pause");
+        pause();
     }
 }
 
@@ -25,5 +26,5 @@ void spin_unlock(spinlock_t *lock)
     __sync_synchronize();
 
     __atomic_clear(lock, __ATOMIC_RELEASE);
-    LEAVE_CRITICAL();
+    leave_critical();
 }

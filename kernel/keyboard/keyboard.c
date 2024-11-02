@@ -7,7 +7,6 @@
 #include "serial.h"
 #include "status.h"
 #include "thread.h"
-#include "vga_buffer.h"
 
 static struct keyboard *keyboard_list_head = nullptr;
 static struct keyboard *keyboard_list_tail = nullptr;

@@ -1,7 +1,9 @@
 #include "idt.h"
 
+#include <pic.h>
 #include <scheduler.h>
 #include <string.h>
+#include <x86.h>
 
 #include "config.h"
 #include "debug.h"
@@ -58,14 +60,19 @@ char *exception_messages[] = {"Division By Zero",
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-void no_interrupt_handler(const int interrupt, const uint32_t unused)
+void no_interrupt_handler(const int interrupt, const uint32_t unused, const struct interrupt_frame *frame)
 {
     kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
-    outb(0x20, 0x20);
 }
 
 void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
+    // External interrupts are special.
+    //   We only handle one at a time (so interrupts must be off)
+    //   and they need to be acknowledged on the PIC (see below).
+    //   An external interrupt handler cannot sleep.
+    bool external = interrupt >= 0x20 && interrupt < 0x30;
+
     // The error code is pushed onto the stack by the CPU when an exception occurs.
     // The interrupt stub at idt.asm then pops the error code from the stack and pushes it into the eax register.
     // After that, this function is called, and now we can access the error code from the eax register.
@@ -75,14 +82,18 @@ void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
     kernel_page();
     if (interrupt_callbacks[interrupt] != nullptr) {
         scheduler_save_current_thread(frame);
-        interrupt_callbacks[interrupt](interrupt, error_code);
+        interrupt_callbacks[interrupt](interrupt, error_code, frame);
     }
 
     scheduler_switch_current_thread_page();
-    outb(0x20, 0x20);
+    if (external) {
+        pic_acknowledge(interrupt);
+    } else {
+        kprintf(KMAG "Interrupt %d\n" KWHT, interrupt);
+    }
 }
 
-void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler)
+void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler, const enum interrupt_type type)
 {
     struct idt_desc *desc = &idt_descriptors[interrupt];
     desc->offset_1        = (uint32_t)handler & 0x0000FFFF;
@@ -95,21 +106,32 @@ void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler)
     // The next two bits (11) set the privilege level (DPL) to 3
     // The next bit (1) is always set to 1.
     // The last four bits (1110) specify the type of gate (e.g., 32-bit interrupt gate).
-    desc->type_attr = 0b11101110; // 0xEE
+    // (1111) specifies a 32-bit trap gate.
+    switch (type) {
+    case interrupt_gate:
+        desc->type_attr = 0b11101110;
+        break;
+    case trap_gate:
+        desc->type_attr = 0b11101111;
+        break;
+    default:
+        panic("Unsupported interrupt type");
+    }
+    // desc->type_attr = 0b11101110; // 0xEE
 
     desc->offset_2 = (uint32_t)handler >> 16;
 }
 
-void idt_exception_handler(int interrupt, uint32_t error_code)
+void idt_exception_handler(int interrupt, uint32_t error_code, const struct interrupt_frame *frame)
 {
+    // Page fault exception
     if (interrupt == 14) {
-        uint32_t faulting_address;
-        asm volatile("mov %%cr2, %0" : "=r"(faulting_address));
+        const uint32_t faulting_address = read_cr2();
         kprintf(KYEL "\nFaulting address:" KWHT " %x\n", faulting_address);
 
         // If the faulting address is not in the user space, try to find the closest function symbol
         if (!(error_code & PAGE_FAULT_USER_MASK)) {
-            auto symbol = debug_function_symbol_lookup(faulting_address);
+            auto const symbol = debug_function_symbol_lookup(faulting_address);
             if (symbol.name) {
                 kprintf(KYEL "Closest function symbol:" KWHT " %s (%x)\n", symbol.name, symbol.address);
             }
@@ -123,19 +145,26 @@ void idt_exception_handler(int interrupt, uint32_t error_code)
         kprintf(KYEL "I:" KWHT "  %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
         kprintf(KYEL "PK:" KWHT " %x\n", error_code & PAGE_FAULT_PK_MASK ? 1 : 0);
         kprintf(KYEL "SS:" KWHT " %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
+        sti();
     } else if (EXCEPTION_HAS_ERROR_CODE(interrupt)) {
         kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
     }
 
     kprintf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
-    debug_callstack();
 
-    int pid = scheduler_get_current_thread()->process->pid;
+    if (frame->cs == KERNEL_CODE_SELECTOR) {
+        kprintf("The exception occurred in the kernel mode\n");
+    } else {
+        kprintf("The exception occurred in the user mode\n");
+    }
+
+    debug_stats();
+
+    const int pid = scheduler_get_current_process()->pid;
     char name[MAX_PATH_LENGTH];
-    strncpy(name, scheduler_get_current_thread()->process->file_name, sizeof(name));
-    process_zombify(scheduler_get_current_thread()->process);
+    strncpy(name, scheduler_get_current_process()->file_name, sizeof(name));
+    process_zombify(scheduler_get_current_process());
     kprintf("\nThe process %s (%d) has been terminated.", name, pid);
-    // schedule();
 }
 
 void idt_init()
@@ -145,8 +174,18 @@ void idt_init()
     idtr_descriptor.limit = sizeof(idt_descriptors) - 1;
     idtr_descriptor.base  = (uintptr_t)idt_descriptors;
 
-    for (int i = 0; i < TOTAL_INTERRUPTS; i++) {
-        idt_set(i, interrupt_pointer_table[i]);
+    // Exceptions
+    for (int i = 0; i < 0x20; i++) {
+        idt_set(i, interrupt_pointer_table[i], trap_gate);
+    }
+
+    // Page fault exception
+    // We want interrupts off for page faults, so we can read the faulting address and error code.
+    idt_set(0xE, interrupt_pointer_table[0xE], interrupt_gate);
+
+    // Interrupts
+    for (int i = 0x20; i < TOTAL_INTERRUPTS; i++) {
+        idt_set(i, interrupt_pointer_table[i], interrupt_gate);
     }
 
     for (int i = 0; i < TOTAL_INTERRUPTS; i++) {
@@ -157,8 +196,7 @@ void idt_init()
         idt_register_interrupt_callback(i, idt_exception_handler);
     }
 
-    // idt_register_interrupt_callback(0x20, idt_clock);
-    idt_set(0x80, isr80h_wrapper);
+    idt_set(0x80, isr80h_wrapper, interrupt_gate);
 
     idt_load(&idtr_descriptor);
 }

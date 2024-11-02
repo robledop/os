@@ -9,6 +9,8 @@
 #include "paging.h"
 #include "process.h"
 
+#define THREAD_MAGIC 0x1eaadf71
+
 typedef struct cpu_state {
     // General-purpose registers
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
@@ -44,6 +46,7 @@ struct thread {
     // struct thread *next;
     // struct thread *prev;
     int tty;
+    unsigned magic; // Detects stack overflow.
 };
 
 struct thread *thread_create(struct process *process);
@@ -58,3 +61,4 @@ void thread_copy_registers(struct thread *dest, const struct thread *src);
 struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame);
 struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers);
 void thread_switch(struct registers *registers);
+bool thread_is_valid(const struct thread *thread);

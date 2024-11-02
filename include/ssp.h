@@ -1,4 +1,4 @@
 #pragma once
 
-__attribute__((__noreturn__))
+[[noreturn]]
 void abort(void);

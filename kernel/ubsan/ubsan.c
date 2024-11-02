@@ -31,11 +31,13 @@ struct scram_undefined_behavior {
     const char *violation;
 };
 
-__attribute__((noreturn)) void scram(int, const struct scram_undefined_behavior *info);
+[[noreturn]] void scram(int, const struct scram_undefined_behavior *info);
 
 void scram(const int event, const struct scram_undefined_behavior *info)
 {
-    kprintf(KYEL "\nCurrent task:" KWHT " %s (%d)\n", scheduler_get_current_thread()->process->file_name, scheduler_get_current_thread()->process->pid);
+    kprintf(KYEL "\nCurrent task:" KWHT " %s (%d)\n",
+            scheduler_get_current_thread()->process->file_name,
+            scheduler_get_current_thread()->process->pid);
     kprintf(KYEL "Event:" KWHT " %d\n", event);
     kprintf(KYEL "File:" KWHT " %s\n", info->filename);
     kprintf(KYEL "Line:" KWHT " %d\n", info->line);
@@ -66,7 +68,7 @@ static const struct ubsan_source_location unknown_location = {
     0,
 };
 
-__attribute__((noreturn)) static void ubsan_abort(const struct ubsan_source_location *location, const char *violation)
+[[noreturn]] static void ubsan_abort(const struct ubsan_source_location *location, const char *violation)
 {
     if (!location || !location->filename)
         location = &unknown_location;
@@ -80,7 +82,7 @@ __attribute__((noreturn)) static void ubsan_abort(const struct ubsan_source_loca
 }
 
 #define ABORT_VARIANT(name, params, call)                                                                              \
-    __attribute__((noreturn)) void __ubsan_handle_##name##_abort params                                                \
+    [[noreturn]] void __ubsan_handle_##name##_abort params                                                             \
     {                                                                                                                  \
         __ubsan_handle_##name call;                                                                                    \
         __builtin_unreachable();                                                                                       \
@@ -238,13 +240,13 @@ struct ubsan_unreachable_data {
     struct ubsan_source_location location;
 };
 
-__attribute__((noreturn)) void __ubsan_handle_builtin_unreachable(void *data_raw) // NOLINT(*-reserved-identifier)
+[[noreturn]] void __ubsan_handle_builtin_unreachable(void *data_raw) // NOLINT(*-reserved-identifier)
 {
     struct ubsan_unreachable_data *data = (struct ubsan_unreachable_data *)data_raw;
     ubsan_abort(&data->location, "reached unreachable");
 }
 
-__attribute__((noreturn)) void __ubsan_handle_missing_return(void *data_raw) // NOLINT(*-reserved-identifier)
+[[noreturn]] void __ubsan_handle_missing_return(void *data_raw) // NOLINT(*-reserved-identifier)
 {
     struct ubsan_unreachable_data *data = (struct ubsan_unreachable_data *)data_raw;
     ubsan_abort(&data->location, "missing return");

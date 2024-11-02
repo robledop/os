@@ -35,6 +35,7 @@ int scheduler_switch_current_thread_page();
 int scheduler_replace(struct process *old, struct process *new);
 uint32_t scheduler_get_jiffies();
 int scheduler_init();
+void scheduler_run_idle_thread();
 
 
 void scheduler_run_thread_in_kernel_mode(uint32_t eip);

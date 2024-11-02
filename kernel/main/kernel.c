@@ -19,6 +19,7 @@
 #include <syscall.h>
 #include <thread.h>
 #include <vga_buffer.h>
+#include <x86.h>
 
 void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
 
@@ -33,13 +34,13 @@ int __cli_count             = 0;
 
 extern struct page_directory *kernel_page_directory;
 
-__attribute__((noreturn)) void panic(const char *msg)
+[[noreturn]] void panic(const char *msg)
 {
     kprintf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
-    debug_callstack();
+    debug_stats();
 
     while (1) {
-        asm volatile("hlt");
+        hlt();
     }
 
     __builtin_unreachable();
@@ -58,33 +59,36 @@ void kernel_main(multiboot_info_t *mbd, unsigned int magic)
     uint32_t stack_ptr = 0;
     asm("mov %%esp, %0" : "=r"(stack_ptr));
 
-    ENTER_CRITICAL();
+    enter_critical();
     init_symbols(mbd);
 
     vga_buffer_init();
     init_serial();
     gdt_init(stack_ptr);
 
-    kprintf(KRESET KYEL "Kernel stack base: %x\n", stack_ptr);
-    char *cpu = cpu_string();
-    kprintf(KCYN "CPU: %s\n", cpu);
-    cpu_print_info();
+    // kprintf(KRESET KYEL "Kernel stack base: %x\n", stack_ptr);
+    // char *cpu = cpu_string();
+    // kprintf(KCYN "CPU: %s\n", cpu);
+    // cpu_print_info();
+
     kernel_heap_init();
     paging_init();
     idt_init();
     pic_init();
     pit_init();
     scheduler_init();
-    display_grub_info(mbd, magic);
-    pci_scan();
+    // display_grub_info(mbd, magic);
+    // pci_scan();
     fs_init();
     disk_init();
     register_syscalls();
     keyboard_init();
 
+    kprintf("Starting the shell\n");
     start_shell(0);
 
-    LEAVE_CRITICAL();
+    ASSERT(!(read_eflags() & EFLAGS_IF), "Interrupts must be disabled");
+    schedule();
 
     panic("Kernel finished");
 }
@@ -105,9 +109,6 @@ void start_shell(const int console)
 
     process->thread->tty = console;
     process->priority    = 1;
-
-    // TODO: Save kernel state and switch to user mode
-    schedule();
 }
 
 void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
@@ -164,5 +165,26 @@ void system_shutdown()
 {
     outw(0x604, 0x2000);
 
-    asm volatile("hlt");
+    hlt();
+}
+
+void enter_critical()
+{
+    __cli_count++;
+    cli();
+}
+
+// Only leave critical section if we are the last one
+void leave_critical()
+{
+    __cli_count--;
+    if (__cli_count <= 0) {
+        __cli_count = 0;
+        sti();
+    }
+}
+
+void reset_critical_count()
+{
+    __cli_count = 0;
 }

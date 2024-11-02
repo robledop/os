@@ -1,5 +1,6 @@
-#include "pic.h"
-#include "io.h"
+#include <debug.h>
+#include <io.h>
+#include <pic.h>
 
 // https://wiki.osdev.org/8259_PIC
 
@@ -42,9 +43,15 @@ void pic_init()
     outb(PIC2_PORT_B, 0xFF);
 }
 
-void pic_acknowledge()
+void pic_acknowledge(const int irq)
 {
-    outb(PIC1_PORT_A, PIC_EOI);
-    outb(PIC2_PORT_A, PIC_EOI);
-}
+    ASSERT(irq >= 0x20 && irq < 0x30);
 
+    // Acknowledge master PIC.
+    outb(PIC1_PORT_A, PIC_EOI);
+
+    // Acknowledge slave PIC if this is a slave interrupt.
+    if (irq >= 0x28) {
+        outb(PIC2_PORT_A, PIC_EOI);
+    }
+}

@@ -1,4 +1,7 @@
 #include "heap.h"
+
+#include <debug.h>
+
 #include "memory.h"
 #include "serial.h"
 #include "status.h"
@@ -127,6 +130,7 @@ static int heap_get_entry_type(const HEAP_BLOCK_TABLE_ENTRY entry)
 /// @return the block number of the first block that can hold the requested number of blocks
 static int heap_get_start_block(const struct heap *heap, const uint32_t blocks_needed)
 {
+    ASSERT(heap != nullptr);
     const struct heap_table *table = heap->table;
     // The block number of the first block that can hold the requested number of blocks
     int start_block = -1;

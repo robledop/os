@@ -1,3 +1,6 @@
+#include <string.h>
+
+
 #include "stdio.h"
 #include "stdlib.h"
 
@@ -20,17 +23,17 @@ int main(const int argc, char **argv)
         printf(KYEL "\nAfter forking. Parent of %d (pid:%d)", rc, getpid());
     }
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
         const char *current_directory = get_current_directory();
         printf("\ncreate_process: %d", i);
-        const int pid = create_process((char *)"sleep 1", current_directory);
+        const int pid = create_process((char *)"echo lalala", current_directory);
         if (pid < 0) {
         } else {
-            waitpid(pid, nullptr);
+            // waitpid(pid, nullptr);
         }
     }
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
         const int r = fork();
         if (r < 0) {
             print("Fork failed\n");
@@ -38,7 +41,7 @@ int main(const int argc, char **argv)
             printf("Forked child %d (pid:%d)\n", i, getpid());
             exit();
         } else {
-            waitpid(r, nullptr);
+            // waitpid(r, nullptr);
             printf("Parent of %d (pid:%d)\n", i, getpid());
         }
     }

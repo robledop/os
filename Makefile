@@ -141,23 +141,23 @@ iso: grub FORCE
 
 .PHONY: qemu_debug
 qemu_debug: all FORCE
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 128 -daemonize -serial file:serial.log -d int -D qemu.log
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -d int -D qemu.log
 
 .PHONY: qemu
 qemu: all FORCE
-	qemu-system-i386 -boot d -hda ./bin/disk.img -m 128 -serial stdio
+	qemu-system-i386 -boot d -hda ./bin/disk.img -m 512 -serial stdio
 
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE
-	qemu-system-i386 -boot d -hda ./disk.img -m 128 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -boot d -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 .PHONY: qemu_iso
 qemu_iso: iso FORCE
-	qemu-system-i386 -boot d -cdrom ./myos.iso -m 128 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
+	qemu-system-i386 -boot d -cdrom ./myos.iso -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 .PHONY: apps
 apps: FORCE

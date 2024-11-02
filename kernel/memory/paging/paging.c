@@ -35,6 +35,11 @@ struct page_directory *paging_create_directory(const uint8_t flags)
         // The table is freed in paging_free_directory
         // ReSharper disable once CppDFAMemoryLeak
         uint32_t *table = kzalloc(sizeof(uint32_t) * PAGING_ENTRIES_PER_TABLE);
+        if (!table) {
+            panic("Failed to allocate page table\n");
+            return nullptr;
+        }
+
         for (size_t j = 0; j < PAGING_ENTRIES_PER_TABLE; j++) {
             table[j] = (offset + (j * PAGING_PAGE_SIZE)) | flags;
         }

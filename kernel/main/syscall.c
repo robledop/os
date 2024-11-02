@@ -5,6 +5,7 @@
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
+#include <pic.h>
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
@@ -15,6 +16,7 @@
 #include <thread.h>
 #include <types.h>
 #include <vga_buffer.h>
+#include <x86.h>
 
 spinlock_t syscall_lock;
 
@@ -195,7 +197,7 @@ void *sys_exec(struct interrupt_frame *frame)
         kfree(args[i]);
     }
 
-    struct process *process = scheduler_get_current_thread()->process;
+    struct process *process = scheduler_get_current_process();
     process_free_allocations(process);
     process_free_program_data(process);
     kfree(process->stack);
@@ -216,23 +218,27 @@ void *sys_exec(struct interrupt_frame *frame)
     const int res = process_load_data(full_path, process);
     if (res < 0) {
         kprintf("Result: %d\n", res);
+        spin_unlock(&syscall_lock);
         return (void *)res;
     }
     void *program_stack_pointer = kzalloc(USER_STACK_SIZE);
     strncpy(process->file_name, full_path, sizeof(process->file_name));
-    process->stack      = program_stack_pointer; // Physical address of the stack for the process
-    struct thread *task = thread_create(process);
-    process->thread     = task;
+    process->stack        = program_stack_pointer; // Physical address of the stack for the process
+    struct thread *thread = thread_create(process);
+    if (ISERR(thread)) {
+        panic("Failed to create thread");
+    }
+    process->thread = thread;
     process_map_memory(process);
 
     process_inject_arguments(process, root_argument);
 
     scheduler_set_process(process->pid, process);
-    scheduler_queue_thread(task);
+    scheduler_queue_thread(thread);
 
     spin_unlock(&syscall_lock);
 
-    schedule();
+    // schedule();
 
     return (void *)nullptr;
 }
@@ -349,7 +355,7 @@ void *sys_open(struct interrupt_frame *frame)
     return (void *)(int)fd;
 }
 
-__attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
+[[noreturn]] void *sys_exit(struct interrupt_frame *frame)
 {
     struct process *process = scheduler_get_current_thread()->process;
     process_zombify(process);
@@ -358,6 +364,7 @@ __attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
         process = nullptr;
     }
 
+    enter_critical();
     schedule();
 
     panic("Trying to schedule a dead task");
@@ -365,9 +372,9 @@ __attribute__((noreturn)) void *sys_exit(struct interrupt_frame *frame)
     // This must not return, otherwise we will get a general protection fault.
     // We will only reach this point if the scheduler tries to run a dead thread.
     // As a last resort, we will enable interrupts, halt the CPU, and wait for a rescheduling.
-    asm volatile("sti");
+    sti();
     while (1) {
-        asm volatile("hlt");
+        hlt();
     }
 
     __builtin_unreachable();
@@ -439,7 +446,7 @@ void *sys_free(struct interrupt_frame *frame)
 
 void *sys_wait_pid(struct interrupt_frame *frame)
 {
-    ENTER_CRITICAL();
+    enter_critical();
 
     const int pid    = get_integer_argument(1);
     int *status_ptr  = thread_virtual_to_physical_address(scheduler_get_current_thread(),
@@ -449,13 +456,16 @@ void *sys_wait_pid(struct interrupt_frame *frame)
         *status_ptr = status;
     }
 
-    LEAVE_CRITICAL();
+    leave_critical();
 
     return nullptr;
 }
 
+extern int __cli_count;
 void *sys_create_process(struct interrupt_frame *frame)
 {
+    spin_lock(&syscall_lock);
+
     struct command_argument *arguments = thread_virtual_to_physical_address(
         scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 0));
     if (!arguments || strlen(arguments->argument) == 0) {
@@ -488,6 +498,8 @@ void *sys_create_process(struct interrupt_frame *frame)
     process->state                  = RUNNING;
     process->priority               = 1;
     process_add_child(current_process, process);
+
+    spin_unlock(&syscall_lock);
 
     return (void *)(int)process->pid;
 }

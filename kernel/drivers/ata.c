@@ -1,8 +1,11 @@
 #include "ata.h"
+#include <spinlock.h>
 #include "io.h"
 #include "kernel.h"
 #include "serial.h"
 #include "status.h"
+
+spinlock_t disk_lock = 0;
 
 int ata_get_sector_size()
 {
@@ -42,7 +45,7 @@ int ata_get_sector_size()
 // https://wiki.osdev.org/ATA_read/write_sectors
 int ata_read_sector(const uint32_t lba, const int total, void *buffer)
 {
-    ENTER_CRITICAL();
+    spin_lock(&disk_lock);
 
     dbgprintf("Reading sector %d\n", lba);
 
@@ -64,6 +67,7 @@ int ata_read_sector(const uint32_t lba, const int total, void *buffer)
             if (status & 0x01) {
                 warningf("Error: Drive fault\n");
                 panic("Error: Drive fault\n");
+                spin_unlock(&disk_lock);
                 return -EIO;
             }
 
@@ -81,7 +85,7 @@ int ata_read_sector(const uint32_t lba, const int total, void *buffer)
     // Check if anything was read
     dbgprintf("Read: %x\n", *(unsigned short *)buffer);
 
-    LEAVE_CRITICAL();
+    spin_unlock(&disk_lock);
 
     return 0;
 }

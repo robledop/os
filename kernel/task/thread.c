@@ -136,12 +136,18 @@ int thread_init(struct thread *thread, struct process *process)
     thread->registers.ss  = USER_DATA_SELECTOR;
     thread->registers.cs  = USER_CODE_SELECTOR;
     thread->registers.esp = USER_STACK_TOP;
+    thread->magic         = THREAD_MAGIC;
 
     dbgprintf("Thread %x initialized\n", thread);
     dbgprintf("Thread %x page directory %x\n", thread, thread->page_directory->directory_entry);
     dbgprintf("Thread %x registers ip %x\n", thread, thread->registers.ip);
 
     return ALL_OK;
+}
+
+bool thread_is_valid(const struct thread *thread)
+{
+    return thread != nullptr && thread->magic == THREAD_MAGIC;
 }
 
 void *thread_peek_stack_item(const struct thread *thread, const int index)

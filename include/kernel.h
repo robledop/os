@@ -21,13 +21,7 @@ void system_shutdown();
 // Keep track of how many times we entered a critical section
 extern int __cli_count;
 
-#define ENTER_CRITICAL()                                                                                               \
-    __cli_count++;                                                                                                     \
-    asm volatile("cli");
-
+void enter_critical();
 // Only leave critical section if we are the last one
-#define LEAVE_CRITICAL()                                                                                               \
-    __cli_count--;                                                                                                     \
-    if (__cli_count == 0) {                                                                                            \
-        asm volatile("sti");                                                                                           \
-    }
+void leave_critical();
+void reset_critical_count();
