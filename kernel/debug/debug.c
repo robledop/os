@@ -137,7 +137,7 @@ void print_registers()
     kprintf("\tEFLAGS: %p ", eflags);
 
     if (eflags & EFLAGS_ALL) {
-        kprintf("(");
+        kprintf("( ");
     }
     if (eflags & EFLAGS_CF) {
         kprintf("CF ");

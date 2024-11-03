@@ -15,9 +15,9 @@
 #include <x86.h>
 
 // How often the PIT should interrupt
-#define PIT_INTERVAL 1 // 1ms
+#define PIT_INTERVAL 100 // 1ms
 // How often the scheduler should run
-#define TIME_SLICE 10 // 100ms
+#define TIME_SLICE 100 // 100ms
 
 // Milliseconds since boot
 uint32_t jiffies                                = 0;
@@ -28,22 +28,10 @@ struct list thread_list;
 struct list zombie_list;
 extern uint32_t stack_top;
 
-// struct thread *current_thread = nullptr;
-// struct thread *idle_thread;
+struct thread *current_thread = nullptr;
 
 void scheduler_initialize_idle_thread(uint32_t idle_thread_stack_address);
 
-// __attribute__((noreturn)) __attribute__((section(".idle_thread"))) void scheduler_idle_thread()
-// {
-//     sti();
-//     while (true) {
-//         asm volatile("hlt");
-//     }
-// }
-//
-// extern void scheduler_idle_thread_end() __attribute__((section(".idle_thread_end")));
-// asm(".global scheduler_idle_thread_end\n"
-//     "scheduler_idle_thread_end:");
 
 __attribute__((noreturn, naked)) void scheduler_idle_thread()
 {
@@ -110,12 +98,12 @@ void scheduler_unlink_process(const struct process *process)
     processes[process->pid] = nullptr;
 }
 
-// void scheduler_remove_current_thread(const struct thread *thread)
-// {
-//     if (current_thread == thread) {
-//         current_thread = nullptr;
-//     }
-// }
+void scheduler_remove_current_thread(const struct thread *thread)
+{
+    if (current_thread == thread) {
+        current_thread = nullptr;
+    }
+}
 
 int scheduler_get_free_pid()
 {
@@ -128,15 +116,9 @@ int scheduler_get_free_pid()
     return -EINSTKN;
 }
 
-/// The current thread is the first thread in the thread list
 struct thread *scheduler_get_current_thread()
 {
-
-    if (list_empty(&thread_list)) {
-        start_shell(0);
-    }
-
-    return list_entry(list_front(&thread_list), struct thread, elem);
+    return current_thread;
 }
 
 struct thread *scheduler_get_thread_sleeping_for_keyboard()
@@ -189,10 +171,6 @@ void scheduler_queue_thread(struct thread *thread)
     list_push_back(&thread_list, &thread->elem);
 }
 
-void scheduler_add_to_zombie_list(struct process *process)
-{
-    list_push_back(&zombie_list, &process->elem);
-}
 
 void scheduler_remove_from_zombie_list(struct process *process)
 {
@@ -202,32 +180,6 @@ void scheduler_remove_from_zombie_list(struct process *process)
 void scheduler_unqueue_thread(struct thread *thread)
 {
     list_remove(&thread->elem);
-}
-
-struct process *scheduler_find_zombie_child(const struct process *parent)
-{
-    struct process *process = nullptr;
-    for (size_t i = 0; i < list_size(&zombie_list); i++) {
-        process = list_entry(list_begin(&zombie_list), struct process, elem);
-        if (process->parent == parent) {
-            return process;
-        }
-    }
-
-    return nullptr;
-}
-
-struct process *scheduler_find_zombie_child_by_pid(const struct process *parent, const int pid)
-{
-    struct process *process = nullptr;
-    for (size_t i = 0; i < list_size(&zombie_list); i++) {
-        process = list_entry(list_begin(&zombie_list), struct process, elem);
-        if (process->parent == parent && process->pid == pid) {
-            return process;
-        }
-    }
-
-    return nullptr;
 }
 
 void scheduler_save_current_thread(const struct interrupt_frame *interrupt_frame)
@@ -250,6 +202,7 @@ int scheduler_switch_thread(struct thread *thread)
     ASSERT(thread->process->state != ZOMBIE, "Trying to switch to a zombie thread");
     ASSERT(thread_is_valid(thread));
 
+    current_thread = thread;
     paging_switch_directory(thread->process->page_directory);
     thread_switch(&thread->registers);
     return ALL_OK;
@@ -259,6 +212,10 @@ int scheduler_switch_thread(struct thread *thread)
 int scheduler_switch_current_thread_page()
 {
     auto const process = scheduler_get_current_process();
+    if (!process) {
+        return -EINVARG;
+    }
+
     ASSERT(process->state != ZOMBIE, "Trying to switch to a zombie thread");
 
     if (process->thread->registers.cs == KERNEL_CODE_SELECTOR) {
@@ -269,7 +226,6 @@ int scheduler_switch_current_thread_page()
         panic("Unknown code selector");
     }
 
-    // set_user_mode_segments();
     paging_switch_directory(scheduler_get_current_process()->page_directory);
 
     return ALL_OK;
@@ -289,7 +245,7 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
 {
     static uint32_t milliseconds = 0;
 
-    jiffies++;
+    jiffies += PIT_INTERVAL;
 
     milliseconds += PIT_INTERVAL;
     // asm volatile("mov %0, %%esp\n" : : "r"(frame->reserved));
@@ -302,45 +258,11 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
     }
 }
 
-
-void scheduler_initialize_idle_thread(const uint32_t idle_thread_stack_address)
-{
-    // auto process            = (struct process *)kzalloc(sizeof(struct process));
-    // process->page_directory = paging_create_directory(
-    //     PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
-    // paging_switch_directory(process->page_directory);
-    //
-    // process->pid       = 0;
-    // process->state     = RUNNING;
-    // process->priority  = 0;
-    // process->file_type = PROCESS_FILE_TYPE_BINARY;
-    // process->pointer   = (void *)(uint32_t)&scheduler_idle_thread;
-    // process->size      = (uint32_t)&scheduler_idle_thread_end - (uint32_t)&scheduler_idle_thread;
-    // process->stack     = (void *)idle_thread_stack_address;
-    //
-    // idle_thread                = kzalloc(sizeof(struct thread));
-    // idle_thread->registers.cs  = KERNEL_CODE_SELECTOR;
-    // idle_thread->registers.ss  = KERNEL_DATA_SELECTOR;
-    // idle_thread->process       = process;
-    // idle_thread->registers.ip  = (uint32_t)process->pointer;
-    // idle_thread->registers.esp = idle_thread_stack_address;
-    // idle_thread->magic         = THREAD_MAGIC;
-    // process->thread            = idle_thread;
-    //
-    // strncpy(idle_thread->process->file_name, "idle", 5);
-    //
-    // // process_map_memory(process);
-    // kernel_page();
-    //
-    // scheduler_set_process(idle_thread->process->pid, idle_thread->process);
-}
-
 int scheduler_init()
 {
     list_init(&thread_list);
     list_init(&zombie_list);
 
-    // scheduler_initialize_idle_thread();
     pit_set_interval(PIT_INTERVAL);
     return idt_register_interrupt_callback(0x20, handle_pit_interrupt);
 }
@@ -392,19 +314,6 @@ void scheduler_check_sleeping(struct process *process)
     }
 }
 
-void scheduler_check_zombie_child_thread(const struct thread *next)
-{
-    if (next->process->state == ZOMBIE) {
-        // If the thread is a child process, signal the parent that the child has exited
-        if (next->process->parent && next->process->parent->state == WAITING &&
-            (next->process->parent->wait_pid == next->process->pid || next->process->parent->wait_pid == -1)) {
-            next->process->parent->state     = RUNNING;
-            next->process->parent->exit_code = next->process->exit_code;
-            next->process->parent->wait_pid  = 0;
-        }
-    }
-}
-
 void scheduler_check_waiting_thread(const struct thread *next)
 {
     auto const process = next->process;
@@ -412,13 +321,9 @@ void scheduler_check_waiting_thread(const struct thread *next)
     if (process->state == WAITING) {
         struct process *child;
         if (process->wait_pid == -1) {
-            // child = find_child_process_by_state(process, ZOMBIE);
-            child = scheduler_find_zombie_child(process);
+            child = find_child_process_by_state(process, ZOMBIE);
         } else {
             child = find_child_process_by_pid(process, process->wait_pid);
-            if (!child) {
-                child = scheduler_find_zombie_child_by_pid(process, process->wait_pid);
-            }
             if (!child) {
                 process->state     = RUNNING;
                 process->exit_code = 0;
@@ -469,25 +374,6 @@ void schedule()
 
     ASSERT(thread_is_valid(next));
 
-    // If the next thread is a zombie, and its parent is also a zombie (or non-existent), free the parent and the child.
-    if (next->process->state == ZOMBIE &&
-        ((next->process->parent && next->process->parent->state == ZOMBIE) || next->process->parent == nullptr)) {
-        if (next->process->parent) {
-            kfree(next->process->parent);
-            next->process->parent = nullptr;
-        }
-        kfree(next);
-        scheduler_rotate_queue();
-        next = scheduler_get_next_thread();
-    }
-
-    // If the next thread is a zombie, get its exit code, give it to the parent, and then find the next thread.
-    scheduler_check_zombie_child_thread(next);
-    if (next->process->state == ZOMBIE) {
-        scheduler_rotate_queue();
-        next = scheduler_get_next_thread();
-    }
-
     struct process *process = next->process;
 
     // If the next thread is sleeping, check if it should wake up.
@@ -498,14 +384,12 @@ void schedule()
     // If the next thread is waiting, check their children
     scheduler_check_waiting_thread(next);
 
-    // If the next thread is not running, find a runnable thread
-    // If no runnable thread is found, run the idle thread
+    // If the next thread is not running, find a runnable thread.
+    // If no runnable thread is found, run the idle thread.
     if (next->process->state != RUNNING) {
         next = scheduler_get_runnable_thread();
         if (!next) {
-
             scheduler_idle_thread();
-            // scheduler_switch_thread(idle_thread);
             return;
         } else {
             // If we found a runnable thread, put it in the front of the queue

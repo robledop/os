@@ -21,3 +21,4 @@ int getpid();
 int create_process(const char *path, const char *current_directory);
 void sleep(const uint32_t milliseconds);
 void yield();
+void ps();

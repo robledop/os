@@ -21,6 +21,11 @@ spinlock_t fork_lock;
 spinlock_t exec_lock;
 spinlock_t wait_lock;
 
+struct command_argument *parse_command(char **args);
+static void *get_pointer_argument(const int index);
+static int get_integer_argument(const int index);
+static char *get_string_argument(const int index, const int max_len);
+
 void register_syscalls()
 {
     spinlock_init(&create_process_lock);
@@ -54,67 +59,67 @@ void register_syscalls()
     register_syscall(SYSCALL_SHUTDOWN, sys_shutdown);
     register_syscall(SYSCALL_SLEEP, sys_sleep);
     register_syscall(SYSCALL_YIELD, sys_yield);
+    register_syscall(SYSCALL_PS, sys_ps);
 }
 
-struct command_argument *parse_command(char **args)
+static void insert_spaces(char *str, const int start, const int len)
 {
-    if (args[0] == NULL) {
-        return nullptr;
+    for (int i = start; i < len; i++) {
+        str[i] = ' ';
     }
+    str[len] = '\0';
+}
 
-    struct command_argument *head = kmalloc(sizeof(struct command_argument));
-    if (head == NULL) {
-        return nullptr;
-    }
+void *sys_ps(struct interrupt_frame *frame)
+{
+    struct process_info *proc_info = nullptr;
+    int count                      = 0;
+    scheduler_get_processes(&proc_info, &count);
+    kprintf(KBOLD KBLU "\n PID  Name           Priority State    Exit code\n" KRESET);
+    for (int i = 0; i < count; i++) {
+        constexpr int col               = 15;
+        const struct process_info *info = &proc_info[i];
+        char pid[col + 1];
+        itoa(info->pid, pid);
+        insert_spaces(pid, strlen(pid), 5);
 
-    strncpy(head->argument, args[0], sizeof(head->argument));
-    head->next = nullptr;
+        char name[col + 1];
+        strncpy(name, info->file_name, col);
+        insert_spaces(name, strlen(name), col);
 
-    struct command_argument *current = head;
+        char priority[col + 1];
+        itoa(info->priority, priority);
+        insert_spaces(priority, strlen(priority), 9);
 
-    int i = 1;
-    while (args[i] != NULL) {
-        struct command_argument *next = kmalloc(sizeof(struct command_argument));
-        if (next == NULL) {
+        char state[col + 1];
+        switch (info->state) {
+        case RUNNING:
+            strncpy(state, "RUNNING", col);
+            break;
+        case ZOMBIE:
+            strncpy(state, "ZOMBIE", col);
+            break;
+        case SLEEPING:
+            strncpy(state, "SLEEPING", col);
+            break;
+        case WAITING:
+            strncpy(state, "WAITING", col);
+            break;
+        default:
+            strncpy(state, "UNKNOWN", col);
             break;
         }
+        insert_spaces(state, strlen(state), 9);
 
-        strncpy(next->argument, args[i], sizeof(next->argument));
-        next->next    = nullptr;
-        current->next = next;
-        current       = next;
-        i++;
+        char exit_code[col + 1];
+        itoa(info->exit_code, exit_code);
+        insert_spaces(exit_code, strlen(exit_code), col);
+
+
+        kprintf(" %s%s%s%s%s\n", pid, name, priority, state, exit_code);
     }
 
-    return head;
-}
-
-
-/// @brief Get the pointer argument from the stack of the current task
-/// @param index position of the argument in the stack
-static void *get_pointer_argument(const int index)
-{
-    return thread_peek_stack_item(scheduler_get_current_thread(), index);
-}
-
-/// @brief Get the int argument from the stack of the current task
-/// @param index position of the argument in the stack
-static int get_integer_argument(const int index)
-{
-    return (int)thread_peek_stack_item(scheduler_get_current_thread(), index);
-}
-
-/// @brief Get the int argument from the stack of the current task
-/// @warning BEWARE: The string is allocated on the kernel heap and must be freed by the caller
-/// @param index position of the argument in the stack
-/// @param max_len maximum length of the string
-static char *get_string_argument(const int index, const int max_len)
-{
-    const void *ptr = get_pointer_argument(index);
-    char *str       = kzalloc(max_len);
-
-    copy_string_from_thread(scheduler_get_current_thread(), ptr, str, (int)sizeof(str));
-    return (char *)str;
+    return nullptr;
 }
 
 void *sys_yield(struct interrupt_frame *frame)
@@ -361,17 +366,25 @@ void *sys_open(struct interrupt_frame *frame)
 
 [[noreturn]] void *sys_exit(struct interrupt_frame *frame)
 {
-    struct process *process = scheduler_get_current_thread()->process;
+    auto const process = scheduler_get_current_process();
+    auto const parent  = process->parent;
+
+    // The parent is not waiting for you, so you can safely remove yourself from the parent's child list.
+    // If the parent is waiting for you, then the waitpid() syscall will take care of everything
+    if ((parent && parent->state != WAITING) ||
+        (parent && parent->state == WAITING && parent->wait_pid != -1 && parent->wait_pid != process->pid)) {
+        process_remove_child(parent, process);
+    }
+
     process_zombify(process);
     if (!process->parent) {
         kfree(process);
-        process = nullptr;
     }
 
-    enter_critical();
+    cli();
     schedule();
 
-    // panic("Trying to schedule a dead thread");
+    panic("Trying to schedule a dead thread");
 
     // This must not return, otherwise we will get a general protection fault.
     // We will only reach this point if the scheduler tries to run a dead thread.
@@ -452,8 +465,6 @@ void *sys_free(struct interrupt_frame *frame)
 
 void *sys_wait_pid(struct interrupt_frame *frame)
 {
-    enter_critical();
-
     const int pid    = get_integer_argument(1);
     int *status_ptr  = thread_virtual_to_physical_address(scheduler_get_current_thread(),
                                                          thread_peek_stack_item(scheduler_get_current_thread(), 0));
@@ -461,8 +472,6 @@ void *sys_wait_pid(struct interrupt_frame *frame)
     if (status_ptr) {
         *status_ptr = status;
     }
-
-    leave_critical();
 
     return nullptr;
 }
@@ -511,4 +520,65 @@ void *sys_create_process(struct interrupt_frame *frame)
     spin_unlock(&create_process_lock);
 
     return (void *)(int)process->pid;
+}
+
+struct command_argument *parse_command(char **args)
+{
+    if (args[0] == NULL) {
+        return nullptr;
+    }
+
+    struct command_argument *head = kmalloc(sizeof(struct command_argument));
+    if (head == NULL) {
+        return nullptr;
+    }
+
+    strncpy(head->argument, args[0], sizeof(head->argument));
+    head->next = nullptr;
+
+    struct command_argument *current = head;
+
+    int i = 1;
+    while (args[i] != NULL) {
+        struct command_argument *next = kmalloc(sizeof(struct command_argument));
+        if (next == NULL) {
+            break;
+        }
+
+        strncpy(next->argument, args[i], sizeof(next->argument));
+        next->next    = nullptr;
+        current->next = next;
+        current       = next;
+        i++;
+    }
+
+    return head;
+}
+
+
+/// @brief Get the pointer argument from the stack of the current task
+/// @param index position of the argument in the stack
+static void *get_pointer_argument(const int index)
+{
+    return thread_peek_stack_item(scheduler_get_current_thread(), index);
+}
+
+/// @brief Get the int argument from the stack of the current task
+/// @param index position of the argument in the stack
+static int get_integer_argument(const int index)
+{
+    return (int)thread_peek_stack_item(scheduler_get_current_thread(), index);
+}
+
+/// @brief Get the int argument from the stack of the current task
+/// @warning BEWARE: The string is allocated on the kernel heap and must be freed by the caller
+/// @param index position of the argument in the stack
+/// @param max_len maximum length of the string
+static char *get_string_argument(const int index, const int max_len)
+{
+    const void *ptr = get_pointer_argument(index);
+    char *str       = kzalloc(max_len);
+
+    copy_string_from_thread(scheduler_get_current_thread(), ptr, str, (int)sizeof(str));
+    return (char *)str;
 }

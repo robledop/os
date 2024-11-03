@@ -46,7 +46,7 @@ thread_switch:
     push dword [ebx + 32]  ; registers->cs
 
     ; push the instruction pointer
-    push dword [ebx + 28]  ; registers->ip
+    push dword [ebx + 28]  ; registers->eip
 
     ; setup segment registers
     mov ax, [ebx + 44] ; registers->ss

@@ -26,6 +26,7 @@ const cmd commands[] = {
     {"shutdown", shutdown      },
     {"help",     print_help    },
     {"so",       stack_overflow},
+    {"ps",       ps            },
 };
 
 int number_of_commands = sizeof(commands) / sizeof(struct cmd);
@@ -110,12 +111,21 @@ int main(int argc, char **argv)
         //     waitpid(pid, nullptr);
         // }
 
+        bool return_immediately = false;
+        return_immediately      = str_ends_with((char *)buffer, " &");
+
+        if (return_immediately) {
+            buffer[strlen((char *)buffer) - 2] = 0x00;
+        }
 
         const int pid = create_process((char *)buffer, current_directory);
         if (pid < 0) {
             printf("\nCommand: %s\n", (char *)buffer);
             printf("Error: %s", get_error_message(pid));
         } else {
+            if (return_immediately) {
+                continue;
+            }
             waitpid(pid, nullptr);
         }
 
@@ -206,14 +216,15 @@ void shell_terminal_readline(uchar *out, const int max, const bool output_while_
 void print_help()
 {
     printf("\nShell commands:\n");
-    printf(KCYN "  cls" KWHT " or" KCYN " clear " KWHT "- Clear the screen\n");
-    printf(KCYN "  exit" KWHT " - Exit the shell\n");
-    printf(KCYN "  reboot" KWHT " - Reboot the system\n");
-    printf(KCYN "  shutdown" KWHT " - Shutdown the system\n");
-    printf(KCYN "  help" KWHT " - Display this help message\n");
-    printf(KCYN "  cd " KYEL "[directory] " KWHT " - Change the current directory\n");
-    printf(KCYN "  so" KWHT " - Causes a stack overflow for testing purposes\n");
-    printf(KCYN "  [command]" KWHT " - Run a command\n");
+    printf(KCYN "  cls" KWHT " or" KCYN " clear        " KWHT " Clear the screen\n");
+    printf(KCYN "  exit                " KWHT " Exit the shell\n");
+    printf(KCYN "  reboot              " KWHT " Reboot the system\n");
+    printf(KCYN "  shutdown            " KWHT " Shutdown the system\n");
+    printf(KCYN "  help                " KWHT " Display this help message\n");
+    printf(KCYN "  cd " KYEL "[directory]      " KWHT " Change the current directory\n");
+    printf(KCYN "  ps                  " KWHT " Shows the list of the processes currently executing\n");
+    printf(KCYN "  so                  " KWHT " Causes a stack overflow for testing purposes\n");
+    printf(KCYN "  [command]           " KWHT " Run a command\n");
 }
 
 int cmd_lookup(const char *name)

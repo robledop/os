@@ -38,7 +38,7 @@ void print_results(const struct file_directory *directory)
 {
     printf(KRESET "\n Entries in directory: %d\n", directory->entry_count);
 
-    printf(KMAG " Name");
+    printf(KBOLD KBLU " Name");
 
     for (size_t i = 0; i < 10; i++) {
         printf(" ");
@@ -56,7 +56,7 @@ void print_results(const struct file_directory *directory)
         printf(" ");
     }
 
-    printf("Attributes" KWHT);
+    printf("Attributes" KRESET KWHT);
 
     printf("\n");
 

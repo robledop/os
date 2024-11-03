@@ -160,27 +160,15 @@ int process_free_program_data(const struct process *process)
 /// The process remains in the process list until the parent process reads the exit code
 int process_zombify(struct process *process)
 {
-    // enter_critical();
     spin_lock(&process_lock);
 
     process->state = ZOMBIE;
 
     int res = process_free_allocations(process);
-    if (res < 0) {
-        warningf("Failed to terminate allocations for process %d\n", process->pid);
-        ASSERT(false, "Failed to terminate allocations for process");
-        spin_unlock(&process_lock);
-        return res;
-    }
+    ASSERT(res == 0, "Failed to free allocations for process");
 
     res = process_free_program_data(process);
-    if (res < 0) {
-        warningf("Failed to free program data for process %d\n", process->pid);
-        ASSERT(false, "Failed to free program data for process");
-        spin_unlock(&process_lock);
-        return res;
-    }
-
+    ASSERT(res == 0, "Failed to free program data for process");
 
     kfree(process->stack);
     process->stack = nullptr;
@@ -190,9 +178,7 @@ int process_zombify(struct process *process)
     process->page_directory = nullptr;
 
     scheduler_unlink_process(process);
-    scheduler_add_to_zombie_list(process);
 
-    // leave_critical();
     spin_unlock(&process_lock);
     return res;
 }
@@ -688,7 +674,6 @@ int process_wait_pid(struct process *process, const int pid)
         if (child == nullptr) {
             process->state    = WAITING;
             process->wait_pid = pid;
-            // TODO: Save thread state
             schedule();
             return -1;
         }
@@ -712,6 +697,7 @@ int process_wait_pid(struct process *process, const int pid)
         const int status  = child->exit_code;
         process->state    = RUNNING;
         process->wait_pid = 0;
+        kfree(child);
         return status;
     }
 

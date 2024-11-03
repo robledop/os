@@ -84,3 +84,8 @@ void yield()
 {
     syscall0(SYSCALL_YIELD);
 }
+
+void ps()
+{
+    syscall0(SYSCALL_PS);
+}

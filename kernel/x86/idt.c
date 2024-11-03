@@ -11,8 +11,6 @@
 #include "status.h"
 #include "vga_buffer.h"
 
-extern struct thread *current_thread;
-
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 typedef void (*INTERRUPT_HANDLER_FUNCTION)(void);
 
@@ -79,6 +77,7 @@ void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
     if (interrupt >= 0x20 && interrupt < 0x30) {
         pic_acknowledge(interrupt);
     }
+
 }
 
 void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler, const enum interrupt_type type)

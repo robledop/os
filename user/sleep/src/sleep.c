@@ -12,7 +12,7 @@ int main(const int argc, char **argv)
     printf("\n");
     sleep(sleep_time);
 
-    printf("Done");
+    // printf("Done");
 
     return 0;
 }

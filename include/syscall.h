@@ -27,6 +27,7 @@ enum SysCalls {
     SYSCALL_SHUTDOWN,
     SYSCALL_SLEEP,
     SYSCALL_YIELD,
+    SYSCALL_PS,
 };
 
 #ifdef __KERNEL__
@@ -60,6 +61,7 @@ void *sys_exec(struct interrupt_frame *frame);
 void *sys_getpid(struct interrupt_frame *frame);
 void *sys_sleep(struct interrupt_frame *frame);
 void *sys_yield(struct interrupt_frame *frame);
+void *sys_ps(struct interrupt_frame *frame);
 
 #else
 

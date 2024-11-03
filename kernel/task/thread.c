@@ -20,7 +20,7 @@ int thread_free(struct thread *thread)
     }
 
     scheduler_unqueue_thread(thread);
-    // scheduler_remove_current_thread(thread);
+    scheduler_remove_current_thread(thread);
 
     kfree(thread);
 
@@ -117,10 +117,10 @@ int thread_init(struct thread *thread, struct process *process)
 
     switch (process->file_type) {
     case PROCESS_FILE_TYPE_BINARY:
-        thread->registers.ip = PROGRAM_VIRTUAL_ADDRESS;
+        thread->registers.eip = PROGRAM_VIRTUAL_ADDRESS;
         break;
     case PROCESS_FILE_TYPE_ELF:
-        thread->registers.ip = elf_header(process->elf_file)->e_entry;
+        thread->registers.eip = elf_header(process->elf_file)->e_entry;
         break;
     default:
         panic("Unknown process file type");
@@ -168,9 +168,9 @@ void thread_save_state(struct thread *thread, const struct interrupt_frame *fram
     thread->registers.ecx = frame->ecx;
     thread->registers.eax = frame->eax;
 
-    thread->registers.ip    = frame->ip;
+    thread->registers.eip    = frame->eip;
     thread->registers.cs    = frame->cs;
-    thread->registers.flags = frame->flags;
+    thread->registers.eflags = frame->eflags;
     thread->registers.esp   = frame->esp;
     // thread->registers.ss    = frame->ss;
 }
@@ -185,9 +185,9 @@ void thread_copy_registers(struct thread *dest, const struct thread *src)
     dest->registers.ecx = src->registers.ecx;
     dest->registers.eax = src->registers.eax;
 
-    dest->registers.ip    = src->registers.ip;
+    dest->registers.eip    = src->registers.eip;
     dest->registers.cs    = src->registers.cs;
-    dest->registers.flags = src->registers.flags;
+    dest->registers.eflags = src->registers.eflags;
     dest->registers.esp   = src->registers.esp;
     dest->registers.ss    = src->registers.ss;
 }
@@ -201,9 +201,9 @@ struct registers interrupt_frame_to_registers(const struct interrupt_frame *fram
         .edx   = frame->edx,
         .ecx   = frame->ecx,
         .eax   = frame->eax,
-        .ip    = frame->ip,
+        .eip    = frame->eip,
         .cs    = frame->cs,
-        .flags = frame->flags,
+        .eflags = frame->eflags,
         .esp   = frame->esp,
         .ss    = frame->ss,
     };
@@ -221,9 +221,9 @@ struct interrupt_frame registers_to_interrupt_frame(const struct registers *regi
         .edx   = registers->edx,
         .ecx   = registers->ecx,
         .eax   = registers->eax,
-        .ip    = registers->ip,
+        .eip    = registers->eip,
         .cs    = registers->cs,
-        .flags = registers->flags,
+        .eflags = registers->eflags,
         .esp   = registers->esp,
         .ss    = registers->ss,
     };
