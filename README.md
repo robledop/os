@@ -18,6 +18,8 @@ Just a little operating system I'm developing for fun.
 
 ![Screenshot](docs/img/screenshot4.png)
 
+![Screenshot](docs/img/screenshot5.png)
+
 </details>
 
 

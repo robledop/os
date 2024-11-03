@@ -1,5 +1,7 @@
 # Task switching
 
+*This is a working in progress and I realize the approach is naive. I'm still learning about this topic.*
+
 The state of the current user thread is saved by the interrupt handler when an interrupt occurs.
 
 <pre>
@@ -72,6 +74,19 @@ void schedule()
     scheduler_switch_thread(next);
 }
 ```
+
+## Terminating processes
+
+When a process launches a child process and waits for it, the function `process_wait_pid()` gets called.
+This function will look for the child process, remove it if it's a zombie, or put the parent process in WAITING state.
+That will make the scheduler call `scheduler_check_waiting_thread()` which will keep checking if the child process is a
+zombie or not.
+
+If a child process is not awaited by its parent, then the `exit()` syscall will eventually be called and remove the
+child
+process from it's parent's children list even if the parent did not wait for it.
+
+```c
 
 
 
