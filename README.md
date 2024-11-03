@@ -1,6 +1,14 @@
 # OS (no name)
 
-My hobby operating system.
+Just a little operating system I'm developing for fun.
+
+## Documentation
+
+[Multi-tasking](docs/MULTITASKING.md)  
+[Things I learned](docs/THINGS_I_LEARNED.md)
+
+<details>
+<summary>Screenshots</summary>
 
 ![Screenshot](docs/img/screenshot1.png)
 
@@ -8,12 +16,16 @@ My hobby operating system.
 
 ![Screenshot](docs/img/screenshot3.png)
 
-## Documentation
+![Screenshot](docs/img/screenshot4.png)
 
-[Multi-tasking](docs/MULTITASKING.md)  
-[Things I learned](docs/THINGS_I_LEARNED.md)
+</details>
 
-## Roadmap
+
+<details>
+<summary>Roadmap</summary>
+
+<details>
+<summary>General features</summary>
 
 - ✅ Bootloader
 - ✅ GRUB compatibility
@@ -51,6 +63,7 @@ My hobby operating system.
 - ⬜ Network stack
 - ⬜ Make the syscalls more POSIX-like
 - ⬜ GUI
+</details>
 
 <details>
 <summary>Syscalls</summary>
@@ -105,5 +118,7 @@ My hobby operating system.
 - ⬜ time
 - ⬜ errno
 - ⬜ pthread_create
+
+</details>
 
 </details>
