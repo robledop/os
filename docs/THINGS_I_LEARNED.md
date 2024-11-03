@@ -39,7 +39,8 @@ objdump -D -S sh | grep 401eba -A 50 -B 50
 
 - `-A 50` and `-B 50` are used to show 50 lines after and before the address `00401eba`
 
-In my case, it was in the `strcat` function:
+In my case, it was in the `strcat` function, but that does not mean the problem was necessarily caused by this function,
+of course:
 
 <pre><code>
  char *strcat(char *dest, const char *src)

@@ -382,6 +382,7 @@ void schedule()
     }
 
     // If the next thread is waiting, check their children
+    // and remove any zombies.
     scheduler_check_waiting_thread(next);
 
     // If the next thread is not running, find a runnable thread.
