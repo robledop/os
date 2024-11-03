@@ -2,6 +2,7 @@
 #include <string.h>
 #include <x86.h>
 
+void print_registers();
 typedef struct stack_frame {
     struct stack_frame *ebp;
     uint32_t eip;
@@ -15,29 +16,11 @@ static struct elf32_shdr *elf_section_headers;
 /// gdb or addr2line can be used to translate these into function names
 void debug_stats(void)
 {
-    kprintf("Registers:\n");
-    uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp;
-    asm volatile("movl %%eax, %0" : "=r"(eax));
-    asm volatile("movl %%ebx, %0" : "=r"(ebx));
-    asm volatile("movl %%ecx, %0" : "=r"(ecx));
-    asm volatile("movl %%edx, %0" : "=r"(edx));
-    asm volatile("movl %%esi, %0" : "=r"(esi));
-    asm volatile("movl %%edi, %0" : "=r"(edi));
-    asm volatile("movl %%ebp, %0" : "=r"(ebp));
-    asm volatile("movl %%esp, %0" : "=r"(esp));
-    kprintf("\tEAX: %p", eax);
-    kprintf("\tEBX: %p", ebx);
-    kprintf("\tECX: %p", ecx);
-    kprintf("\tEDX: %p", edx);
-    kprintf("\tESI: %p\n", esi);
-    kprintf("\tEDI: %p", edi);
-    kprintf("\tEBP: %p", ebp);
-    kprintf("\tESP: %p", esp);
-    kprintf("\tEFLAGS: %p (IF: %d) \n", read_eflags(), read_eflags() & EFLAGS_IF);
+    print_registers();
 
     stack_frame_t *stack;
     asm volatile("movl %%ebp, %0" : "=r"(stack));
-    kprintf("Stack trace:\n");
+    kprintf(KBOLD KWHT "Stack trace:\n" KRESET);
     int max = 10;
     while (stack && stack->eip != 0 && max-- > 0) {
         auto symbol = debug_function_symbol_lookup(stack->eip);
@@ -55,7 +38,10 @@ struct symbol debug_function_symbol_lookup(const elf32_addr address)
         return (struct symbol){0, NULL};
     }
 
-    auto const symbols_table      = (struct elf32_sym *)symtab_section_header->sh_addr;
+    auto const symbols_table = (struct elf32_sym *)symtab_section_header->sh_addr;
+    if (!symbols_table) {
+        return (struct symbol){0, NULL};
+    }
     const uint32_t symtab_entries = symtab_section_header->sh_size / sizeof(struct elf32_sym);
 
     const struct elf32_shdr *strtab_sh = &elf_section_headers[symtab_section_header->sh_link];
@@ -122,4 +108,94 @@ void assert(const char *snippet, const char *file, int line, const char *message
         panic(message);
     }
     panic("Assertion failed");
+}
+
+void print_registers()
+{
+    kprintf(KBOLD KWHT "Registers:\n" KRESET);
+    uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
+    asm volatile("movl %%eax, %0" : "=r"(eax));
+    asm volatile("movl %%ebx, %0" : "=r"(ebx));
+    asm volatile("movl %%ecx, %0" : "=r"(ecx));
+    asm volatile("movl %%edx, %0" : "=r"(edx));
+    asm volatile("movl %%esi, %0" : "=r"(esi));
+    asm volatile("movl %%edi, %0" : "=r"(edi));
+    asm volatile("movl %%ebp, %0" : "=r"(ebp));
+    asm volatile("movl %%esp, %0" : "=r"(esp));
+    asm volatile("1: movl $1b, %0" : "=r"(eip));
+    kprintf("\tEAX: %p", eax);
+    kprintf("\tEBX: %p", ebx);
+    kprintf("\tECX: %p", ecx);
+    kprintf("\tEDX: %p", edx);
+    kprintf("\tESI: %p\n", esi);
+    kprintf("\tEDI: %p", edi);
+    kprintf("\tEBP: %p", ebp);
+    kprintf("\tESP: %p", esp);
+    kprintf("\tEIP: %p\n", eip);
+    auto eflags = read_eflags();
+
+    kprintf("\tEFLAGS: %p ", eflags);
+
+    if (eflags & EFLAGS_ALL) {
+        kprintf("(");
+    }
+    if (eflags & EFLAGS_CF) {
+        kprintf("CF ");
+    }
+    if (eflags & EFLAGS_PF) {
+        kprintf("PF ");
+    }
+    if (eflags & EFLAGS_AF) {
+        kprintf("AF ");
+    }
+    if (eflags & EFLAGS_ZF) {
+        kprintf("ZF ");
+    }
+    if (eflags & EFLAGS_SF) {
+        kprintf("SF ");
+    }
+    if (eflags & EFLAGS_TF) {
+        kprintf("TF ");
+    }
+    if (eflags & EFLAGS_IF) {
+        kprintf("IF ");
+    }
+    if (eflags & EFLAGS_DF) {
+        kprintf("DF ");
+    }
+    if (eflags & EFLAGS_OF) {
+        kprintf("OF ");
+    }
+    if (eflags & EFLAGS_IOPL) {
+        kprintf("IOPL ");
+    }
+    if (eflags & EFLAGS_NT) {
+        kprintf("NT ");
+    }
+    if (eflags & EFLAGS_RF) {
+        kprintf("RF ");
+    }
+    if (eflags & EFLAGS_VM) {
+        kprintf("VM ");
+    }
+    if (eflags & EFLAGS_AC) {
+        kprintf("AC ");
+    }
+    if (eflags & EFLAGS_VIF) {
+        kprintf("VIF ");
+    }
+    if (eflags & EFLAGS_VIP) {
+        kprintf("VIP ");
+    }
+    if (eflags & EFLAGS_ID) {
+        kprintf("ID ");
+    }
+    if (eflags & EFLAGS_AI) {
+        kprintf("AI ");
+    }
+
+    if (eflags & EFLAGS_ALL) {
+        kprintf(")");
+    }
+    kprintf("\n");
 }

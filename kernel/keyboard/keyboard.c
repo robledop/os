@@ -53,13 +53,18 @@ void keyboard_push(const uchar c)
         return;
     }
 
-    struct process *process = scheduler_get_current_process();
+    auto const thread = scheduler_get_thread_sleeping_for_keyboard();
+    if (!thread) {
+        return;
+    }
+    struct process *process = thread->process;
+
     if (!process) {
         warningf("No current process\n");
         return;
     }
 
-    const int real_index                 = keyboard_get_tail_index(process);
+    const int real_index = keyboard_get_tail_index(process);
 
     process->keyboard.buffer[real_index] = c;
     process->keyboard.tail               = (process->keyboard.tail + 1) % KEYBOARD_BUFFER_SIZE;

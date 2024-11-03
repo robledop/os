@@ -1,9 +1,9 @@
-#include "path_parser.h"
-#include "config.h"
-#include "kernel_heap.h"
-#include "serial.h"
-#include "status.h"
-#include "string.h"
+#include <config.h>
+#include <kernel_heap.h>
+#include <path_parser.h>
+#include <serial.h>
+#include <status.h>
+#include <string.h>
 #ifndef __KERNEL__
 #include <stdlib.h>
 #endif

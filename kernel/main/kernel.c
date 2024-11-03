@@ -1,6 +1,5 @@
 #include <debug.h>
 #include <disk.h>
-#include <elf.h>
 #include <file.h>
 #include <gdt.h>
 #include <idt.h>
@@ -9,13 +8,11 @@
 #include <kernel_heap.h>
 #include <keyboard.h>
 #include <paging.h>
-#include <pci.h>
 #include <pic.h>
 #include <pit.h>
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
-#include <string.h>
 #include <syscall.h>
 #include <thread.h>
 #include <vga_buffer.h>
@@ -31,6 +28,7 @@ void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
 
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
 int __cli_count             = 0;
+uint32_t stack_top          = 0;
 
 extern struct page_directory *kernel_page_directory;
 
@@ -53,38 +51,39 @@ void kernel_page()
     paging_switch_directory(kernel_page_directory);
 }
 
-void kernel_main(multiboot_info_t *mbd, unsigned int magic)
+void kernel_main(multiboot_info_t *mbd, uint32_t magic)
 {
-    __stack_chk_guard  = STACK_CHK_GUARD;
-    uint32_t stack_ptr = 0;
-    asm("mov %%esp, %0" : "=r"(stack_ptr));
+    __stack_chk_guard = STACK_CHK_GUARD;
+    asm("mov %%esp, %0" : "=r"(stack_top));
 
     enter_critical();
-    init_symbols(mbd);
 
     vga_buffer_init();
     init_serial();
-    gdt_init(stack_ptr);
+    gdt_init(stack_top);
 
     // kprintf(KRESET KYEL "Kernel stack base: %x\n", stack_ptr);
     // char *cpu = cpu_string();
     // kprintf(KCYN "CPU: %s\n", cpu);
     // cpu_print_info();
+    // pci_scan();
 
     kernel_heap_init();
     paging_init();
+
     idt_init();
     pic_init();
     pit_init();
+    display_grub_info(mbd, magic);
+    init_symbols(mbd);
     scheduler_init();
-    // display_grub_info(mbd, magic);
-    // pci_scan();
     fs_init();
     disk_init();
     register_syscalls();
     keyboard_init();
 
-    kprintf("Starting the shell\n");
+
+    kprintf("\nStarting the shell");
     start_shell(0);
 
     ASSERT(!(read_eflags() & EFLAGS_IF), "Interrupts must be disabled");
@@ -123,8 +122,7 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
         panic("invalid memory map given by GRUB bootloader");
     }
 
-    kprintf("Bootloader: %s\n", mbd->boot_loader_name);
-
+    // kprintf("Bootloader: %s\n", mbd->boot_loader_name);
 
     /* Loop through the memory map and display the values */
     for (unsigned int i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {

@@ -1,17 +1,15 @@
-#include "thread.h"
-
 #include <debug.h>
+#include <elf.h>
+#include <idt.h>
+#include <kernel.h>
+#include <kernel_heap.h>
+#include <memory.h>
+#include <process.h>
 #include <scheduler.h>
-
-#include "elfloader.h"
-#include "idt.h"
-#include "kernel.h"
-#include "kernel_heap.h"
-#include "memory.h"
-#include "process.h"
-#include "serial.h"
-#include "status.h"
-#include "string.h"
+#include <serial.h>
+#include <status.h>
+#include <string.h>
+#include <thread.h>
 
 int thread_init(struct thread *thread, struct process *process);
 
@@ -22,6 +20,7 @@ int thread_free(struct thread *thread)
     }
 
     scheduler_unqueue_thread(thread);
+    // scheduler_remove_current_thread(thread);
 
     kfree(thread);
 
@@ -47,7 +46,6 @@ struct thread *thread_create(struct process *process)
         goto out;
     }
 
-
 out:
     if (ISERR(res)) {
         thread_free(thread);
@@ -71,11 +69,6 @@ int thread_page_thread(const struct thread *thread)
 
 int copy_string_from_thread(const struct thread *thread, const void *virtual, void *physical, const int max)
 {
-    if (max >= PAGING_PAGE_SIZE) {
-        dbgprintf("String too long\n");
-        return -EINVARG;
-    }
-
     int res   = 0;
     char *tmp = kzalloc(max);
     if (!tmp) {
@@ -118,6 +111,7 @@ int thread_init(struct thread *thread, struct process *process)
 
     if (!thread->process->page_directory) {
         dbgprintf("Failed to create page directory for thread %x\n", &thread);
+        ASSERT(false, "Failed to create page directory");
         return -ENOMEM;
     }
 
@@ -178,7 +172,7 @@ void thread_save_state(struct thread *thread, const struct interrupt_frame *fram
     thread->registers.cs    = frame->cs;
     thread->registers.flags = frame->flags;
     thread->registers.esp   = frame->esp;
-    thread->registers.ss    = frame->ss;
+    // thread->registers.ss    = frame->ss;
 }
 
 void thread_copy_registers(struct thread *dest, const struct thread *src)

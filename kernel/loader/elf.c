@@ -1,5 +1,4 @@
-#include <config.h>
-#include <elfloader.h>
+#include <elf.h>
 #include <file.h>
 #include <kernel.h>
 #include <kernel_heap.h>
@@ -8,6 +7,16 @@
 #include <string.h>
 
 constexpr char elf_signature[] = {0x7f, 'E', 'L', 'F'};
+
+void *elf_get_entry_ptr(const struct elf_header *elf_header)
+{
+    return (void *)elf_header->e_entry;
+}
+
+uint32_t elf_get_entry(const struct elf_header *elf_header)
+{
+    return elf_header->e_entry;
+}
 
 static bool elf_valid_signature(const void *buffer)
 {

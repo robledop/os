@@ -212,6 +212,7 @@ void print_help()
     printf(KCYN "  shutdown" KWHT " - Shutdown the system\n");
     printf(KCYN "  help" KWHT " - Display this help message\n");
     printf(KCYN "  cd " KYEL "[directory] " KWHT " - Change the current directory\n");
+    printf(KCYN "  so" KWHT " - Causes a stack overflow for testing purposes\n");
     printf(KCYN "  [command]" KWHT " - Run a command\n");
 }
 

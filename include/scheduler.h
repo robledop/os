@@ -40,3 +40,4 @@ void scheduler_run_idle_thread();
 
 void scheduler_run_thread_in_kernel_mode(uint32_t eip);
 int scheduler_get_processes(struct process_info **proc_info, int *count);
+struct thread *scheduler_get_thread_sleeping_for_keyboard();

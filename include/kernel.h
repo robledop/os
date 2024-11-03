@@ -4,9 +4,10 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "multiboot.h"
+#include <multiboot.h>
+#include <types.h>
 
-void kernel_main(multiboot_info_t *mbd, unsigned int magic);
+void kernel_main(multiboot_info_t *mbd, uint32_t magic);
 void panic(const char *msg);
 void kernel_page();
 void set_kernel_mode_segments();

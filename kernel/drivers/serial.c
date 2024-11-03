@@ -1,5 +1,4 @@
 #include <io.h>
-#include <kernel.h>
 #include <memory.h>
 #include <serial.h>
 #include <spinlock.h>
@@ -39,8 +38,7 @@ int serial_printf(const char *fmt, ...)
 {
     int written = 0;
 #if defined(DEBUG_SERIAL) || defined(DEBUG_WARNINGS)
-    // spin_lock(&serial_lock);
-    // ENTER_CRITICAL();
+    spin_lock(&serial_lock);
 
     va_list args;
 
@@ -91,8 +89,7 @@ int serial_printf(const char *fmt, ...)
 
     va_end(args);
 
-    // spin_unlock(&serial_lock);
-    // LEAVE_CRITICAL();
+    spin_unlock(&serial_lock);
 
 #endif
     return written;

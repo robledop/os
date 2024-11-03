@@ -1,4 +1,4 @@
-#include "config.h"
+#include <config.h>
 
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;

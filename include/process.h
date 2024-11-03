@@ -18,6 +18,7 @@ enum PROCESS_STATE {
     SLEEPING
 };
 enum PROCESS_SIGNAL { NONE, SIGKILL, SIGSTOP, SIGCONT, SIGTERM, SIGWAKEUP };
+enum SLEEP_REASON { SLEEP_REASON_NONE, SLEEP_REASON_KEYBOARD };
 
 struct command_argument {
     char argument[512];
@@ -49,6 +50,7 @@ struct process {
     struct thread *thread;
     enum PROCESS_STATE state;
     enum PROCESS_SIGNAL signal;
+    enum SLEEP_REASON sleep_reason;
     int wait_pid;
     int exit_code;
     uint32_t sleep_until;

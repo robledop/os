@@ -1,19 +1,17 @@
 #include "idt.h"
-
 #include <pic.h>
 #include <scheduler.h>
 #include <string.h>
 #include <x86.h>
-
 #include "config.h"
 #include "debug.h"
-#include "io.h"
 #include "kernel.h"
 #include "memory.h"
 #include "serial.h"
 #include "status.h"
-#include "thread.h"
 #include "vga_buffer.h"
+
+extern struct thread *current_thread;
 
 // https://wiki.osdev.org/Interrupt_Descriptor_Table
 typedef void (*INTERRUPT_HANDLER_FUNCTION)(void);
@@ -60,36 +58,26 @@ char *exception_messages[] = {"Division By Zero",
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-void no_interrupt_handler(const int interrupt, const uint32_t unused, const struct interrupt_frame *frame)
+void no_interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
     kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
 }
 
 void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
+    if (interrupt_callbacks[interrupt] != nullptr) {
+        kernel_page();
+        scheduler_save_current_thread(frame);
+        interrupt_callbacks[interrupt](interrupt, frame);
+        scheduler_switch_current_thread_page();
+    }
+
     // External interrupts are special.
     //   We only handle one at a time (so interrupts must be off)
     //   and they need to be acknowledged on the PIC (see below).
     //   An external interrupt handler cannot sleep.
-    bool external = interrupt >= 0x20 && interrupt < 0x30;
-
-    // The error code is pushed onto the stack by the CPU when an exception occurs.
-    // The interrupt stub at idt.asm then pops the error code from the stack and pushes it into the eax register.
-    // After that, this function is called, and now we can access the error code from the eax register.
-    uint32_t error_code;
-    asm volatile("movl %%eax, %0\n" : "=r"(error_code) : : "ebx", "eax");
-
-    kernel_page();
-    if (interrupt_callbacks[interrupt] != nullptr) {
-        scheduler_save_current_thread(frame);
-        interrupt_callbacks[interrupt](interrupt, error_code, frame);
-    }
-
-    scheduler_switch_current_thread_page();
-    if (external) {
+    if (interrupt >= 0x20 && interrupt < 0x30) {
         pic_acknowledge(interrupt);
-    } else {
-        kprintf(KMAG "Interrupt %d\n" KWHT, interrupt);
     }
 }
 
@@ -109,10 +97,10 @@ void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler, cons
     // (1111) specifies a 32-bit trap gate.
     switch (type) {
     case interrupt_gate:
-        desc->type_attr = 0b11101110;
+        desc->type_attr = 0b11101110; // 0xEE
         break;
     case trap_gate:
-        desc->type_attr = 0b11101111;
+        desc->type_attr = 0b11101111; // 0xEF
         break;
     default:
         panic("Unsupported interrupt type");
@@ -122,7 +110,7 @@ void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler, cons
     desc->offset_2 = (uint32_t)handler >> 16;
 }
 
-void idt_exception_handler(int interrupt, uint32_t error_code, const struct interrupt_frame *frame)
+void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
 {
     // Page fault exception
     if (interrupt == 14) {
@@ -130,32 +118,31 @@ void idt_exception_handler(int interrupt, uint32_t error_code, const struct inte
         kprintf(KYEL "\nFaulting address:" KWHT " %x\n", faulting_address);
 
         // If the faulting address is not in the user space, try to find the closest function symbol
-        if (!(error_code & PAGE_FAULT_USER_MASK)) {
+        if (!(frame->eax & PAGE_FAULT_USER_MASK)) {
             auto const symbol = debug_function_symbol_lookup(faulting_address);
             if (symbol.name) {
                 kprintf(KYEL "Closest function symbol:" KWHT " %s (%x)\n", symbol.name, symbol.address);
             }
         }
 
-        kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
-        kprintf(KYEL "P:" KWHT "  %x\n", error_code & PAGE_FAULT_PRESENT_MASK ? 1 : 0);
-        kprintf(KYEL "W:" KWHT "  %x\n", error_code & PAGE_FAULT_WRITE_MASK ? 1 : 0);
-        kprintf(KYEL "U:" KWHT "  %x\n", error_code & PAGE_FAULT_USER_MASK ? 1 : 0);
-        kprintf(KYEL "R:" KWHT "  %x\n", error_code & PAGE_FAULT_RESERVED_MASK ? 1 : 0);
-        kprintf(KYEL "I:" KWHT "  %x\n", error_code & PAGE_FAULT_ID_MASK ? 1 : 0);
-        kprintf(KYEL "PK:" KWHT " %x\n", error_code & PAGE_FAULT_PK_MASK ? 1 : 0);
-        kprintf(KYEL "SS:" KWHT " %x\n", error_code & PAGE_FAULT_SS_MASK ? 1 : 0);
-        sti();
+        kprintf(KYEL "Error code:" KWHT " %x\n", frame->eax);
+        kprintf(KYEL "P:" KWHT " %s ", frame->eax & PAGE_FAULT_PRESENT_MASK ? "true" : "false");
+        kprintf(KYEL "W:" KWHT " %s ", frame->eax & PAGE_FAULT_WRITE_MASK ? "true" : "false");
+        kprintf(KYEL "U:" KWHT " %s ", frame->eax & PAGE_FAULT_USER_MASK ? "true" : "false");
+        kprintf(KYEL "R:" KWHT " %s ", frame->eax & PAGE_FAULT_RESERVED_MASK ? "true" : "false");
+        kprintf(KYEL "I:" KWHT " %s ", frame->eax & PAGE_FAULT_ID_MASK ? "true" : "false");
+        kprintf(KYEL "PK:" KWHT " %s ", frame->eax & PAGE_FAULT_PK_MASK ? "true" : "false");
+        kprintf(KYEL "SS:" KWHT " %s\n", frame->eax & PAGE_FAULT_SS_MASK ? "true" : "false");
     } else if (EXCEPTION_HAS_ERROR_CODE(interrupt)) {
-        kprintf(KYEL "Error code:" KWHT " %x\n", error_code);
+        kprintf(KYEL "Error code:" KWHT " %x\n", frame->eax);
     }
 
     kprintf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
 
     if (frame->cs == KERNEL_CODE_SELECTOR) {
-        kprintf("The exception occurred in the kernel mode\n");
+        kprintf(KBOLD KWHT "The exception occurred in kernel mode.\n" KRESET);
     } else {
-        kprintf("The exception occurred in the user mode\n");
+        kprintf(KBOLD KWHT "The exception occurred in user mode.\n" KRESET);
     }
 
     debug_stats();
@@ -164,7 +151,9 @@ void idt_exception_handler(int interrupt, uint32_t error_code, const struct inte
     char name[MAX_PATH_LENGTH];
     strncpy(name, scheduler_get_current_process()->file_name, sizeof(name));
     process_zombify(scheduler_get_current_process());
-    kprintf("\nThe process %s (%d) has been terminated.", name, pid);
+    kprintf("The process %s (%d) has been terminated.\n", name, pid);
+
+    sti();
 }
 
 void idt_init()
@@ -203,46 +192,27 @@ void idt_init()
 
 int idt_register_interrupt_callback(const int interrupt, const INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
 {
-    if (interrupt < 0 || interrupt >= TOTAL_INTERRUPTS) {
-        dbgprintf("Interrupt out of bounds: %d\n", interrupt);
-        ASSERT(false, "Interrupt out of bounds");
-        return -EINVARG;
-    }
+    ASSERT(interrupt >= 0 && interrupt < TOTAL_INTERRUPTS, "Interrupt out of bounds");
+
     dbgprintf("Registering interrupt callback: %d\n", interrupt);
 
     interrupt_callbacks[interrupt] = interrupt_callback;
     return ALL_OK;
 }
 
-void register_syscall(const int command, const SYSCALL_HANDLER_FUNCTION handler)
+void register_syscall(const int syscall, const SYSCALL_HANDLER_FUNCTION handler)
 {
-    if (command < 0 || command >= MAX_SYSCALLS) {
-        panic("The command is out of bounds");
-    }
+    ASSERT(syscall >= 0 && syscall < MAX_SYSCALLS, "Invalid syscall");
+    ASSERT(!syscalls[syscall], "The syscall is already registered");
 
-    if (syscalls[command]) {
-        kprintf("The syscall %x is already registered\n", syscalls[command]);
-        panic("The syscall is already registered");
-    }
-
-    syscalls[command] = handler;
+    syscalls[syscall] = handler;
 }
 
 void *handle_syscall(const int syscall, struct interrupt_frame *frame)
 {
-    if (syscall < 0 || syscall >= MAX_SYSCALLS) {
-        warningf("Invalid command: %d\n", syscall);
-        kprintf("Invalid command: %d\n", syscall);
-        ASSERT(false, "Invalid command");
-        return NULL;
-    }
-
-    const SYSCALL_HANDLER_FUNCTION handler = syscalls[syscall];
-    if (!handler) {
-        warningf("No handler for command: %d\n", syscall);
-        ASSERT(false, "No handler for command");
-        return NULL;
-    }
+    ASSERT(syscall >= 0 && syscall < MAX_SYSCALLS, "Invalid syscall");
+    auto const handler = syscalls[syscall];
+    ASSERT(handler);
 
     return handler(frame);
 }

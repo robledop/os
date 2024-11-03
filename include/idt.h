@@ -51,9 +51,9 @@ void idt_init();
 // void disable_interrupts();
 
 typedef void *(*SYSCALL_HANDLER_FUNCTION)(struct interrupt_frame *frame);
-typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt, uint32_t error_code, const struct interrupt_frame *frame);
+typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt, const struct interrupt_frame *frame);
 
-void register_syscall(int command, SYSCALL_HANDLER_FUNCTION handler);
+void register_syscall(int syscall, SYSCALL_HANDLER_FUNCTION handler);
 int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback);
 
 /*

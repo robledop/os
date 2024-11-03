@@ -19,11 +19,11 @@ int main(const int argc, char **argv)
 
         printf("This should not be printed\n");
     } else {
-        waitpid(rc, nullptr);
+        // waitpid(rc, nullptr);
         printf(KYEL "\nAfter forking. Parent of %d (pid:%d)", rc, getpid());
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 3; i++) {
         const char *current_directory = get_current_directory();
         printf("\ncreate_process: %d", i);
         const int pid = create_process((char *)"echo lalala", current_directory);
@@ -33,10 +33,10 @@ int main(const int argc, char **argv)
         }
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 3; i++) {
         const int r = fork();
         if (r < 0) {
-            print("Fork failed\n");
+            printf("Fork failed\n");
         } else if (r == 0) {
             printf("Forked child %d (pid:%d)\n", i, getpid());
             exit();

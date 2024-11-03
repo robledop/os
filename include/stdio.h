@@ -65,7 +65,7 @@ struct file_stat {
 
 void putchar(unsigned char c);
 int printf(const char *fmt, ...);
-int print(const char *str);
+int print(const char *str, uint32_t size);
 int fopen(const char *name, const char *mode);
 int fclose(int fd);
 int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);

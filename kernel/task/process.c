@@ -1,21 +1,17 @@
-#include "process.h"
-
-#include <idt.h>
+#include <debug.h>
+#include <elf.h>
+#include <file.h>
+#include <kernel.h>
+#include <kernel_heap.h>
+#include <memory.h>
+#include <paging.h>
+#include <process.h>
+#include <scheduler.h>
+#include <serial.h>
 #include <spinlock.h>
-
-#include "debug.h"
-#include "elfloader.h"
-#include "file.h"
-#include "kernel.h"
-#include "kernel_heap.h"
-#include "memory.h"
-#include "paging.h"
-#include "scheduler.h"
-#include "serial.h"
-#include "status.h"
-#include "string.h"
-#include "thread.h"
-#include "vga_buffer.h"
+#include <status.h>
+#include <string.h>
+#include <thread.h>
 
 spinlock_t process_lock = 0;
 
@@ -32,7 +28,6 @@ int process_get_child_count(const struct process *process)
 
 struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state)
 {
-    // Traverse the linked list of children
     struct process *child = parent->children;
     while (child) {
         if (child->state == state) {
@@ -45,7 +40,6 @@ struct process *find_child_process_by_state(const struct process *parent, const 
 
 struct process *find_child_process_by_pid(const struct process *parent, const int pid)
 {
-    // Traverse the linked list of children
     struct process *child = parent->children;
     while (child) {
         if (child->pid == pid) {
@@ -76,7 +70,6 @@ int process_add_child(struct process *parent, struct process *child)
     return ALL_OK;
 }
 
-// TODO: free process data
 int process_remove_child(struct process *parent, struct process *child)
 {
     if (!parent || !child) {
@@ -113,18 +106,16 @@ static int process_find_free_allocation_slot(const struct process *process)
     return -ENOMEM;
 }
 
-// static bool process_is_process_pointer(struct process *process, void *ptr)
-// {
-//     for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++)
-//     {
-//         if (process->allocations[i].ptr == ptr)
-//         {
-//             return true;
-//         }
-//     }
+static bool process_is_process_pointer(const struct process *process, const void *ptr)
+{
+    for (size_t i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
+        if (process->allocations[i].ptr == ptr) {
+            return true;
+        }
+    }
 
-//     return false;
-// }
+    return false;
+}
 
 static struct process_allocation *process_get_allocation_by_address(struct process *process, const void *address)
 {
@@ -169,14 +160,16 @@ int process_free_program_data(const struct process *process)
 /// The process remains in the process list until the parent process reads the exit code
 int process_zombify(struct process *process)
 {
-    enter_critical();
+    // enter_critical();
+    spin_lock(&process_lock);
+
     process->state = ZOMBIE;
 
     int res = process_free_allocations(process);
     if (res < 0) {
         warningf("Failed to terminate allocations for process %d\n", process->pid);
         ASSERT(false, "Failed to terminate allocations for process");
-        leave_critical();
+        spin_unlock(&process_lock);
         return res;
     }
 
@@ -184,9 +177,10 @@ int process_zombify(struct process *process)
     if (res < 0) {
         warningf("Failed to free program data for process %d\n", process->pid);
         ASSERT(false, "Failed to free program data for process");
-        leave_critical();
+        spin_unlock(&process_lock);
         return res;
     }
+
 
     kfree(process->stack);
     process->stack = nullptr;
@@ -198,7 +192,8 @@ int process_zombify(struct process *process)
     scheduler_unlink_process(process);
     scheduler_add_to_zombie_list(process);
 
-    leave_critical();
+    // leave_critical();
+    spin_unlock(&process_lock);
     return res;
 }
 
@@ -724,7 +719,6 @@ int process_wait_pid(struct process *process, const int pid)
     process->state    = WAITING;
     process->wait_pid = pid;
 
-    // TODO: Save thread state
     schedule(); // Context switch to another process
     return -1;  // No child to wait for
 }
@@ -834,14 +828,3 @@ struct process *process_clone(struct process *process)
 
     return clone;
 }
-
-// struct process *process_replace(const struct process *parent, const char *file_name)
-// {
-//     struct process *child = process_create(file_name);
-//     child->parent         = parent->parent;
-//     child->pid            = parent->pid;
-//
-//     // TODO: Copy file descriptors
-//
-//     return child;
-// }

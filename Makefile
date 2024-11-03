@@ -74,7 +74,7 @@ FLAGS += -D__KERNEL__
 ifeq ($(filter grub,$(MAKECMDGOALS)),grub)
     FLAGS += -DGRUB
 endif
-ifeq ($(filter qemu_grub,$(MAKECMDGOALS)),qemu_grub)
+ifeq ($(filter qemu_grub_debug,$(MAKECMDGOALS)),qemu_grub_debug)
     FLAGS += -DGRUB
 endif
 

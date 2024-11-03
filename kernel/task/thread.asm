@@ -37,7 +37,7 @@ thread_switch:
 
     ; push the flags
     ; We also manipulate the flags to make sure interrupts are enabled
-    pushf
+    pushfd
     pop eax
     or eax, 0x200          ; enable interrupts
     push eax

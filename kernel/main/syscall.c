@@ -1,11 +1,9 @@
 #include <debug.h>
-#include <elfloader.h>
 #include <file.h>
 #include <idt.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
-#include <pic.h>
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
@@ -18,11 +16,17 @@
 #include <vga_buffer.h>
 #include <x86.h>
 
-spinlock_t syscall_lock;
+spinlock_t create_process_lock;
+spinlock_t fork_lock;
+spinlock_t exec_lock;
+spinlock_t wait_lock;
 
 void register_syscalls()
 {
-    spinlock_init(&syscall_lock);
+    spinlock_init(&create_process_lock);
+    spinlock_init(&fork_lock);
+    spinlock_init(&exec_lock);
+    spinlock_init(&wait_lock);
 
     register_syscall(SYSCALL_EXIT, sys_exit);
     register_syscall(SYSCALL_PRINT, sys_print);
@@ -140,13 +144,13 @@ void *sys_getpid(struct interrupt_frame *frame)
 
 void *sys_fork(struct interrupt_frame *frame)
 {
-    spin_lock(&syscall_lock);
+    spin_lock(&fork_lock);
 
     auto const parent            = scheduler_get_current_process();
     auto const child             = process_clone(parent);
     child->thread->registers.eax = 0;
 
-    spin_unlock(&syscall_lock);
+    spin_unlock(&fork_lock);
 
     return (void *)(int)child->pid;
 }
@@ -155,7 +159,7 @@ void *sys_fork(struct interrupt_frame *frame)
 // int exec(const char *path, const char *argv[])
 void *sys_exec(struct interrupt_frame *frame)
 {
-    spin_lock(&syscall_lock);
+    spin_lock(&exec_lock);
 
     const void *path_ptr = thread_peek_stack_item(scheduler_get_current_thread(), 1);
 
@@ -218,7 +222,7 @@ void *sys_exec(struct interrupt_frame *frame)
     const int res = process_load_data(full_path, process);
     if (res < 0) {
         kprintf("Result: %d\n", res);
-        spin_unlock(&syscall_lock);
+        spin_unlock(&exec_lock);
         return (void *)res;
     }
     void *program_stack_pointer = kzalloc(USER_STACK_SIZE);
@@ -236,7 +240,7 @@ void *sys_exec(struct interrupt_frame *frame)
     scheduler_set_process(process->pid, process);
     scheduler_queue_thread(thread);
 
-    spin_unlock(&syscall_lock);
+    spin_unlock(&exec_lock);
 
     // schedule();
 
@@ -367,7 +371,7 @@ void *sys_open(struct interrupt_frame *frame)
     enter_critical();
     schedule();
 
-    panic("Trying to schedule a dead task");
+    // panic("Trying to schedule a dead thread");
 
     // This must not return, otherwise we will get a general protection fault.
     // We will only reach this point if the scheduler tries to run a dead thread.
@@ -382,13 +386,14 @@ void *sys_open(struct interrupt_frame *frame)
 
 void *sys_print(struct interrupt_frame *frame)
 {
-    const void *message = get_pointer_argument(0);
+    uint32_t size       = get_integer_argument(0);
+    const void *message = get_pointer_argument(1);
     if (!message) {
         warningf("message is null\n");
         return NULL;
     }
 
-    char buffer[2048];
+    char buffer[size];
 
     copy_string_from_thread(scheduler_get_current_thread(), message, buffer, sizeof(buffer));
 
@@ -401,7 +406,8 @@ void *sys_getkey(struct interrupt_frame *frame)
 {
     const uchar c = keyboard_pop();
     if (c == 0) {
-        scheduler_get_current_thread()->process->state = SLEEPING;
+        scheduler_get_current_thread()->process->state        = SLEEPING;
+        scheduler_get_current_thread()->process->sleep_reason = SLEEP_REASON_KEYBOARD;
     }
     return (void *)(int)c;
 }
@@ -464,12 +470,13 @@ void *sys_wait_pid(struct interrupt_frame *frame)
 extern int __cli_count;
 void *sys_create_process(struct interrupt_frame *frame)
 {
-    spin_lock(&syscall_lock);
+    spin_lock(&create_process_lock);
 
     struct command_argument *arguments = thread_virtual_to_physical_address(
         scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 0));
     if (!arguments || strlen(arguments->argument) == 0) {
         warningf("Invalid arguments\n");
+        spin_unlock(&create_process_lock);
         return ERROR(-EINVARG);
     }
 
@@ -484,12 +491,14 @@ void *sys_create_process(struct interrupt_frame *frame)
     int res                 = process_load_enqueue(path, &process);
     if (res < 0) {
         warningf("Failed to load process %s\n", program_name);
+        spin_unlock(&create_process_lock);
         return ERROR(res);
     }
 
     res = process_inject_arguments(process, root_command_argument);
     if (res < 0) {
         warningf("Failed to inject arguments for process %s\n", program_name);
+        spin_unlock(&create_process_lock);
         return ERROR(res);
     }
 
@@ -499,7 +508,7 @@ void *sys_create_process(struct interrupt_frame *frame)
     process->priority               = 1;
     process_add_child(current_process, process);
 
-    spin_unlock(&syscall_lock);
+    spin_unlock(&create_process_lock);
 
     return (void *)(int)process->pid;
 }

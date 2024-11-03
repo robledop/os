@@ -1,14 +1,17 @@
 #include <idt.h>
 #include <io.h>
-#include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
+#include <pic.h>
 #include <ps2_kbd.h>
 #include <scheduler.h>
+#include <spinlock.h>
 #include <string.h>
 
+spinlock_t keyboard_lock         = 0;
+spinlock_t keyboard_getchar_lock = 0;
 int ps2_keyboard_init();
-void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused, const struct interrupt_frame* frame);
+void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame *frame);
 
 #define PS2_CAPSLOCK 0x3A
 
@@ -28,21 +31,21 @@ void kbd_led_handling(const unsigned char ledstatus)
 // Taken from xv6
 uchar keyboard_get_char()
 {
-    enter_critical();
+    spin_lock(&keyboard_getchar_lock);
 
     static unsigned int shift;
     static uchar *charcode[4] = {normalmap, shiftmap, ctlmap, ctlmap};
 
     const unsigned int st = inb(KBD_STATUS_PORT);
     if ((st & KBD_DATA_IN_BUFFER) == 0) {
-        leave_critical();
+        spin_unlock(&keyboard_getchar_lock);
         return -1;
     }
     unsigned int data = inb(KBD_DATA_PORT);
 
     if (data == 0xE0) {
         shift |= E0ESC;
-        leave_critical();
+        spin_unlock(&keyboard_getchar_lock);
         return 0;
     }
     if (data & 0x80) {
@@ -50,7 +53,7 @@ uchar keyboard_get_char()
         // key_released = true;
         data = (shift & E0ESC ? data : data & 0x7F);
         shift &= ~(shiftcode[data] | E0ESC);
-        leave_critical();
+        spin_unlock(&keyboard_getchar_lock);
         return 0;
     }
     if (shift & E0ESC) {
@@ -70,12 +73,15 @@ uchar keyboard_get_char()
         }
     }
 
-    leave_critical();
+    spin_unlock(&keyboard_getchar_lock);
     return c;
 }
 
 int ps2_keyboard_init()
 {
+    spinlock_init(&keyboard_lock);
+    spinlock_init(&keyboard_getchar_lock);
+
     idt_register_interrupt_callback(ISR_KEYBOARD, ps2_keyboard_interrupt_handler);
 
     outb(KBD_STATUS_PORT, 0xAE); // keyboard enable command
@@ -86,20 +92,25 @@ int ps2_keyboard_init()
     return 0;
 }
 
-void ps2_keyboard_interrupt_handler(int interrupt, uint32_t unused, const struct interrupt_frame *frame)
+void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 {
-    enter_critical();
+    spin_lock(&keyboard_lock);
+
+    pic_acknowledge(interrupt);
 
     const uchar c = keyboard_get_char();
     // Delete key
     if (c > 0 && c != 233) {
         keyboard_push(c);
     }
-    if (scheduler_get_current_thread()->process->state == SLEEPING) {
-        scheduler_get_current_thread()->process->signal = SIGWAKEUP;
+
+    auto const thread = scheduler_get_thread_sleeping_for_keyboard();
+    if (thread) {
+        thread->process->signal       = SIGWAKEUP;
+        // thread->process->sleep_reason = SLEEP_REASON_NONE;
     }
 
-    leave_critical();
+    spin_unlock(&keyboard_lock);
 }
 
 struct keyboard *ps2_init()

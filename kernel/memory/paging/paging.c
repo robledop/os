@@ -62,10 +62,8 @@ struct page_directory *paging_create_directory(const uint8_t flags)
 
 void paging_free_directory(struct page_directory *page_directory)
 {
-    if (!page_directory || !page_directory->directory_entry) {
-        warningf("Page directory is null\n");
-        return;
-    }
+    ASSERT(page_directory);
+    ASSERT(page_directory->directory_entry);
 
     dbgprintf("Freeing page directory %x\n", &page_directory);
 
@@ -81,15 +79,8 @@ void paging_free_directory(struct page_directory *page_directory)
 
 void paging_switch_directory(const struct page_directory *directory)
 {
-    if (!directory) {
-        panic("Page directory is null");
-        return;
-    }
-
-    if (!directory->directory_entry) {
-        panic("Page directory entry is null");
-        return;
-    }
+    ASSERT(directory);
+    ASSERT(directory->directory_entry);
 
     if (current_directory == directory->directory_entry) {
         return;
@@ -187,34 +178,13 @@ int paging_map_to(const struct page_directory *directory, void *virtual_address,
 {
     ASSERT(!paging_is_video_memory((uint32_t)physical_start_address), "Trying to map video memory");
     ASSERT(!paging_is_video_memory((uint32_t)physical_end_address), "Trying to map video memory");
-    int res = 0;
+    ASSERT((uint32_t)virtual_address % PAGING_PAGE_SIZE == 0, "Virtual address is not aligned");
+    ASSERT(paging_is_aligned(physical_start_address), "Physical start address is not aligned");
+    ASSERT(paging_is_aligned(physical_end_address), "Physical end address is not aligned");
+    ASSERT((uint32_t)physical_end_address >= (uint32_t)physical_start_address,
+           "Physical end address is less than physical start address");
 
-    if ((uint32_t)virtual_address % PAGING_PAGE_SIZE) {
-        warningf("Virtual address %x is not page aligned\n", (uint32_t)virtual_address);
-        ASSERT(false, "Virtual address is not aligned");
-        res = -EINVARG;
-    }
-
-    if (!paging_is_aligned(physical_start_address)) {
-        warningf("Physical start address %x is not page aligned\n", (uint32_t)physical_start_address);
-        ASSERT(false, "Physical start address is not aligned");
-        res = -EINVARG;
-    }
-
-    if (!paging_is_aligned(physical_end_address)) {
-        warningf("Physical end address %x is not page aligned\n", (uint32_t)physical_end_address);
-        ASSERT(false, "Physical end address is not aligned");
-        res = -EINVARG;
-    }
-
-    if ((uint32_t)physical_end_address < (uint32_t)physical_start_address) {
-        warningf("Physical end address %x is less than physical start address %x\n",
-                 (uint32_t)physical_end_address,
-                 (uint32_t)physical_start_address);
-        ASSERT(false, "Physical end address is less than physical start address");
-        res = -EINVARG;
-    }
-
+    int res               = 0;
     const int total_bytes = (char *)physical_end_address - (char *)physical_start_address;
     const int total_pages = total_bytes / PAGING_PAGE_SIZE;
     res                   = paging_map_range(directory, virtual_address, physical_start_address, total_pages, flags);

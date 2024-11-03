@@ -182,41 +182,56 @@ void cpu_print_info()
 
         kprintf("Features:");
 
-        if (edx & CPUID_FEAT_EDX_PSE)
+        if (edx & CPUID_FEAT_EDX_PSE) {
             kprintf(" PSE");
-        if (edx & CPUID_FEAT_EDX_PAE)
+        }
+        if (edx & CPUID_FEAT_EDX_PAE) {
             kprintf(" PAE");
-        if (edx & CPUID_FEAT_EDX_APIC)
+        }
+        if (edx & CPUID_FEAT_EDX_APIC) {
             kprintf(" APIC");
-        if (edx & CPUID_FEAT_EDX_MTRR)
+        }
+        if (edx & CPUID_FEAT_EDX_MTRR) {
             kprintf(" MTRR");
+        }
 
         kprintf("\n");
 
         kprintf("Instructions:");
 
-        if (edx & CPUID_FEAT_EDX_TSC)
+        if (edx & CPUID_FEAT_EDX_TSC) {
             kprintf(" TSC");
-        if (edx & CPUID_FEAT_EDX_MSR)
+        }
+        if (edx & CPUID_FEAT_EDX_MSR) {
             kprintf(" MSR");
-        if (edx & CPUID_FEAT_EDX_SSE)
+        }
+        if (edx & CPUID_FEAT_EDX_SSE) {
             kprintf(" SSE");
-        if (edx & CPUID_FEAT_EDX_SSE2)
+        }
+        if (edx & CPUID_FEAT_EDX_SSE2) {
             kprintf(" SSE2");
-        if (ecx & CPUID_FEAT_ECX_SSE3)
+        }
+        if (ecx & CPUID_FEAT_ECX_SSE3) {
             kprintf(" SSE3");
-        if (ecx & CPUID_FEAT_ECX_SSSE3)
+        }
+        if (ecx & CPUID_FEAT_ECX_SSSE3) {
             kprintf(" SSSE3");
-        if (ecx & bit_SSE4_1)
+        }
+        if (ecx & bit_SSE4_1) {
             kprintf(" SSE41");
-        if (ecx & bit_SSE4_2)
+        }
+        if (ecx & bit_SSE4_2) {
             kprintf(" SSE42");
-        if (ecx & bit_AVX)
+        }
+        if (ecx & bit_AVX) {
             kprintf(" AVX");
-        if (ecx & bit_F16C)
+        }
+        if (ecx & bit_F16C) {
             kprintf(" F16C");
-        if (ecx & bit_RDRND)
+        }
+        if (ecx & bit_RDRND) {
             kprintf(" RDRAND");
+        }
 
         kprintf("\n");
     }

@@ -7,6 +7,7 @@ global _start
 _start:
     push ebp
     push message
+    push len
     mov eax, 1           ; print syscall
     int 0x80
     mov eax, 0           ; sys_exit syscall
@@ -17,3 +18,4 @@ _start:
 
 section .data
 message db 0x0a, "This is from blank.elf", 0
+len equ $ - message

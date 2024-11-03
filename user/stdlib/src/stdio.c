@@ -1,7 +1,6 @@
 #include "stdio.h"
 #include <memory.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <string.h>
 #include <syscall.h>
 
@@ -69,9 +68,9 @@ void putchar(const unsigned char c)
     syscall1(SYSCALL_PUTCHAR, c);
 }
 
-int print(const char *str)
+int print(const char *str, uint32_t size)
 {
-    return syscall1(SYSCALL_PRINT, str);
+    return syscall2(SYSCALL_PRINT, str, size + 1);
 }
 
 uint8_t attribute = 0x07;
@@ -119,7 +118,7 @@ int printf(const char *fmt, ...)
                 char num_str[12];
                 itoa(num, num_str);
                 strncpy(str, num_str, MAX_FMT_STR);
-                print(str);
+                print(str, strlen(str));
                 x_offset += strlen(str);
                 break;
 
@@ -127,14 +126,14 @@ int printf(const char *fmt, ...)
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);
-                print("0x");
-                print(str);
+                print("0x", 2);
+                print(str, strlen(str));
                 x_offset += strlen(str);
                 break;
 
             case 's':
                 const char *str_arg = va_arg(args, char *);
-                print(str_arg);
+                print(str_arg, strlen(str_arg));
                 x_offset += strlen(str_arg);
                 break;
 

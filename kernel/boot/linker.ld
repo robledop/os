@@ -1,3 +1,6 @@
+
+/*Linker for the first stage bootloader*/
+
 ENTRY(_start)
 OUTPUT_FORMAT(binary)
 SECTIONS
@@ -7,6 +10,7 @@ SECTIONS
   {
     *(.text)
   }
+
 
   .asm : ALIGN(4096)
   {

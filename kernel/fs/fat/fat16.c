@@ -1,6 +1,6 @@
 #include "fat16.h"
-#include "debug.h"
 #include "config.h"
+#include "debug.h"
 #include "disk.h"
 #include "kernel.h"
 #include "kernel_heap.h"
@@ -119,7 +119,8 @@ int fat16_close(void *private);
 
 struct file_system *fat16_fs;
 
-struct file_system *fat16_init() {
+struct file_system *fat16_init()
+{
     fat16_fs          = kzalloc(sizeof(struct file_system));
     fat16_fs->resolve = fat16_resolve;
     fat16_fs->open    = fat16_open;
@@ -136,7 +137,8 @@ struct file_system *fat16_init() {
     return fat16_fs;
 }
 
-static void fat16_init_private(const struct disk *disk, struct fat_private *fat_private) {
+static void fat16_init_private(const struct disk *disk, struct fat_private *fat_private)
+{
     memset(&fat_private->header, 0, sizeof(struct fat_h));
 
     fat_private->cluster_read_stream = disk_stream_create(disk->id);
@@ -144,9 +146,13 @@ static void fat16_init_private(const struct disk *disk, struct fat_private *fat_
     fat_private->directory_stream    = disk_stream_create(disk->id);
 }
 
-int fat16_sector_to_absolute(const struct disk *disk, const int sector) { return sector * disk->sector_size; }
+int fat16_sector_to_absolute(const struct disk *disk, const int sector)
+{
+    return sector * disk->sector_size;
+}
 
-int fat16_get_total_items_for_directory(const struct disk *disk, const uint32_t directory_start_sector) {
+int fat16_get_total_items_for_directory(const struct disk *disk, const uint32_t directory_start_sector)
+{
     struct fat_directory_entry entry;
 
     const struct fat_private *fat_private = disk->fs_private;
@@ -197,7 +203,8 @@ out:
 }
 
 int fat16_get_root_directory(const struct disk *disk, const struct fat_private *fat_private,
-                             struct fat_directory *directory) {
+                             struct fat_directory *directory)
+{
     dbgprintf("Getting root directory\n");
 
     ASSERT(disk->sector_size > 0, "Invalid sector size");
@@ -250,7 +257,8 @@ error_out:
     return res;
 }
 
-int fat16_resolve(struct disk *disk) {
+int fat16_resolve(struct disk *disk)
+{
     int res = 0;
     dbgprintf("Disk type: %d\n", disk->type);
     dbgprintf("Disk sector size: %d\n", disk->sector_size);
@@ -321,7 +329,8 @@ out:
     return res;
 }
 
-void fat16_get_null_terminated_string(char **out, const char *in, size_t size) {
+void fat16_get_null_terminated_string(char **out, const char *in, size_t size)
+{
     size_t i = 0;
     while (*in != 0x00 && *in != 0x20) {
         **out = *in;
@@ -337,7 +346,8 @@ void fat16_get_null_terminated_string(char **out, const char *in, size_t size) {
     **out = 0x00;
 }
 
-void fat16_get_relative_filename(const struct fat_directory_entry *entry, char *out, const int max_len) {
+void fat16_get_relative_filename(const struct fat_directory_entry *entry, char *out, const int max_len)
+{
     memset(out, 0x00, max_len);
     char *out_tmp = out;
     fat16_get_null_terminated_string(&out_tmp, (const char *)entry->name, sizeof(entry->name));
@@ -347,8 +357,8 @@ void fat16_get_relative_filename(const struct fat_directory_entry *entry, char *
     }
 }
 
-struct fat_directory_entry *fat16_clone_fat_directory_entry(const struct fat_directory_entry *entry,
-                                                            const size_t size) {
+struct fat_directory_entry *fat16_clone_fat_directory_entry(const struct fat_directory_entry *entry, const size_t size)
+{
     if (size < sizeof(struct fat_directory_entry)) {
         warningf("Invalid size for cloning directory entry\n");
         return nullptr;
@@ -365,12 +375,14 @@ struct fat_directory_entry *fat16_clone_fat_directory_entry(const struct fat_dir
     return new_entry;
 }
 
-static uint32_t fat16_cluster_to_sector(const struct fat_private *fat_private, const int cluster) {
+static uint32_t fat16_cluster_to_sector(const struct fat_private *fat_private, const int cluster)
+{
     return fat_private->root_directory.ending_sector_position +
         ((cluster - 2) * fat_private->header.primary_header.sectors_per_cluster);
 }
 
-static int fat16_get_fat_entry(const struct disk *disk, const int cluster) {
+static int fat16_get_fat_entry(const struct disk *disk, const int cluster)
+{
     const struct fat_private *fs_private = disk->fs_private;
 
     const uint32_t fat_offset = cluster * 2;
@@ -396,7 +408,8 @@ out:
     return res;
 }
 
-static int fat16_get_cluster_for_offset(const struct disk *disk, const int start_cluster, const uint32_t offset) {
+static int fat16_get_cluster_for_offset(const struct disk *disk, const int start_cluster, const uint32_t offset)
+{
     int res                              = 0;
     const struct fat_private *fs_private = disk->fs_private;
     const int size_of_cluster            = fs_private->header.primary_header.sectors_per_cluster * disk->sector_size;
@@ -441,7 +454,8 @@ out:
     return res;
 }
 
-static int fat16_read_internal(struct disk *disk, const int cluster, const uint32_t offset, uint32_t total, void *out) {
+static int fat16_read_internal(struct disk *disk, const int cluster, const uint32_t offset, uint32_t total, void *out)
+{
     int res                              = 0;
     const struct fat_private *private    = disk->fs_private;
     struct disk_stream *stream           = private->cluster_read_stream;
@@ -478,7 +492,8 @@ out:
     return res;
 }
 
-void fat16_free_directory(struct fat_directory *directory) {
+void fat16_free_directory(struct fat_directory *directory)
+{
     if (!directory) {
         return;
     }
@@ -489,7 +504,8 @@ void fat16_free_directory(struct fat_directory *directory) {
     kfree(directory);
 }
 
-void fat16_fat_item_free(struct fat_item *item) {
+void fat16_fat_item_free(struct fat_item *item)
+{
     if (!item) {
         return;
     }
@@ -503,7 +519,8 @@ void fat16_fat_item_free(struct fat_item *item) {
     kfree(item);
 }
 
-struct fat_directory *fat16_load_fat_directory(struct disk *disk, const struct fat_directory_entry *entry) {
+struct fat_directory *fat16_load_fat_directory(struct disk *disk, const struct fat_directory_entry *entry)
+{
     int res                         = 0;
     struct fat_directory *directory = nullptr;
     struct fat_private *fat_private = disk->fs_private;
@@ -545,7 +562,8 @@ out:
     return directory;
 }
 
-struct fat_item *fat16_new_fat_item_for_directory_entry(struct disk *disk, const struct fat_directory_entry *entry) {
+struct fat_item *fat16_new_fat_item_for_directory_entry(struct disk *disk, const struct fat_directory_entry *entry)
+{
     struct fat_item *f_item = kzalloc(sizeof(struct fat_item));
     if (!f_item) {
         warningf("Failed to allocate memory for fat item\n");
@@ -564,7 +582,8 @@ struct fat_item *fat16_new_fat_item_for_directory_entry(struct disk *disk, const
 }
 
 struct fat_item *fat16_find_item_in_directory(struct disk *disk, const struct fat_directory *directory,
-                                              const char *name) {
+                                              const char *name)
+{
     struct fat_item *f_item = nullptr;
     for (int i = 0; i < directory->entry_count; i++) {
         char tmp_filename[MAX_PATH_LENGTH];
@@ -577,7 +596,8 @@ struct fat_item *fat16_find_item_in_directory(struct disk *disk, const struct fa
     return f_item;
 }
 
-struct fat_item *fat16_get_directory_entry(struct disk *disk, const struct path_part *path) {
+struct fat_item *fat16_get_directory_entry(struct disk *disk, const struct path_part *path)
+{
     dbgprintf("Getting directory entry for: %s\n", path->part);
     const struct fat_private *fat_private = disk->fs_private;
     struct fat_item *current_item         = nullptr;
@@ -607,7 +627,8 @@ out:
     return current_item;
 }
 
-void *fat16_open(struct disk *disk, const struct path_part *path, const FILE_MODE mode) {
+void *fat16_open(struct disk *disk, const struct path_part *path, const FILE_MODE mode)
+{
     dbgprintf("Opening file: %s\n", path->part);
     struct fat_file_descriptor *descriptor = nullptr;
     int error_code                         = 0;
@@ -643,7 +664,8 @@ error_out:
     return ERROR(error_code);
 }
 
-int fat16_read(struct disk *disk, const void *descriptor, const uint32_t size, const uint32_t nmemb, char *out) {
+int fat16_read(struct disk *disk, const void *descriptor, const uint32_t size, const uint32_t nmemb, char *out)
+{
     dbgprintf("Reading %d bytes from file\n", size * nmemb);
     int res = 0;
 
@@ -667,7 +689,8 @@ int fat16_read(struct disk *disk, const void *descriptor, const uint32_t size, c
     return res;
 }
 
-int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode) {
+int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode)
+{
     int res = 0;
 
     struct fat_file_descriptor *fat_desc = private;
@@ -705,7 +728,8 @@ out:
     return res;
 }
 
-int fat16_stat(struct disk *disk, void *private, struct file_stat *stat) {
+int fat16_stat(struct disk *disk, void *private, struct file_stat *stat)
+{
     int res = 0;
 
     struct fat_file_descriptor *fat_desc = (struct fat_file_descriptor *)private;
@@ -727,7 +751,8 @@ out:
     return res;
 }
 
-static void fat16_free_file_descriptor(struct fat_file_descriptor *descriptor) {
+static void fat16_free_file_descriptor(struct fat_file_descriptor *descriptor)
+{
     if (!descriptor) {
         warningf("Invalid file descriptor\n");
         return;
@@ -737,13 +762,14 @@ static void fat16_free_file_descriptor(struct fat_file_descriptor *descriptor) {
     kfree(descriptor);
 }
 
-int fat16_close(void *private) {
+int fat16_close(void *private)
+{
     fat16_free_file_descriptor((struct fat_file_descriptor *)private);
     return ALL_OK;
 }
 
-////////////////////
-struct directory_entry get_directory_entry(void *fat_directory_entries, int index) {
+struct directory_entry get_directory_entry(void *fat_directory_entries, int index)
+{
     // struct fat_directory_entry *entry = (struct fat_directory_entry *)entries[index];
     struct fat_directory_entry *entries = (struct fat_directory_entry *)fat_directory_entries;
     struct fat_directory_entry *entry   = entries + index;
@@ -779,7 +805,8 @@ struct directory_entry get_directory_entry(void *fat_directory_entries, int inde
     return directory_entry;
 }
 
-int get_fs_root_directory(const struct disk *disk, struct file_directory *directory) {
+int get_fs_root_directory(const struct disk *disk, struct file_directory *directory)
+{
     const struct fat_private *fat_private      = disk->fs_private;
     const struct file_directory root_directory = {
         .name        = "0:/",
@@ -791,7 +818,8 @@ int get_fs_root_directory(const struct disk *disk, struct file_directory *direct
     return 0;
 }
 
-int fat16_get_subdirectory(struct disk *disk, const char *path, struct file_directory *directory) {
+int fat16_get_subdirectory(struct disk *disk, const char *path, struct file_directory *directory)
+{
     // path comes a fully qualified path
     // e.g. 0:/subdirectory/subsubdirectory/file.txt
     // use strtok to get the name of the first subdirectory
@@ -835,7 +863,8 @@ int fat16_get_subdirectory(struct disk *disk, const char *path, struct file_dire
     return 0;
 }
 
-void fat16_print_partition_stats(const struct disk *disk) {
+void fat16_print_partition_stats(const struct disk *disk)
+{
     struct fat_private *fat_private = disk->fs_private;
     struct disk_stream *stream      = disk_stream_create(disk->id);
     if (!stream) {

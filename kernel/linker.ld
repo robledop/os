@@ -8,6 +8,11 @@ SECTIONS
     *(.text)
   }
 
+  .idle_thread : ALIGN(4K)
+  {
+      KEEP(*(.idle_thread))
+  }
+
   .asm : ALIGN(4096)
   {
     *(.asm)

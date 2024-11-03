@@ -1,15 +1,14 @@
-#include "file.h"
-#include "config.h"
-#include "debug.h"
-#include "disk.h"
-#include "fat16.h"
-#include "kernel.h"
-#include "kernel_heap.h"
-#include "memory.h"
-#include "serial.h"
-#include "status.h"
-#include "string.h"
-#include "vga_buffer.h"
+#include <config.h>
+#include <debug.h>
+#include <disk.h>
+#include <fat16.h>
+#include <file.h>
+#include <kernel.h>
+#include <kernel_heap.h>
+#include <memory.h>
+#include <serial.h>
+#include <status.h>
+#include <string.h>
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
