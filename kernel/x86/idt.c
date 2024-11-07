@@ -58,7 +58,8 @@ struct idtr_desc idtr_descriptor;
 
 void no_interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
-    kprintf(KYEL "No handler for interrupt: %d\n" KCYN, interrupt);
+    warningf("No handler for interrupt: %d\n", interrupt);
+    pic_acknowledge(interrupt);
 }
 
 void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)

@@ -6,8 +6,6 @@
 
 // https://wiki.osdev.org/PCI
 
-struct pci_driver pci_drivers[255];
-
 struct pci_class classes[] = {
     {0x00, 0x00, "Non-VGA-Compatible Unclassified Device"     },
     {0x00, 0x01, "VGA-Compatible Unclassified Device"         },
@@ -142,6 +140,12 @@ struct pci_vendor vendors[] = {
     {0x10EC, "Realtek Semiconductor Co."   }
 };
 
+struct pci_driver pci_drivers[] = {
+    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_DEV,     .pci_function = &e1000_init},
+    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_I217,    .pci_function = &e1000_init},
+    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_82577LM, .pci_function = &e1000_init},
+};
+
 uint16_t pci_config_read_word(const uint8_t bus, const uint8_t slot, const uint8_t func, const uint8_t offset)
 {
     const uint32_t lbus  = bus;
@@ -213,29 +217,21 @@ const char *pci_find_vendor(const uint16_t vendor_id)
 
 void load_driver(const struct pci_header pci, const uint8_t bus, const uint8_t device, const uint8_t function)
 {
-    for (uint16_t i = 0; i < 255; i++) {
-        if (pci_drivers[i].available && pci_drivers[i].class == pci.class && pci_drivers[i].subclass == pci.subclass) {
-            kprintf("bus: %x, dev: %x, func: %x: Loading the driver for %s\n",
-                    bus,
-                    device,
-                    function,
-                    pci_find_name(pci.class, pci.subclass));
-            pci_drivers[i].pci_function(pci, bus, device, function);
+    for (uint16_t i = 0; i < sizeof(pci_drivers) / sizeof(struct pci_driver); i++) {
+        if (pci_drivers[i].class == pci.class && pci_drivers[i].subclass == pci.subclass &&
+            pci_drivers[i].vendor_id == pci.vendor_id && pci_drivers[i].device_id == pci.device_id) {
+
+            kprintf("Loading driver for %s\n", pci_find_name(pci.class, pci.subclass));
+
+            struct pci_device *pci_device = kzalloc(sizeof(struct pci_device));
+            pci_device->header            = pci;
+            pci_device->bus               = bus;
+            pci_device->slot              = device;
+            pci_device->function          = function;
+
+            pci_drivers[i].pci_function(pci_device);
             return;
         }
-    }
-
-    // Quick and dirty solution for now
-    if (pci.vendor_id == INTEL_VEND &&
-        (pci.device_id == E1000_DEV || pci.device_id == E1000_I217 || pci.device_id == E1000_82577LM)) {
-        struct pci_device *pci_device = kzalloc(sizeof(struct pci_device));
-        pci_device->header = pci;
-        pci_device->bus = bus;
-        pci_device->slot = device;
-        pci_device->function = function;
-        pci_device->driver = &pci_drivers[0];
-
-        e1000_init(pci_device);
     }
 }
 
@@ -276,10 +272,10 @@ void pci_scan()
 
 void pci_enable_bus_mastering(const struct pci_device *device)
 {
-    uint16_t command_register_offset = 0x04;
+    constexpr uint16_t command_register_offset = 0x04;
     uint16_t dev_command_reg =
         pci_config_read_word(device->bus, device->slot, device->function, command_register_offset);
-    dev_command_reg |= (1 << 2); /* enable bus master */
+    dev_command_reg |= PCI_COMMAND_BUS_MASTER;
 
     pci_config_write_word(device->bus, device->slot, device->function, command_register_offset, dev_command_reg);
 }
