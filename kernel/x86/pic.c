@@ -42,8 +42,8 @@ void pic_init()
     // Mask all interrupts
     // outb(PIC1_PORT_B, 0xEC);
     // outb(PIC2_PORT_B, 0xFF);
-    outb(PIC1_PORT_B, 0xFB);
-    outb(PIC2_PORT_B, 0xF7);
+    // outb(PIC1_PORT_B, 0xFB);
+    // outb(PIC2_PORT_B, 0xF7);
 }
 
 void pic_acknowledge(const int irq)

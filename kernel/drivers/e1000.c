@@ -2,13 +2,60 @@
 #include <idt.h>
 #include <io.h>
 #include <kernel_heap.h>
+#include <memory.h>
+#include <net/arp.h>
 #include <net/ethernet.h>
+#include <net/helpers.h>
+#include <net/icmp.h>
+#include <net/ipv4.h>
+#include <net/network.h>
 #include <string.h>
 #include <vga_buffer.h>
 
 #define IRQ0 0x20
 
-void e1000_handle_receive();
+// struct ether_type {
+//     uint16_t ether_type;
+//     char *name;
+// };
+//
+// struct arp_packet {
+//     struct ether_header ether_header;
+//     struct arp_header arp_packet;
+// } __attribute__((packed));
+//
+// struct icmp_packet {
+//     struct ether_header ether_header;
+//     struct ipv4_header ip_header;
+//     struct icmp_header icmp_header;
+// } __attribute__((packed));
+//
+// struct ether_type ether_types[] = {
+//     {ETHERTYPE_PUP,      "Xerox PUP"               },
+//     {ETHERTYPE_SPRITE,   "Sprite"                  },
+//     {ETHERTYPE_IP,       "IPv4"                    },
+//     {ETHERTYPE_ARP,      "ARP"                     },
+//     {ETHERTYPE_REVARP,   "Reverse ARP"             },
+//     {ETHERTYPE_AT,       "AppleTalk protocol"      },
+//     {ETHERTYPE_AARP,     "AppleTalk ARP"           },
+//     {ETHERTYPE_VLAN,     "IEEE 802.1Q VLAN tagging"},
+//     {ETHERTYPE_IPX,      "IPX"                     },
+//     {ETHERTYPE_IPV6,     "IPv6"                    },
+//     {ETHERTYPE_LOOPBACK, "Loopback"                }
+// };
+//
+// const char *find_ether_type(const uint16_t ether_type)
+// {
+//     for (int i = 0; i < sizeof(ether_types) / sizeof(struct ether_type); i++) {
+//         if (ether_types[i].ether_type == ether_type) {
+//             return ether_types[i].name;
+//         }
+//     }
+//     return "Unknown";
+// }
+
+
+void e1000_receive();
 bool e1000_start();
 void e1000_linkup();
 int e1000_send_packet(const void *p_data, uint16_t p_len);
@@ -140,6 +187,8 @@ bool e1000_read_mac_address()
             return false;
         }
     }
+
+    network_set_mac(mac);
     return true;
 }
 
@@ -230,9 +279,8 @@ void e1000_init(struct pci_device *pci)
 void e1000_fire(int interrupt, const struct interrupt_frame *frame)
 {
     if (interrupt == pci_device->header.irq + IRQ0) {
-        // /* This might be needed here if your handler doesn't clear interrupts from each device and must be done
-        // before
-        //    EOI if using the PIC. Without this, the card will spam interrupts as the int-line will stay high. */
+        // This might be needed here if your handler doesn't clear interrupts from each device and must be done
+        // before EOI if using the PIC. Without this, the card will spam interrupts as the int-line will stay high.
         e1000_write_command(REG_IMASK, 0x1);
 
         const uint32_t status = e1000_read_command(0xc0);
@@ -241,7 +289,7 @@ void e1000_fire(int interrupt, const struct interrupt_frame *frame)
         } else if (status & 0x10) {
             // good threshold
         } else if (status & 0x80) {
-            e1000_handle_receive();
+            e1000_receive();
         }
     }
 }
@@ -286,62 +334,20 @@ bool e1000_start()
         e1000_rx_init();
         e1000_tx_init();
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
-uint16_t ntohs(uint16_t data)
+void e1000_receive()
 {
-    return ((data & 0x00ff) << 8) | (data & 0xff00) >> 8;
-}
-
-void e1000_handle_receive()
-{
-    uint16_t old_cur;
-    bool got_packet = false;
-
     while ((rx_descs[rx_cur]->status & 0x1)) {
-        got_packet   = true;
-        uint8_t *buf = (uint8_t *)rx_descs[rx_cur]->addr;
-        uint16_t len = rx_descs[rx_cur]->length;
+        auto const buf     = (uint8_t *)rx_descs[rx_cur]->addr;
+        const uint16_t len = rx_descs[rx_cur]->length;
 
-        struct ether_header *hdr = (struct ether_header *)buf;
-        kprintf(KBOLD KBLU "Source MAC: " KRESET KWHT);
-
-        for (int i = 0; i < 6; i++) {
-            char str[3];
-            itohex(hdr->src_host[i], str);
-            kprintf(str);
-            if (i < 5) {
-                kprintf(":");
-            }
-        }
-        kprintf("\n");
-
-        kprintf(KBOLD KBLU "Destination MAC: " KRESET KWHT);
-        for (int i = 0; i < 6; i++) {
-            char str[3];
-            itohex(hdr->dest_host[i], str);
-            kprintf(str);
-            if (i < 5) {
-                kprintf(":");
-            }
-        }
-        kprintf("\n");
-
-        kprintf(KBOLD KBLU "EtherType: " KRESET KWHT "%x\n", ntohs(hdr->ether_type));
-
-        for (int i = sizeof(struct ether_header); i < len; i++) {
-            if (buf[i]) {
-                kprintf("%c", buf[i]);
-            }
-        }
-
-        kprintf("\n");
+        network_receive(buf, len);
 
         rx_descs[rx_cur]->status = 0;
-        old_cur                  = rx_cur;
+        const uint16_t old_cur   = rx_cur;
         rx_cur                   = (rx_cur + 1) % E1000_NUM_RX_DESC;
         e1000_write_command(REG_RXDESCTAIL, old_cur);
     }

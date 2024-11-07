@@ -153,7 +153,7 @@ qemu: all FORCE
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
 	#./scripts/create_tap.sh
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -object filter-dump,id=f1,netdev=net0,file=dump.dat
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE

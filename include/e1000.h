@@ -122,3 +122,4 @@ struct e1000_tx_desc {
 } __attribute__((packed));
 
 void e1000_init(struct pci_device *pci);
+int e1000_send_packet(const void *p_data, uint16_t p_len);

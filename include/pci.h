@@ -131,11 +131,19 @@ struct pci_header {
 #define PCI_BAR_MEMORY_TYPE_32 0x0
 #define PCI_BAR_MEMORY_TYPE_64 0x2
 
+struct pci_device {
+    uint32_t bus;
+    uint32_t slot;
+    uint32_t function;
+    struct pci_header header;
+};
+
 struct pci_driver {
-    bool available;
     uint8_t class;
     uint8_t subclass;
-    void (*pci_function)(struct pci_header, uint8_t, uint8_t, uint8_t);
+    uint16_t vendor_id;
+    uint16_t device_id;
+    void (*pci_function)(struct pci_device *device);
 };
 
 struct pci_class {
@@ -144,18 +152,6 @@ struct pci_class {
     const char *name;
 };
 
-struct pci_device {
-    uint32_t bus;
-    uint32_t slot;
-    uint32_t function;
-    // uint16_t device;
-    // uint16_t vendor;
-    // uint8_t irq;
-    // uint16_t class;
-    // uint32_t base;
-    struct pci_header header;
-    struct pci_driver *driver;
-};
 
 struct pci_vendor {
     uint16_t id;
@@ -165,4 +161,4 @@ struct pci_vendor {
 
 void pci_scan();
 void pci_enable_bus_mastering(const struct pci_device *device);
-uint32_t pci_get_bar(const struct pci_device *dev, const uint8_t type);
+uint32_t pci_get_bar(const struct pci_device *dev, uint8_t type);
