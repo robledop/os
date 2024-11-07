@@ -33,6 +33,7 @@ FLAGS = -g \
 	-Wno-unused-parameter \
 	-nostartfiles \
 	-nodefaultlibs \
+	-save-temps \
 	-Iinc \
 	-Wall
 

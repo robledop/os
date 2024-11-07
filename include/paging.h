@@ -68,3 +68,6 @@ void *paging_align_address(void *address);
 void *paging_align_to_lower_page(void *address);
 void *paging_get_physical_address(const struct page_directory *directory, void *virtual_address);
 void paging_init();
+void kernel_page();
+int paging_kernel_map(void *virtual_address, void *physical_address, const int flags);
+int paging_kernel_map_range(void *virtual_address, void *physical_start_address, const int total_pages, const int flags);

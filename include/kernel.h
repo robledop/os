@@ -7,9 +7,8 @@
 #include <multiboot.h>
 #include <types.h>
 
-void kernel_main(multiboot_info_t *mbd, uint32_t magic);
+void kernel_main(const multiboot_info_t *mbd, uint32_t magic);
 void panic(const char *msg);
-void kernel_page();
 void set_kernel_mode_segments();
 void start_shell(int console);
 void system_reboot();

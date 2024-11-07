@@ -8,6 +8,7 @@
 #include <kernel_heap.h>
 #include <keyboard.h>
 #include <paging.h>
+#include <pci.h>
 #include <pic.h>
 #include <pit.h>
 #include <process.h>
@@ -20,17 +21,10 @@
 
 void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
 
-#if UINT32_MAX == UINTPTR_MAX
 #define STACK_CHK_GUARD 0xe2dee396
-#else
-#define STACK_CHK_GUARD 0x595e9fbd94fda766
-#endif
 
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
 int __cli_count             = 0;
-uint32_t stack_top          = 0;
-
-extern struct page_directory *kernel_page_directory;
 
 [[noreturn]] void panic(const char *msg)
 {
@@ -44,29 +38,15 @@ extern struct page_directory *kernel_page_directory;
     __builtin_unreachable();
 }
 
-/// @brief Set the kernel mode segments and switch to the kernel page directory
-void kernel_page()
-{
-    set_kernel_mode_segments();
-    paging_switch_directory(kernel_page_directory);
-}
-
-void kernel_main(multiboot_info_t *mbd, uint32_t magic)
+void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
 {
     __stack_chk_guard = STACK_CHK_GUARD;
-    asm("mov %%esp, %0" : "=r"(stack_top));
 
-    enter_critical();
+    cli();
 
     vga_buffer_init();
     init_serial();
-    gdt_init(stack_top);
-
-    // kprintf(KRESET KYEL "Kernel stack base: %x\n", stack_ptr);
-    // char *cpu = cpu_string();
-    // kprintf(KCYN "CPU: %s\n", cpu);
-    // cpu_print_info();
-    // pci_scan();
+    gdt_init();
 
     kernel_heap_init();
     paging_init();
@@ -81,12 +61,11 @@ void kernel_main(multiboot_info_t *mbd, uint32_t magic)
     disk_init();
     register_syscalls();
     keyboard_init();
-
+    pci_scan();
 
     kprintf("\nStarting the shell");
     start_shell(0);
 
-    ASSERT(!(read_eflags() & EFLAGS_IF), "Interrupts must be disabled");
     schedule();
 
     panic("Kernel finished");
@@ -122,30 +101,16 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
         panic("invalid memory map given by GRUB bootloader");
     }
 
-    // kprintf("Bootloader: %s\n", mbd->boot_loader_name);
-
     /* Loop through the memory map and display the values */
     for (unsigned int i = 0; i < mbd->mmap_length; i += sizeof(multiboot_memory_map_t)) {
         const multiboot_memory_map_t *mmmt = (multiboot_memory_map_t *)(mbd->mmap_addr + i);
 
         const uint32_t type = mmmt->type;
-        // kprintf("Start Addr: %x | Length: %x | Size: %x ",
-        //         mmmt->addr, mmmt->len, mmmt->size);
-        // kprintf("| Type %d\n", type);
-
-        // dbgprintf("Start Addr: %x | Length: %x | Size: %x | Type: %x\n",
-        //           mmmt->addr, mmmt->len, mmmt->size, type);
 
         if (type == MULTIBOOT_MEMORY_AVAILABLE) {
             if (mmmt->len > 0x100000) {
-                kprintf("Available memory: %d MiB\n", mmmt->len / 1024 / 1024);
+                kprintf(KBOLD KBLU "Available memory: %d MiB\n" KRESET KWHT, mmmt->len / 1024 / 1024);
             }
-            /*
-             * Do something with this memory block!
-             * BE WARNED that some of the memory shown as available is actually
-             * actively being used by the kernel! You'll need to take that
-             * into account before writing to memory!
-             */
         }
     }
 #endif

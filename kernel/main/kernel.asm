@@ -16,7 +16,7 @@ _start:
   mov gs, ax
   mov ss, ax
   ; Remember that the stack grows downwards
-  mov ebp, stack_top
+  mov ebp, kernel_stack_top
   mov esp, ebp
 
   ; https://wiki.osdev.org/A20_Line
@@ -55,6 +55,7 @@ section .bss
     align 16
     stack_bottom:
     resb 1048576 ; 1 MiB
-    stack_top:
+    global kernel_stack_top
+    kernel_stack_top:
 
 ;   times 512-($ - $$) db 0

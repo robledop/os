@@ -27,7 +27,8 @@
 void pic_init()
 {
     outb(PIC1_PORT_A, PIC1_ICW1);
-    outb(PIC2_PORT_A, PIC2_ICW1);
+    // outb(PIC2_PORT_A, PIC2_ICW1);
+    outb(PIC2_PORT_A, PIC1_ICW1);
 
     outb(PIC1_PORT_B, PIC1_ICW2);
     outb(PIC2_PORT_B, PIC2_ICW2);
@@ -39,8 +40,10 @@ void pic_init()
     outb(PIC2_PORT_B, PIC2_ICW4);
 
     // Mask all interrupts
-    outb(PIC1_PORT_B, 0xEC);
-    outb(PIC2_PORT_B, 0xFF);
+    // outb(PIC1_PORT_B, 0xEC);
+    // outb(PIC2_PORT_B, 0xFF);
+    outb(PIC1_PORT_B, 0xFB);
+    outb(PIC2_PORT_B, 0xF7);
 }
 
 void pic_acknowledge(const int irq)

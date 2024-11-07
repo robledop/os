@@ -17,6 +17,13 @@ bool paging_is_video_memory(const uint32_t address)
     return address >= 0xB8000 && address <= 0xBFFFF;
 }
 
+/// @brief Set the kernel mode segments and switch to the kernel page directory
+void kernel_page()
+{
+    set_kernel_mode_segments();
+    paging_switch_directory(kernel_page_directory);
+}
+
 struct page_directory *paging_create_directory(const uint8_t flags)
 {
     dbgprintf("Allocating page directory. Present: %d, Write: %d, Supervisor: %d \n",
@@ -130,6 +137,16 @@ void *paging_align_address(void *address)
 void *paging_align_to_lower_page(void *address)
 {
     return (void *)((uint32_t)address - ((uint32_t)address % PAGING_PAGE_SIZE));
+}
+
+int paging_kernel_map(void *virtual_address, void *physical_address, const int flags)
+{
+    return paging_map(kernel_page_directory, virtual_address, physical_address, flags);
+}
+
+int paging_kernel_map_range(void *virtual_address, void *physical_start_address, const int total_pages, const int flags)
+{
+    return paging_map_range(kernel_page_directory, virtual_address, physical_start_address, total_pages, flags);
 }
 
 int paging_map(const struct page_directory *directory, void *virtual_address, void *physical_address, const int flags)

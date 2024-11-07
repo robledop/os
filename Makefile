@@ -34,6 +34,7 @@ STAGE2_FLAGS = -ffreestanding \
 	-Wno-unused-parameter \
 	-nostartfiles \
 	-nodefaultlibs \
+	-save-temps \
 	-Wextra \
 	-std=gnu23 \
 	-pedantic \
@@ -52,19 +53,21 @@ FLAGS = -ffreestanding \
 	-Wno-unused-variable \
 	-fno-inline-functions \
 	-fno-builtin \
-	-Werror \
 	-Wno-unused-label \
 	-Wno-cpp \
 	-Wno-unused-parameter \
 	-nostartfiles \
 	-nodefaultlibs \
-	-Wextra \
+	-save-temps \
 	-std=gnu23 \
-	-pedantic \
-	 -fstack-protector \
-	 -fsanitize=undefined \
-	-Wall
+	-fstack-protector \
+	-fsanitize=undefined \
 
+#	-Werror \
+#	-Wextra \
+#	-Wall
+#	-pedantic \
+#	-masm=intel \
 	# -pedantic-errors \
 	# -fstack-protector \
 	# -fsanitize=undefined \
@@ -149,7 +152,8 @@ qemu: all FORCE
 
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
+	#./scripts/create_tap.sh
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -object filter-dump,id=f1,netdev=net0,file=dump.dat
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE

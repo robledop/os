@@ -2,7 +2,7 @@ section .text
 
 extern syscall_handler
 extern interrupt_handler
-extern interrupt_pointer_table
+global interrupt_pointer_table
 
 global idt_load
 global enable_interrupts

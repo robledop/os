@@ -15,9 +15,9 @@
 #include <x86.h>
 
 // How often the PIT should interrupt
-#define PIT_INTERVAL 100 // 1ms
+#define PIT_INTERVAL 100 // ms
 // How often the scheduler should run
-#define TIME_SLICE 100 // 100ms
+#define TIME_SLICE 100 // ms
 
 // Milliseconds since boot
 uint32_t jiffies                                = 0;
@@ -25,28 +25,24 @@ static struct process *processes[MAX_PROCESSES] = {nullptr};
 spinlock_t scheduler_lock                       = 0;
 
 struct list thread_list;
-struct list zombie_list;
-extern uint32_t stack_top;
 
 struct thread *current_thread = nullptr;
 
 void scheduler_initialize_idle_thread(uint32_t idle_thread_stack_address);
 
 
+/// @brief The idle function that runs when no other threads are ready
 __attribute__((noreturn, naked)) void scheduler_idle_thread()
 {
-    // TODO
-    // ! HACK: I'm resetting the stack pointer to the top manually every time the idle "thread" runs.
-    // ! This is to prevent the stack pointer from drifting down the stack and eventually causing a stack overflow.
-    // ! It seems to be drifting 240 bytes at a time.
-    // ! This would happen even when I loaded this function in a proper separate thread with its
-    // ! own stack (I probably didn't do that right either).
-    // ! This will probably bite me later. I should figure out how to properly manage the kernel stack.
-    asm volatile("mov %0, %%esp" ::"r"(stack_top));
+    // Defined in assembly
+    extern uint32_t kernel_stack_top;
 
-    asm volatile("sti\n"
-                 "_idle_loop:\n"
-                 "hlt\n"
+    // The kernel stack gets reset when the idle thread is run
+    asm volatile("mov %0, %%esp" ::"r"(&kernel_stack_top));
+
+    asm volatile("sti;"
+                 "_idle_loop:;"
+                 "hlt;"
                  "jmp _idle_loop");
 }
 
@@ -80,17 +76,6 @@ struct process *scheduler_set_process(const int pid, struct process *process)
 
     processes[pid] = process;
     return process;
-}
-
-bool scheduler_is_shell_running()
-{
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (processes[i] && strncmp(processes[i]->file_name, "0:/bin/sh", strlen("0:/bin/sh")) == 0) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 void scheduler_unlink_process(const struct process *process)
@@ -171,12 +156,6 @@ void scheduler_queue_thread(struct thread *thread)
     list_push_back(&thread_list, &thread->elem);
 }
 
-
-void scheduler_remove_from_zombie_list(struct process *process)
-{
-    list_remove(&process->elem);
-}
-
 void scheduler_unqueue_thread(struct thread *thread)
 {
     list_remove(&thread->elem);
@@ -231,16 +210,6 @@ int scheduler_switch_current_thread_page()
     return ALL_OK;
 }
 
-
-int scheduler_replace(struct process *old, struct process *new)
-{
-    process_zombify(old);
-
-    processes[old->pid] = new;
-
-    return ALL_OK;
-}
-
 void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
 {
     static uint32_t milliseconds = 0;
@@ -261,7 +230,6 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
 int scheduler_init()
 {
     list_init(&thread_list);
-    list_init(&zombie_list);
 
     pit_set_interval(PIT_INTERVAL);
     return idt_register_interrupt_callback(0x20, handle_pit_interrupt);
@@ -300,6 +268,7 @@ int scheduler_get_processes(struct process_info **proc_info, int *count)
     return 0;
 }
 
+/// @brief Check if the process is sleeping and should wake up
 void scheduler_check_sleeping(struct process *process)
 {
     if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
@@ -314,45 +283,62 @@ void scheduler_check_sleeping(struct process *process)
     }
 }
 
-void scheduler_check_waiting_thread(const struct thread *next)
+int scheduler_count_children(const struct process *process)
+{
+    int count         = 0;
+    const struct process* child = process->children;
+    while (child) {
+        count++;
+        child = child->next;
+    }
+
+    return count;
+}
+
+/// @brief If the process is waiting, check their children and remove any zombies
+void scheduler_check_waiting(const struct thread *next)
 {
     auto const process = next->process;
 
-    if (process->state == WAITING) {
-        struct process *child;
-        if (process->wait_pid == -1) {
-            child = find_child_process_by_state(process, ZOMBIE);
-        } else {
-            child = find_child_process_by_pid(process, process->wait_pid);
-            if (!child) {
-                process->state     = RUNNING;
-                process->exit_code = 0;
-                process->wait_pid  = 0;
-            }
-        }
-
-        if (child && child->state == ZOMBIE) {
+    struct process *child;
+    // If the wait_pid is -1, wait for any child
+    if (process->wait_pid == -1) {
+        child = find_child_process_by_state(process, ZOMBIE);
+        if (!child && scheduler_count_children(process) == 0) {
             process->state     = RUNNING;
-            process->exit_code = child->exit_code;
+            process->exit_code = 0;
             process->wait_pid  = 0;
-
-            process_remove_child(process, child);
-
-            kfree(child);
         }
+    } else {
+        // Otherwise, wait for the specific child
+        child = find_child_process_by_pid(process, process->wait_pid);
+        if (!child) {
+            process->state     = RUNNING;
+            process->exit_code = 0;
+            process->wait_pid  = 0;
+        }
+    }
+
+    if (child && child->state == ZOMBIE) {
+        process->state     = RUNNING;
+        process->exit_code = child->exit_code;
+        process->wait_pid  = 0;
+
+        process_remove_child(process, child);
+
+        kfree(child);
     }
 }
 
 /// Move the first thread in the thread list to the end of the queue
 void scheduler_rotate_queue()
 {
+    ASSERT(!(read_eflags() & EFLAGS_IF), "Interrupts must be disabled");
     if (list_size(&thread_list) > 1) {
-        enter_critical();
         auto const current_thread = list_entry(list_pop_front(&thread_list), struct thread, elem);
         if (current_thread) {
             list_push_back(&thread_list, &current_thread->elem);
         }
-        leave_critical();
     }
 }
 
@@ -376,14 +362,13 @@ void schedule()
 
     struct process *process = next->process;
 
-    // If the next thread is sleeping, check if it should wake up.
     if (process->state == SLEEPING) {
         scheduler_check_sleeping(process);
     }
 
-    // If the next thread is waiting, check their children
-    // and remove any zombies.
-    scheduler_check_waiting_thread(next);
+    if (process->state == WAITING) {
+        scheduler_check_waiting(next);
+    }
 
     // If the next thread is not running, find a runnable thread.
     // If no runnable thread is found, run the idle thread.

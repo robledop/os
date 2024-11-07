@@ -9,6 +9,7 @@
 
 // @brief Generate a stack overflow to test the stack guard page
 void stack_overflow();
+void print_registers();
 bool directory_exists(const char *path);
 void shell_terminal_readline(uchar *out, int max, bool output_while_typing);
 void print_help();
@@ -19,14 +20,15 @@ char *command_history[256];
 uint8_t history_index = 0;
 
 const cmd commands[] = {
-    {"cls",      clear_screen  },
-    {"clear",    clear_screen  },
-    {"exit",     exit          },
-    {"reboot",   reboot        },
-    {"shutdown", shutdown      },
-    {"help",     print_help    },
-    {"so",       stack_overflow},
-    {"ps",       ps            },
+    {"cls",      clear_screen   },
+    {"clear",    clear_screen   },
+    {"exit",     exit           },
+    {"reboot",   reboot         },
+    {"shutdown", shutdown       },
+    {"help",     print_help     },
+    {"so",       stack_overflow },
+    {"ps",       ps             },
+    {"reg",      print_registers},
 };
 
 int number_of_commands = sizeof(commands) / sizeof(struct cmd);
@@ -51,6 +53,7 @@ void stack_overflow() // NOLINT(*-no-recursion)
     stack_overflow();
 }
 #pragma GCC diagnostic pop
+
 
 int main(int argc, char **argv)
 {
@@ -128,7 +131,6 @@ int main(int argc, char **argv)
             }
             waitpid(pid, nullptr);
         }
-
         putchar('\n');
     }
 
@@ -224,6 +226,7 @@ void print_help()
     printf(KCYN "  cd " KYEL "[directory]      " KWHT " Change the current directory\n");
     printf(KCYN "  ps                  " KWHT " Shows the list of the processes currently executing\n");
     printf(KCYN "  so                  " KWHT " Causes a stack overflow for testing purposes\n");
+    printf(KCYN "  reg                 " KWHT " Display current registers\n");
     printf(KCYN "  [command]           " KWHT " Run a command\n");
 }
 
@@ -333,4 +336,37 @@ bool directory_exists(const char *path)
 
     free(directory);
     return res >= 0;
+}
+
+void print_registers()
+{
+    uint32_t esp, ebp, eax, ebx, ecx, edx, esi, edi, eflags;
+    asm volatile("movl %%esp, %0" : "=r"(esp));
+    asm volatile("movl %%ebp, %0" : "=r"(ebp));
+    asm volatile("movl %%eax, %0" : "=r"(eax));
+    asm volatile("movl %%ebx, %0" : "=r"(ebx));
+    asm volatile("movl %%ecx, %0" : "=r"(ecx));
+    asm volatile("movl %%edx, %0" : "=r"(edx));
+    asm volatile("movl %%esi, %0" : "=r"(esi));
+    asm volatile("movl %%edi, %0" : "=r"(edi));
+    asm volatile("pushfl; popl %0" : "=r"(eflags));
+
+    printf("\nESP:\t%x\n"
+           "EBP:    %x\n"
+           "EAX:    %x\n"
+           "EBX:    %x\n"
+           "ECX:    %x\n"
+           "EDX:    %x\n"
+           "ESI:    %x\n"
+           "EDI:    %x\n"
+           "EFLAGS: %x\n",
+           esp,
+           ebp,
+           eax,
+           ebx,
+           ecx,
+           edx,
+           esi,
+           edi,
+           eflags);
 }
