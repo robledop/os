@@ -1,8 +1,12 @@
 #pragma once
+#include <net/ethernet.h>
 #include <types.h>
 
 #define ARP_REQUEST 1
 #define ARP_REPLY 2
+
+#define ARP_CACHE_SIZE 256
+#define ARP_CACHE_TIMEOUT 60'000 // jiffies
 
 
 struct arp_header {
@@ -16,3 +20,20 @@ struct arp_header {
     uint8_t target_hw_addr[6];
     uint8_t target_protocol_addr[4];
 };
+
+struct arp_packet {
+    struct ether_header ether_header;
+    struct arp_header arp_packet;
+} __attribute__((packed));
+
+struct arp_cache_entry {
+    uint8_t ip[4];
+    uint8_t mac[6];
+    uint32_t timestamp;
+};
+
+struct arp_cache_entry arp_cache_find(const uint8_t ip[4]);
+void arp_receive(uint8_t *packet);
+void arp_send_reply(uint8_t *packet);
+void arp_send_request(const uint8_t dest_ip[4]);
+void arp_init();

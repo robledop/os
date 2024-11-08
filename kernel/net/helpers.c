@@ -36,15 +36,15 @@ unsigned int ip_to_int(const char *ip)
     return v;
 }
 
-/// @brief Computes the checksum according to the algorithm described in RFC 1071.
+/// @brief Computes the checksum according to the algorithm described in
+/// <a href="https://datatracker.ietf.org/doc/html/rfc1071#section-4.1">RFC 1071</a>.
 /// @code
 /// checksum(header, header->ihl * 4, 0);
 /// @endcode
 uint16_t checksum(void *addr, int count, const int start_sum)
 {
     register uint32_t sum = start_sum;
-
-    uint16_t *ptr = addr;
+    uint16_t *ptr         = addr;
 
     while (count > 1) {
         sum += *ptr++;
@@ -73,8 +73,15 @@ uint16_t htons(const uint16_t data)
     return ((data & 0x00ff) << 8) | (data & 0xff00) >> 8;
 }
 
+/// @brief Converts the unsigned long integer netlong from network byte order to host byte order.
+uint32_t htonl(const uint32_t data)
+{
+    return ((data & 0x000000ff) << 24) | ((data & 0x0000ff00) << 8) | ((data & 0x00ff0000) >> 8) |
+        ((data & 0xff000000) >> 24);
+}
+
 // ReSharper disable once CppDFAConstantFunctionResult
-char *print_mac_address(uint8_t mac[6])
+char *get_mac_address_string(uint8_t mac[6])
 {
     // ReSharper disable once CppUseAuto
     char *result = "00:00:00:00:00:00";

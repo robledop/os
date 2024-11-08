@@ -4,6 +4,7 @@
 #include <kernel_heap.h>
 #include <list.h>
 #include <memory.h>
+#include <net/network.h>
 #include <pic.h>
 #include <pit.h>
 #include <process.h>
@@ -25,6 +26,7 @@ static struct process *processes[MAX_PROCESSES] = {nullptr};
 spinlock_t scheduler_lock                       = 0;
 
 struct list thread_list;
+bool scheduler_enabled = false;
 
 struct thread *current_thread = nullptr;
 
@@ -215,6 +217,9 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
     static uint32_t milliseconds = 0;
 
     jiffies += PIT_INTERVAL;
+    if (!scheduler_enabled) {
+        return;
+    }
 
     milliseconds += PIT_INTERVAL;
     // asm volatile("mov %0, %%esp\n" : : "r"(frame->reserved));
@@ -227,12 +232,16 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
     }
 }
 
-int scheduler_init()
+void scheduler_init()
 {
     list_init(&thread_list);
-
     pit_set_interval(PIT_INTERVAL);
-    return idt_register_interrupt_callback(0x20, handle_pit_interrupt);
+    idt_register_interrupt_callback(0x20, handle_pit_interrupt);
+}
+
+void scheduler_start()
+{
+    scheduler_enabled = true;
 }
 
 uint32_t scheduler_get_jiffies()
@@ -285,8 +294,8 @@ void scheduler_check_sleeping(struct process *process)
 
 int scheduler_count_children(const struct process *process)
 {
-    int count         = 0;
-    const struct process* child = process->children;
+    int count                   = 0;
+    const struct process *child = process->children;
     while (child) {
         count++;
         child = child->next;

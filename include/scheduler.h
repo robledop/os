@@ -32,8 +32,10 @@ void set_user_mode_segments();
 int scheduler_switch_current_thread_page();
 int scheduler_replace(struct process *old, struct process *new);
 uint32_t scheduler_get_jiffies();
-int scheduler_init();
+void scheduler_init();
+void scheduler_start();
 
 int scheduler_get_processes(struct process_info **proc_info, int *count);
 struct thread *scheduler_get_thread_sleeping_for_keyboard();
 void scheduler_remove_current_thread(const struct thread *thread);
+__attribute__((noreturn, naked)) void scheduler_idle_thread();

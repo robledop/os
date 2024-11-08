@@ -4,6 +4,7 @@
 #include <kernel_heap.h>
 #include <memory.h>
 #include <net/arp.h>
+#include <net/dhcp.h>
 #include <net/ethernet.h>
 #include <net/helpers.h>
 #include <net/icmp.h>
@@ -231,8 +232,10 @@ void e1000_init(struct pci_device *pci)
     pci_enable_bus_mastering(pci);
     eeprom_exists = false;
     if (e1000_start()) {
-        kprintf("E1000 started\n");
+        kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] E1000 started\n");
     }
+
+    arp_init();
 }
 
 void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
@@ -255,7 +258,8 @@ void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 
 void e1000_print_mac_address()
 {
-    kprintf("Intel e1000 MAC Address: %s\n", print_mac_address(mac));
+    kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+    kprintf("Intel e1000 MAC Address: %s\n", get_mac_address_string(mac));
 }
 
 void e1000_linkup()
@@ -282,6 +286,8 @@ bool e1000_start()
         e1000_enable_interrupt();
         e1000_rx_init();
         e1000_tx_init();
+
+        dhcp_send_request(mac);
         return true;
     }
     return false;

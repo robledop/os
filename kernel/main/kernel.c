@@ -7,6 +7,7 @@
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
+#include <net/network.h>
 #include <paging.h>
 #include <pci.h>
 #include <pic.h>
@@ -22,6 +23,8 @@
 void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
 
 #define STACK_CHK_GUARD 0xe2dee396
+uint32_t wait_for_network_start;
+uint32_t wait_for_network_timeout = 15'000;
 
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
 int __cli_count             = 0;
@@ -38,10 +41,22 @@ int __cli_count             = 0;
     __builtin_unreachable();
 }
 
+void wait_for_network()
+{
+    wait_for_network_start = scheduler_get_jiffies();
+    sti();
+    while (!network_is_ready() && scheduler_get_jiffies() - wait_for_network_start < wait_for_network_timeout) {
+        hlt();
+    }
+    cli();
+    if (!network_is_ready()) {
+        kprintf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] ");
+        kprintf(KBOLD KYEL "Network failed to start\n" KRESET KWHT);
+    }
+}
+
 void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
 {
-    __stack_chk_guard = STACK_CHK_GUARD;
-
     cli();
 
     vga_buffer_init();
@@ -57,11 +72,14 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     display_grub_info(mbd, magic);
     init_symbols(mbd);
     scheduler_init();
+    pci_scan();
+    wait_for_network();
+
     fs_init();
     disk_init();
     register_syscalls();
     keyboard_init();
-    pci_scan();
+    scheduler_start();
 
     kprintf("\nStarting the shell");
     start_shell(0);
@@ -109,7 +127,8 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
 
         if (type == MULTIBOOT_MEMORY_AVAILABLE) {
             if (mmmt->len > 0x100000) {
-                kprintf(KBOLD KBLU "Available memory: %d MiB\n" KRESET KWHT, mmmt->len / 1024 / 1024);
+                kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+                kprintf("Available memory: %d MiB\n", mmmt->len / 1024 / 1024);
             }
         }
     }

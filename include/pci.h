@@ -143,7 +143,7 @@ struct pci_driver {
     uint8_t subclass;
     uint16_t vendor_id;
     uint16_t device_id;
-    void (*pci_function)(struct pci_device *device);
+    void (*init)(struct pci_device *device);
 };
 
 struct pci_class {

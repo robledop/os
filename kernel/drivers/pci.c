@@ -141,9 +141,9 @@ struct pci_vendor vendors[] = {
 };
 
 struct pci_driver pci_drivers[] = {
-    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_DEV,     .pci_function = &e1000_init},
-    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_I217,    .pci_function = &e1000_init},
-    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_82577LM, .pci_function = &e1000_init},
+    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_DEV,     .init = &e1000_init},
+    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_I217,    .init = &e1000_init},
+    {.class = 0x02, .subclass = 0x00, .vendor_id = INTEL_VEND, .device_id = E1000_82577LM, .init = &e1000_init},
 };
 
 uint16_t pci_config_read_word(const uint8_t bus, const uint8_t slot, const uint8_t func, const uint8_t offset)
@@ -174,23 +174,18 @@ void pci_config_write_word(const uint8_t bus, const uint8_t slot, const uint8_t 
     const uint32_t lslot = slot;
     const uint32_t lfunc = func;
 
-    // Create configuration address
     const uint32_t address = (0x80000000 | (lbus << 16) | (lslot << 11) | (lfunc << 8) | (offset & 0xFC));
 
-    // Write out the address
     outl(PCI_CONFIG_ADDRESS, address);
 
-    // Read the current 32-bit register data
     uint32_t tmp = inl(PCI_CONFIG_DATA);
 
-    // Modify only the 16 bits at the specified offset
     if (offset & 2) {
         tmp = (tmp & 0x0000FFFF) | (data << 16); // Modify the upper 16 bits
     } else {
         tmp = (tmp & 0xFFFF0000) | data; // Modify the lower 16 bits
     }
 
-    // Write back the modified 32-bit value
     outl(PCI_CONFIG_DATA, tmp);
 }
 
@@ -221,6 +216,7 @@ void load_driver(const struct pci_header pci, const uint8_t bus, const uint8_t d
         if (pci_drivers[i].class == pci.class && pci_drivers[i].subclass == pci.subclass &&
             pci_drivers[i].vendor_id == pci.vendor_id && pci_drivers[i].device_id == pci.device_id) {
 
+            kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
             kprintf("Loading driver for %s\n", pci_find_name(pci.class, pci.subclass));
 
             struct pci_device *pci_device = kzalloc(sizeof(struct pci_device));
@@ -229,7 +225,7 @@ void load_driver(const struct pci_header pci, const uint8_t bus, const uint8_t d
             pci_device->slot              = device;
             pci_device->function          = function;
 
-            pci_drivers[i].pci_function(pci_device);
+            pci_drivers[i].init(pci_device);
             return;
         }
     }
@@ -247,6 +243,7 @@ struct pci_header get_pci_data(const uint8_t bus, const uint8_t num, const uint8
 
 void pci_scan()
 {
+    kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
     kprintf("Scanning PCI devices...\n");
 
     struct pci_header pci_data;
