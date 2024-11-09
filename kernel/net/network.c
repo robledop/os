@@ -1,5 +1,6 @@
 #include <e1000.h>
 #include <kernel.h>
+#include <kernel_heap.h>
 #include <memory.h>
 #include <net/arp.h>
 #include <net/dhcp.h>
@@ -13,9 +14,9 @@
 #include <types.h>
 #include <vga_buffer.h>
 
-bool network_ready       = false;
-uint8_t my_ip_address[4] = {192, 168, 0, 96};
-static uint8_t mac[6];
+bool network_ready     = false;
+uint8_t *my_ip_address = nullptr;
+static uint8_t *mac    = nullptr;
 
 struct ether_type {
     uint16_t ether_type;
@@ -43,6 +44,9 @@ bool network_is_ready()
 
 void network_set_my_ip_address(const uint8_t ip[4])
 {
+    if (my_ip_address == nullptr) {
+        my_ip_address = (uint8_t *)kmalloc(4);
+    }
     memcpy(my_ip_address, ip, 4);
 }
 
@@ -68,6 +72,9 @@ const char *find_ether_type(const uint16_t ether_type)
 
 void network_set_mac(const uint8_t *mac_addr)
 {
+    if (mac == nullptr) {
+        mac = (uint8_t *)kmalloc(6);
+    }
     memcpy(mac, mac_addr, 6);
 }
 
@@ -85,7 +92,7 @@ void network_receive(uint8_t *packet, const uint16_t len)
         const uint8_t protocol                = ipv4_header->protocol;
         switch (protocol) {
         case IP_PROTOCOL_ICMP:
-            if (network_compare_ip_addresses(ipv4_header->dest_ip, my_ip_address)) {
+            if (my_ip_address && network_compare_ip_addresses(ipv4_header->dest_ip, my_ip_address)) {
                 icmp_receive(packet, len);
             }
             break;
@@ -99,7 +106,8 @@ void network_receive(uint8_t *packet, const uint16_t len)
                 struct dhcp_header *dhcp_packet =
                     (struct dhcp_header *)(packet + sizeof(struct ether_header) + sizeof(struct ipv4_header) +
                                            sizeof(struct udp_header));
-                if (dhcp_packet->op == DHCP_OP_OFFER && network_compare_mac_addresses(dhcp_packet->chaddr, mac)) {
+                if (dhcp_packet->op == DHCP_OP_OFFER && mac &&
+                    network_compare_mac_addresses(dhcp_packet->chaddr, mac)) {
 
                     kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
                     kprintf("IP address: %d.%d.%d.%d\n",

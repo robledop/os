@@ -233,8 +233,9 @@ void print_help()
 int cmd_lookup(const char *name)
 {
     for (int index = 0; index < number_of_commands; index++) {
-        const int len = strlen(commands[index].name);
-        if (strncmp(name, commands[index].name, len) == 0) {
+        const int cmd_len   = strlen(commands[index].name);
+        const int input_len = strlen(name);
+        if (strncmp(name, commands[index].name, cmd_len) == 0 && cmd_len == input_len) {
             return index;
         }
     }

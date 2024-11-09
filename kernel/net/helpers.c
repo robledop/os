@@ -83,12 +83,51 @@ uint32_t htonl(const uint32_t data)
 // ReSharper disable once CppDFAConstantFunctionResult
 char *get_mac_address_string(uint8_t mac[6])
 {
-    // ReSharper disable once CppUseAuto
-    char *result = "00:00:00:00:00:00";
+    static char result[18] = "00:00:00:00:00:00";
     for (int i = 0; i < 6; i++) {
         result[i * 3]     = "0123456789ABCDEF"[mac[i] / 16];
         result[i * 3 + 1] = "0123456789ABCDEF"[mac[i] % 16];
     }
 
     return result;
+}
+
+uint8_t read8(const uint64_t addr)
+{
+    return *(volatile uint8_t *)(uintptr_t)addr;
+}
+
+uint16_t read16(const uint64_t addr)
+{
+    return *(volatile uint16_t *)(uintptr_t)addr;
+}
+
+uint32_t read32(const uint64_t addr)
+{
+    return *(volatile uint32_t *)(uintptr_t)addr;
+}
+
+uint64_t read64(const uint64_t addr)
+{
+    return *(volatile uint64_t *)(uintptr_t)addr;
+}
+
+void write8(const uint64_t addr, const uint8_t data)
+{
+    *(volatile uint8_t *)(uintptr_t)addr = data;
+}
+
+void write16(const uint64_t addr, const uint16_t data)
+{
+    *(volatile uint16_t *)(uintptr_t)addr = data;
+}
+
+void write32(const uint64_t addr, const uint32_t data)
+{
+    *(volatile uint64_t *)(uintptr_t)addr = data;
+}
+
+void write64(const uint64_t addr, const uint64_t data)
+{
+    *(volatile uint64_t *)(uintptr_t)addr = data;
 }

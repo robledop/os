@@ -55,7 +55,7 @@ void arp_init()
 
 void arp_receive_reply(uint8_t *packet)
 {
-    const struct arp_header *arp_header = (struct arp_header *)(packet + sizeof(struct ether_header));
+    struct arp_header *arp_header = (struct arp_header *)(packet + sizeof(struct ether_header));
 
     auto const cache_entry = arp_cache_find(arp_header->sender_protocol_addr);
     if (cache_entry.ip[0] == 0) {
@@ -69,12 +69,14 @@ void arp_receive(uint8_t *packet)
     const uint16_t opcode        = ntohs(arp->opcode);
     switch (opcode) {
     case ARP_REQUEST:
-        if (network_compare_ip_addresses(arp->target_protocol_addr, network_get_my_ip_address())) {
+        if (network_get_my_ip_address() &&
+            network_compare_ip_addresses(arp->target_protocol_addr, network_get_my_ip_address())) {
             arp_send_reply(packet);
         }
         break;
     case ARP_REPLY:
-        if (network_compare_ip_addresses(arp->target_protocol_addr, network_get_my_ip_address())) {
+        if (network_get_my_ip_address() &&
+            network_compare_ip_addresses(arp->target_protocol_addr, network_get_my_ip_address())) {
             arp_receive_reply(packet);
         }
         break;
