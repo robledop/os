@@ -1,3 +1,4 @@
+#include <memory.h>
 #include <net/helpers.h>
 #include <string.h>
 
@@ -35,19 +36,32 @@ unsigned int ip_to_int(const char *ip)
     return v;
 }
 
-const char *int_to_ip(unsigned int ip)
+uint32_t ntohl(uint32_t netlong)
 {
-    static char buffer[16];
-    unsigned char *bytes = (unsigned char *)&ip;
+    return ((netlong & 0x000000ff) << 24) | ((netlong & 0x0000ff00) << 8) | ((netlong & 0x00ff0000) >> 8) |
+        ((netlong & 0xff000000) >> 24);
+}
 
-    for (int i = 0; i < 4; i++) {
-        buffer[i * 4]     = '0' + bytes[i] / 100;
-        buffer[i * 4 + 1] = '0' + (bytes[i] / 10) % 10;
-        buffer[i * 4 + 2] = '0' + bytes[i] % 10;
-        buffer[i * 4 + 3] = '.';
+void int_to_ip(uint32_t ip_addr, char *result[16])
+{
+    const uint32_t ip = ntohl(ip_addr);
+
+    uint8_t ip_address[4];
+
+    ip_address[0] = (ip >> 24) & 0xFF;
+    ip_address[1] = (ip >> 16) & 0xFF;
+    ip_address[2] = (ip >> 8) & 0xFF;
+    ip_address[3] = ip & 0xFF;
+
+    for (size_t i = 0; i < 4; i++) {
+        char buffer[4];
+        itoa(ip_address[i], buffer);
+        if (i < 3) {
+            strcat(buffer, ".");
+        } else {
+            strcat(*result, buffer);
+        }
     }
-    buffer[15] = 0;
-    return buffer;
 }
 
 /// @brief Computes the checksum according to the algorithm described in

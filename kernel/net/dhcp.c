@@ -4,6 +4,8 @@
 #include <net/network.h>
 #include <vga_buffer.h>
 
+// TODO: This does not implement things that require the client to store state (like lease time)
+
 void set_request_dhcp_options(uint8_t *options, uint8_t ip[4], uint8_t server_ip[4])
 {
     int offset = 0;
@@ -161,6 +163,8 @@ void dhcp_receive(uint8_t *packet)
     auto const dhcp_packet = (struct dhcp_header *)(packet + sizeof(struct ether_header) + sizeof(struct ipv4_header) +
                                                     sizeof(struct udp_header));
     const uint16_t dhcp_message_type = dhcp_packet->options[2];
+
+    // A response to our DHCP Discover (Offer)
     if (dhcp_packet->op == DHCP_OP_OFFER && dhcp_message_type == DHCP_MESSAGE_TYPE_OFFER &&
         network_get_my_mac_address() &&
         network_compare_mac_addresses(dhcp_packet->chaddr, network_get_my_mac_address())) {
@@ -183,10 +187,11 @@ void dhcp_receive(uint8_t *packet)
 
         dhcp_send_request(network_get_my_mac_address(), dhcp_packet->yiaddr, dhcp_packet->siaddr);
     }
-
-    if (dhcp_packet->op == DHCP_OP_OFFER && dhcp_message_type == DHCP_MESSAGE_TYPE_ACK &&
-        network_get_my_mac_address() &&
-        network_compare_mac_addresses(dhcp_packet->chaddr, network_get_my_mac_address())) {
+    // A response to our DHCP Request (ACK)
+    // This is the final step in the DHCP process and we are now bound to the IP address
+    else if (dhcp_packet->op == DHCP_OP_OFFER && dhcp_message_type == DHCP_MESSAGE_TYPE_ACK &&
+             network_get_my_mac_address() &&
+             network_compare_mac_addresses(dhcp_packet->chaddr, network_get_my_mac_address())) {
         kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
         kprintf("IP address: %d.%d.%d.%d\n",
                 dhcp_packet->yiaddr[0],
