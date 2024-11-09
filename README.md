@@ -10,6 +10,8 @@ Just a little operating system I'm developing for fun.
 <details>
 <summary>Screenshots</summary>
 
+![Screenshot](docs/img/screenshot0.png)
+
 ![Screenshot](docs/img/screenshot1.png)
 
 ![Screenshot](docs/img/screenshot2.png)
