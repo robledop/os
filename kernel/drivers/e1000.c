@@ -53,10 +53,10 @@ uint32_t e1000_read_command(const uint16_t p_address)
 bool e1000_detect_eeprom()
 {
     uint32_t val = 0;
-    e1000_write_command(REG_EEPROM, 0x1);
+    e1000_write_command(REG_EERD, 0x1);
 
     for (int i = 0; i < 1000 && !eeprom_exists; i++) {
-        val = e1000_read_command(REG_EEPROM);
+        val = e1000_read_command(REG_EERD);
         if (val & 0x10) {
             eeprom_exists = true;
         } else {
@@ -71,12 +71,12 @@ uint32_t e1000_eeprom_read(const uint8_t addr)
     uint16_t data = 0;
     uint32_t tmp  = 0;
     if (eeprom_exists) {
-        e1000_write_command(REG_EEPROM, (1) | ((uint32_t)(addr) << 8));
-        while (!((tmp = e1000_read_command(REG_EEPROM)) & (1 << 4)))
+        e1000_write_command(REG_EERD, (1) | ((uint32_t)(addr) << 8));
+        while (!((tmp = e1000_read_command(REG_EERD)) & (1 << 4)))
             ;
     } else {
-        e1000_write_command(REG_EEPROM, (1) | ((uint32_t)(addr) << 2));
-        while (!((tmp = e1000_read_command(REG_EEPROM)) & (1 << 1)))
+        e1000_write_command(REG_EERD, (1) | ((uint32_t)(addr) << 2));
+        while (!((tmp = e1000_read_command(REG_EERD)) & (1 << 1)))
             ;
     }
     data = (uint16_t)((tmp >> 16) & 0xFFFF);
@@ -96,8 +96,8 @@ bool e1000_read_mac_address()
         mac[4]        = temp & 0xff;
         mac[5]        = temp >> 8;
     } else {
-        const uint8_t *mem_base_mac_8   = (uint8_t *)(mem_base + 0x5400);
-        const uint32_t *mem_base_mac_32 = (uint32_t *)(mem_base + 0x5400);
+        const uint8_t *mem_base_mac_8   = (uint8_t *)(uintptr_t)(mem_base + 0x5400);
+        const uint32_t *mem_base_mac_32 = (uint32_t *)(uintptr_t)(mem_base + 0x5400);
         if (mem_base_mac_32[0] != 0) {
             for (int i = 0; i < 6; i++) {
                 mac[i] = mem_base_mac_8[i];
@@ -120,14 +120,11 @@ void e1000_rx_init()
 
     for (int i = 0; i < E1000_RX_RING_SIZE; i++) {
         rx_descs[i]         = (struct e1000_rx_desc *)((uint8_t *)descs + i * 16);
-        rx_descs[i]->addr   = (uint64_t)(uint8_t *)(kmalloc(8192 + 16));
+        rx_descs[i]->addr   = (uint64_t)(uintptr_t)(kmalloc(8192 + 16));
         rx_descs[i]->status = 0;
     }
 
-    e1000_write_command(REG_TXDESCLO, (uint32_t)((uint64_t)ptr >> 32));
-    e1000_write_command(REG_TXDESCHI, (uint32_t)((uint64_t)ptr & 0xFFFFFFFF));
-
-    e1000_write_command(REG_RXDESCLO, (uint64_t)ptr);
+    e1000_write_command(REG_RXDESCLO, (uint32_t)ptr);
     e1000_write_command(REG_RXDESCHI, 0);
 
     e1000_write_command(REG_RXDESCLEN, E1000_RX_RING_SIZE * 16);
@@ -154,13 +151,14 @@ void e1000_tx_init()
         tx_descs[i]->status = TSTA_DD;
     }
 
-    e1000_write_command(REG_TXDESCLO, (uint32_t)((uint64_t)ptr >> 32));
-    e1000_write_command(REG_TXDESCLO, (uint32_t)((uint64_t)ptr & 0xFFFFFFFF));
+    // e1000_write_command(REG_TXDESCLO, (uint32_t)((uint64_t)ptr >> 32));
+    // e1000_write_command(REG_TXDESCHI, (uint32_t)((uint64_t)ptr & 0xFFFFFFFF));
 
-    // now setup total length of descriptors
+    e1000_write_command(REG_TXDESCLO, (uint32_t)ptr);
+    e1000_write_command(REG_TXDESCHI, 0);
+
     e1000_write_command(REG_TXDESCLEN, E1000_TX_RING_SIZE * 16);
 
-    // setup numbers
     e1000_write_command(REG_TXDESCHEAD, 0);
     e1000_write_command(REG_TXDESCTAIL, 0);
     tx_cur = 0;
@@ -176,13 +174,11 @@ void e1000_tx_init()
 
 void e1000_enable_interrupt()
 {
-    e1000_write_command(REG_IMASK, 0x1F6DC); // Enable RX and TX interrupts
-
-    // Clear specific bits to ensure unwanted interrupts are not triggered
-    e1000_write_command(REG_IMASK, 0xff & ~4);
+    // e1000_write_command(REG_IMASK, 0x1F6DC); // Enable RX and TX interrupts
+    e1000_write_command(REG_IMS, E1000_IMS_ENABLE_MASK);
 
     // Clear any pending interrupts by reading ICR (Interrupt Cause Read) register
-    e1000_read_command(0xc0);
+    e1000_read_command(REG_ICR);
 }
 
 void e1000_init(struct pci_device *pci)
@@ -201,21 +197,13 @@ void e1000_init(struct pci_device *pci)
     arp_init();
 }
 
-// Set the Receive Delay Timer to define the RXDMT0 threshold
-// e1000_write_command(REG_RDTR, desired_threshold_value);
-
-// Set the Interrupt Throttling Rate (in microseconds)
-// e1000_write_command(REG_ITR, desired_itr_value);
-
-// Enable LSC, RXDMT0, and RXT0 interrupts
-// e1000_write_command(REG_IMS, E1000_IMS_LSC | E1000_IMS_RXDMT0 | E1000_IMS_RXT0);
 
 void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 {
     if (interrupt == pci_device->header.irq + IRQ0) {
         // This might be needed here if your handler doesn't clear interrupts from each device and must be done
         // before EOI if using the PIC. Without this, the card will spam interrupts as the int-line will stay high.
-        e1000_write_command(REG_IMASK, 0x1);
+        e1000_write_command(REG_IMS, 0x1);
 
         // - Bit 0 (0x01): Transmit Descriptor Written Back (TXDW) - Indicates that the transmit descriptor has been
         // written back.
@@ -228,13 +216,20 @@ void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
         // - Bit 7 (0x80): Receive Descriptor Written Back (RXO) - Indicates that a receive descriptor has been
         // written back.
         const uint32_t status = e1000_read_command(REG_ICR);
-        if (status & E1000_ICR_LSC) {
+        if (status & E1000_LSC) {
             e1000_linkup();
-        } else if (status & 0x10) {
-            // good threshold
-        } else if (status & 0x80) {
+        } else if (status & E1000_RXDMT0) {
+            // triggered when the number of packets in the receive buffer is above the minimum threshold
+            e1000_receive();
+        } else if (status & E1000_RX0) {
+            // triggered as soon as any packet is received
+            e1000_receive();
+        } else if (status & E1000_RXT0) {
+            // triggered when a packet has been sitting in the receive buffer for a certain amount of time
             e1000_receive();
         }
+
+        e1000_write_command(REG_IMS, E1000_IMS_ENABLE_MASK);
     }
 }
 
@@ -262,7 +257,7 @@ bool e1000_start()
 
     // Clear multicast table array
     for (int i = 0; i < 0x80; i++)
-        e1000_write_command(0x5200 + i * 4, 0);
+        e1000_write_command(REG_MTA + i * 4, 0);
 
     if (idt_register_interrupt_callback(IRQ0 + pci_device->header.irq, e1000_interrupt_handler) == 0) {
         e1000_enable_interrupt();
@@ -275,56 +270,62 @@ bool e1000_start()
     return false;
 }
 
+// void e1000_receive_packets()
+// {
+//     while (true) {
+//         struct e1000_rx_desc *rx_desc = rx_descs[rx_cur];
+//         const uint16_t len            = rx_descs[rx_cur]->length;
+//
+//         // Check if the descriptor is ready (Descriptor Done - DD bit set)
+//         if (!(rx_desc->status & E1000_RXD_STAT_DD)) {
+//             break; // No more packets to process
+//         }
+//
+//         // Check if the packet has End of Packet (EOP) set
+//         if (!(rx_desc->status & E1000_RXD_STAT_EOP)) {
+//             // TODO: Handle the error: packet is not complete
+//             warningf("Incomplete packet received\n");
+//             continue;
+//         }
+//
+//         network_receive((uint8_t *)rx_desc->addr, len);
+//
+//         // Clear the status to indicate the descriptor is free
+//         rx_desc->status = 0;
+//
+//         // Update the tail index
+//         rx_cur = (rx_cur + 1) % E1000_RX_RING_SIZE;
+//     }
+//
+//     // Update the Receive Descriptor Tail (RDT) register
+//     e1000_write_command(REG_RXDESCTAIL, rx_cur);
+// }
+
 /// @brief Process all available packets in the receive ring
-void e1000_receive_packets()
+void e1000_receive()
 {
-    while (true) {
-        struct e1000_rx_desc *rx_desc = rx_descs[rx_cur];
-        const uint16_t len            = rx_descs[rx_cur]->length;
+    while ((rx_descs[rx_cur]->status & E1000_RXD_STAT_DD)) {
+        uint8_t *buf       = (uint8_t *)(uint32_t)rx_descs[rx_cur]->addr;
+        const uint16_t len = rx_descs[rx_cur]->length;
 
-        // Check if the descriptor is ready (Descriptor Done - DD bit set)
-        if (!(rx_desc->status & E1000_RXD_STAT_DD)) {
-            break; // No more packets to process
-        }
-
-        // Check if the packet has End of Packet (EOP) set
-        if (!(rx_desc->status & E1000_RXD_STAT_EOP)) {
+        if (!(rx_descs[rx_cur]->status & E1000_RXD_STAT_EOP)) {
             // TODO: Handle the error: packet is not complete
             warningf("Incomplete packet received\n");
             continue;
         }
 
-        network_receive((uint8_t *)rx_desc->addr, len);
+        network_receive(buf, len);
 
-        // Clear the status to indicate the descriptor is free
-        rx_desc->status = 0;
-
-        // Update the tail index
-        rx_cur = (rx_cur + 1) % E1000_RX_RING_SIZE;
+        rx_descs[rx_cur]->status = 0;
+        const uint16_t old_cur   = rx_cur;
+        rx_cur                   = (rx_cur + 1) % E1000_RX_RING_SIZE;
+        e1000_write_command(REG_RXDESCTAIL, old_cur);
     }
-
-    // Update the Receive Descriptor Tail (RDT) register
-    e1000_write_command(REG_RXDESCTAIL, rx_cur);
 }
-
-// void e1000_receive()
-// {
-//     while ((rx_descs[rx_cur]->status & 0x1)) {
-//         auto const buf     = (uint8_t *)rx_descs[rx_cur]->addr;
-//         const uint16_t len = rx_descs[rx_cur]->length;
-//
-//         network_receive(buf, len);
-//
-//         rx_descs[rx_cur]->status = 0;
-//         const uint16_t old_cur   = rx_cur;
-//         rx_cur                   = (rx_cur + 1) % E1000_NUM_RX_DESC;
-//         e1000_write_command(REG_RXDESCTAIL, old_cur);
-//     }
-// }
 
 int e1000_send_packet(const void *data, const uint16_t len)
 {
-    tx_descs[tx_cur]->addr   = (uint64_t)data;
+    tx_descs[tx_cur]->addr   = (uintptr_t)data;
     tx_descs[tx_cur]->length = len;
     tx_descs[tx_cur]->cmd    = CMD_EOP | CMD_IFCS | CMD_RS;
     tx_descs[tx_cur]->status = 0;

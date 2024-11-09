@@ -62,7 +62,7 @@ uint8_t *network_get_my_mac_address()
 
 const char *find_ether_type(const uint16_t ether_type)
 {
-    for (int i = 0; i < sizeof(ether_types) / sizeof(struct ether_type); i++) {
+    for (size_t i = 0; i < sizeof(ether_types) / sizeof(struct ether_type); i++) {
         if (ether_types[i].ether_type == ether_type) {
             return ether_types[i].name;
         }

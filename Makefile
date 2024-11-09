@@ -62,10 +62,10 @@ FLAGS = -ffreestanding \
 	-std=gnu23 \
 	-fstack-protector \
 	-fsanitize=undefined \
-#	-pedantic \
-#	-Werror \
-#	-Wextra \
-#	-Wall
+	-pedantic \
+	-Werror \
+	-Wextra \
+	-Wall
 
 	# -masm=intel \
 	# -pedantic-errors \

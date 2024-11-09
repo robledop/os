@@ -65,10 +65,10 @@ void dhcp_send_request(uint8_t mac[6])
         .xid    = 0x726f626,
         .secs   = 0x0000,
         .flags  = htons(DHCP_FLAG_BROADCAST),
-        .ciaddr = 0,
-        .yiaddr = 0,
-        .siaddr = 0,
-        .giaddr = 0,
+        .ciaddr = {0},
+        .yiaddr = {0},
+        .siaddr = {0},
+        .giaddr = {0},
         .magic  = htonl(DHCP_MAGIC_COOKIE),
     };
 

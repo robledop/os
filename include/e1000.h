@@ -8,49 +8,64 @@
 #define E1000_I217 0x153A    // Device ID for Intel I217
 #define E1000_82577LM 0x10EA // Device ID for Intel 82577LM
 
-#define REG_CTRL 0x0000
-#define REG_STATUS 0x0008
-#define REG_EEPROM 0x0014
-#define REG_CTRL_EXT 0x0018
-#define REG_IMASK 0x00D0
-#define REG_RCTRL 0x0100
-#define REG_RXDESCLO 0x2800
-#define REG_RXDESCHI 0x2804
-#define REG_RXDESCLEN 0x2808
-#define REG_RXDESCHEAD 0x2810
-#define REG_RXDESCTAIL 0x2818
+// Control Registers
+#define REG_CTRL 0x0000     // Device Control Register
+#define REG_STATUS 0x0008   // Device Status Register
+#define REG_CTRL_EXT 0x0018 // Extended Device Control Register
 
-#define REG_TCTRL 0x0400
-#define REG_TXDESCLO 0x3800
-#define REG_TXDESCHI 0x3804
-#define REG_TXDESCLEN 0x3808
-#define REG_TXDESCHEAD 0x3810
-#define REG_TXDESCTAIL 0x3818
+// Interrupt Registers
+#define REG_ICR 0x00C0 // Interrupt Cause Read Register
+#define REG_ICS 0x00C8 // Interrupt Cause Set Register
+#define REG_IMS 0x00D0 // Interrupt Mask Set Register
+#define REG_IMC 0x00D8 // Interrupt Mask Clear Register
+
+// Receive Registers
+#define REG_RCTRL 0x0100      // Receive Control Register
+#define REG_RDTR 0x2820       // RX Delay Timer Register
+#define REG_RXDESCLO 0x2800   // RX Descriptor Base Low
+#define REG_RXDESCHI 0x2804   // RX Descriptor Base High
+#define REG_RXDESCLEN 0x2808  // RX Descriptor Length
+#define REG_RXDESCHEAD 0x2810 // RX Descriptor Head
+#define REG_RXDESCTAIL 0x2818 // RX Descriptor Tail
+
+// Transmit Registers
+#define REG_TCTRL 0x0400      // Transmit Control Register
+#define REG_TXDESCLO 0x3800   // TX Descriptor Base Low
+#define REG_TXDESCHI 0x3804   // TX Descriptor Base High
+#define REG_TXDESCLEN 0x3808  // TX Descriptor Length
+#define REG_TXDESCHEAD 0x3810 // TX Descriptor Head
+#define REG_TXDESCTAIL 0x3818 // TX Descriptor Tail
+
+// EEPROM Registers
+#define REG_EERD 0x0014     // EEPROM Read Register
+#define REG_EEMNGCTL 0x1010 // Management Control
+
+// Flow Control Registers
+#define REG_FCRTL 0x2160  // Flow Control Receive Threshold Low
+#define REG_FCRTH 0x2168  // Flow Control Receive Threshold High
+#define REG_FCTTV 0x0170C // Flow Control Transmit Timer Value
+
+// Multicast table array registers
+#define REG_MTA 0x5200 // to 0x053FC
+
+// Receive Address Registers
+#define REG_RA 0x5400 // to 0x053FC
+
+// Miscellaneous Registers
+#define REG_LEDCTL 0x00E00 // LED Control Register
+#define REG_PBA 0x01000    // Packet Buffer Allocation
+#define REG_VET 0x00038    // VLAN Ether Type Register
 
 
-#define REG_RDTR 0x2820   // RX Delay Timer Register
-#define REG_RXDCTL 0x2828 // RX Descriptor Control
-#define REG_RADV 0x282C   // RX Int. Absolute Delay Timer
-#define REG_RSRPD 0x2C00  // RX Small Packet Detect Interrupt
+#define ECTRL_SLU 0x40 // set link up
 
 
-#define REG_TIPG 0x0410 // Transmit Inter Packet Gap
-#define ECTRL_SLU 0x40  // set link up
+#define E1000_LSC 0x00000004    // Link Status Change
+#define E1000_RXDMT0 0x00000010 // RX Descriptor Minimum Threshold Reached
+#define E1000_RXT0 0x00000040   // RX Timer Interrupt
+#define E1000_RX0 0x00000080    // RX Interrupt
 
-
-// Interrupt Cause Read Register
-#define REG_ICR 0x00C0
-#define E1000_ICR_LSC 0x00000004    // Link Status Change
-#define E1000_ICR_RXDMT0 0x00000010 // RX Descriptor Minimum Threshold Reached
-#define E1000_ICR_RXT0 0x00000080   // RX Timer Interrupt
-
-// Interrupt Mask Set/Read Register
-#define REG_IMS 0x00D0
-#define E1000_IMS_LSC 0x00000004    // Link Status Change
-#define E1000_IMS_RXDMT0 0x00000010 // RX Descriptor Minimum Threshold Reached
-#define E1000_IMS_RXT0 0x00000040   // RX Timer Interrupt
-
-#define E1000_IMS_ENABLE_MASK (E1000_IMS_LSC | E1000_IMS_RXDMT0 | E1000_IMS_RXT0)
+#define E1000_IMS_ENABLE_MASK (E1000_LSC | E1000_RXDMT0 | E1000_RXT0 | E1000_RX0)
 
 #define E1000_RXD_STAT_DD (1 << 0)  // Descriptor Done
 #define E1000_RXD_STAT_EOP (1 << 1) // End of Packet
@@ -112,12 +127,9 @@
 #define TSTA_LC (1 << 2) // Late Collision
 #define LSTA_TU (1 << 3) // Transmit Underrun
 
-#define E1000_RX_RING_SIZE 32
-#define E1000_TX_RING_SIZE 8
+#define E1000_RX_RING_SIZE 32 // Number of receive descriptors
+#define E1000_TX_RING_SIZE 8  // Number of transmit descriptors
 
-#define E1000_IMS_RXDW (1 << 0) // RX descriptor written
-// #define E1000_IMS_RXT0 (1 << 7) // RX timer interrupt
-#define E1000_ICR (0xc0 / 4)    // Interrupt Cause Read
 
 struct e1000_rx_desc {
     volatile uint64_t addr;
