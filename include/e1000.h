@@ -38,6 +38,23 @@
 #define ECTRL_SLU 0x40  // set link up
 
 
+// Interrupt Cause Read Register
+#define REG_ICR 0x00C0
+#define E1000_ICR_LSC 0x00000004    // Link Status Change
+#define E1000_ICR_RXDMT0 0x00000010 // RX Descriptor Minimum Threshold Reached
+#define E1000_ICR_RXT0 0x00000080   // RX Timer Interrupt
+
+// Interrupt Mask Set/Read Register
+#define REG_IMS 0x00D0
+#define E1000_IMS_LSC 0x00000004    // Link Status Change
+#define E1000_IMS_RXDMT0 0x00000010 // RX Descriptor Minimum Threshold Reached
+#define E1000_IMS_RXT0 0x00000040   // RX Timer Interrupt
+
+#define E1000_IMS_ENABLE_MASK (E1000_IMS_LSC | E1000_IMS_RXDMT0 | E1000_IMS_RXT0)
+
+#define E1000_RXD_STAT_DD (1 << 0)  // Descriptor Done
+#define E1000_RXD_STAT_EOP (1 << 1) // End of Packet
+
 #define RCTL_EN (1 << 1)            // Receiver Enable
 #define RCTL_SBP (1 << 2)           // Store Bad Packets
 #define RCTL_UPE (1 << 3)           // Unicast Promiscuous Enabled
@@ -95,11 +112,11 @@
 #define TSTA_LC (1 << 2) // Late Collision
 #define LSTA_TU (1 << 3) // Transmit Underrun
 
-#define E1000_NUM_RX_DESC 32
-#define E1000_NUM_TX_DESC 8
+#define E1000_RX_RING_SIZE 32
+#define E1000_TX_RING_SIZE 8
 
 #define E1000_IMS_RXDW (1 << 0) // RX descriptor written
-#define E1000_IMS_RXT0 (1 << 7) // RX timer interrupt
+// #define E1000_IMS_RXT0 (1 << 7) // RX timer interrupt
 #define E1000_ICR (0xc0 / 4)    // Interrupt Cause Read
 
 struct e1000_rx_desc {
