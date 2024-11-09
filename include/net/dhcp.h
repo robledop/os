@@ -10,7 +10,9 @@
 #define DHCP_FILE_LEN 128
 #define DHCP_OPTIONS_LEN 128
 
+
 #define DHCP_OP_DISCOVER 0x01
+#define DHCP_OP_REQUEST 0x01
 #define DHCP_OP_OFFER 0x02
 #define DHCP_SOURCE_PORT 68
 #define DHCP_DEST_PORT 67
@@ -18,7 +20,7 @@
 #define DHCP_HTYPE_ETH 0x01
 #define DHCP_HLEN_ETH 0x06
 
-#define DHCP_MAGIC_COOKIE 0x63538263
+#define DHCP_MAGIC_COOKIE 0x63825363
 
 #define DHCP_FLAG_BROADCAST 0x8000
 #define DHCP_FLAG_UNICAST 0x0000
@@ -26,7 +28,28 @@
 #define DHCP_OPTION_MESSAGE_TYPE 53
 #define DHCP_OPTION_PARAMETER_REQUEST 55
 #define DHCP_OPTION_MESSAGE_TYPE_LEN 1
-#define DHCP_DISCOVER 1
+
+#define DHCP_MESSAGE_TYPE_DISCOVER 1
+#define DHCP_MESSAGE_TYPE_OFFER 2
+#define DHCP_MESSAGE_TYPE_REQUEST 3
+#define DHCP_MESSAGE_TYPE_DECLINE 4
+#define DHCP_MESSAGE_TYPE_ACK 5
+#define DHCP_MESSAGE_TYPE_NAK 6
+#define DHCP_MESSAGE_TYPE_RELEASE 7
+#define DHCP_MESSAGE_TYPE_INFORM 8
+
+#define DHCP_OPT_PAD 0
+#define DHCP_OPT_SUBNET_MASK 1
+#define DHCP_OPT_ROUTER 3
+#define DHCP_OPT_DNS 6
+#define DHCP_OPT_HOST_NAME 12
+#define DHCP_OPT_REQUESTED_IP_ADDR 50
+#define DHCP_OPT_LEASE_TIME 51
+#define DHCP_OPT_DHCP_MESSAGE_TYPE 53
+#define DHCP_OPT_SERVER_ID 54
+#define DHCP_OPT_PARAMETER_REQUEST 55
+#define DHCP_OPT_CLIENT_ID 61
+#define DHCP_OPT_END 255
 
 struct dhcp_header {
     uint8_t op;
@@ -55,4 +78,8 @@ struct dhcp_packet {
     struct dhcp_header dhcp;
 } __attribute__((packed));
 
-void dhcp_send_request(uint8_t mac[6]);
+void dhcp_send_discover(uint8_t mac[6]);
+void dhcp_send_request(uint8_t mac[6], uint8_t ip[4], uint8_t server_ip[4]);
+uint32_t dhcp_options_get_ip_option(const uint8_t options[DHCP_OPTIONS_LEN], int option);
+int dhcp_options_get_dns_servers(const uint8_t options[], uint32_t dns_servers[], size_t *dns_server_count);
+void dhcp_receive(uint8_t *packet);

@@ -1,5 +1,4 @@
 #include <e1000.h>
-#include <kernel.h>
 #include <kernel_heap.h>
 #include <memory.h>
 #include <net/arp.h>
@@ -10,13 +9,15 @@
 #include <net/ipv4.h>
 #include <net/network.h>
 #include <net/udp.h>
-#include <scheduler.h>
 #include <types.h>
-#include <vga_buffer.h>
 
-bool network_ready     = false;
-uint8_t *my_ip_address = nullptr;
-static uint8_t *mac    = nullptr;
+bool network_ready       = false;
+uint8_t *my_ip_address   = nullptr;
+uint8_t *default_gateway = nullptr;
+uint8_t *subnet_mask     = nullptr;
+uint32_t *dns_servers;
+
+static uint8_t *mac = nullptr;
 
 struct ether_type {
     uint16_t ether_type;
@@ -37,9 +38,20 @@ struct ether_type ether_types[] = {
     {ETHERTYPE_LOOPBACK, "Loopback"                }
 };
 
+void network_set_state(bool state)
+{
+    network_ready = state;
+}
+
 bool network_is_ready()
 {
     return network_ready;
+}
+
+void network_set_dns_servers(uint32_t dns_servers_p[], size_t dns_server_count)
+{
+    dns_servers = (uint32_t *)kmalloc(sizeof(uint32_t) * dns_server_count);
+    memcpy(dns_servers, dns_servers_p, sizeof(uint32_t) * dns_server_count);
 }
 
 void network_set_my_ip_address(const uint8_t ip[4])
@@ -48,6 +60,22 @@ void network_set_my_ip_address(const uint8_t ip[4])
         my_ip_address = (uint8_t *)kmalloc(4);
     }
     memcpy(my_ip_address, ip, 4);
+}
+
+void network_set_subnet_mask(const uint8_t ip[4])
+{
+    if (subnet_mask == nullptr) {
+        subnet_mask = (uint8_t *)kmalloc(4);
+    }
+    memcpy(subnet_mask, ip, 4);
+}
+
+void network_set_default_gateway(const uint8_t ip[4])
+{
+    if (default_gateway == nullptr) {
+        default_gateway = (uint8_t *)kmalloc(4);
+    }
+    memcpy(default_gateway, ip, 4);
 }
 
 uint8_t *network_get_my_ip_address()
@@ -103,24 +131,7 @@ void network_receive(uint8_t *packet, const uint16_t len)
                 (struct udp_header *)(packet + sizeof(struct ether_header) + sizeof(struct ipv4_header));
 
             if (udp_header->dest_port == htons(DHCP_SOURCE_PORT)) {
-                struct dhcp_header *dhcp_packet =
-                    (struct dhcp_header *)(packet + sizeof(struct ether_header) + sizeof(struct ipv4_header) +
-                                           sizeof(struct udp_header));
-                if (dhcp_packet->op == DHCP_OP_OFFER && mac &&
-                    network_compare_mac_addresses(dhcp_packet->chaddr, mac)) {
-
-                    kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
-                    kprintf("IP address: %d.%d.%d.%d\n",
-                            dhcp_packet->yiaddr[0],
-                            dhcp_packet->yiaddr[1],
-                            dhcp_packet->yiaddr[2],
-                            dhcp_packet->yiaddr[3]);
-
-                    // TODO: Send DHCP Ack and complete the DHCP process
-                    network_set_my_ip_address(dhcp_packet->yiaddr);
-
-                    network_ready = true;
-                }
+                dhcp_receive(packet);
             }
             break;
         default:

@@ -1,6 +1,5 @@
 #include <net/helpers.h>
 #include <string.h>
-#include <vga_buffer.h>
 
 // https://www.lemoda.net/c/ip-to-integer/
 
@@ -34,6 +33,21 @@ unsigned int ip_to_int(const char *ip)
         v += n;
     }
     return v;
+}
+
+const char *int_to_ip(unsigned int ip)
+{
+    static char buffer[16];
+    unsigned char *bytes = (unsigned char *)&ip;
+
+    for (int i = 0; i < 4; i++) {
+        buffer[i * 4]     = '0' + bytes[i] / 100;
+        buffer[i * 4 + 1] = '0' + (bytes[i] / 10) % 10;
+        buffer[i * 4 + 2] = '0' + bytes[i] % 10;
+        buffer[i * 4 + 3] = '.';
+    }
+    buffer[15] = 0;
+    return buffer;
 }
 
 /// @brief Computes the checksum according to the algorithm described in

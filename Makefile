@@ -61,7 +61,6 @@ FLAGS = -ffreestanding \
 	-save-temps \
 	-std=gnu23 \
 	-fstack-protector \
-	-fsanitize=undefined \
 	-pedantic \
 	-Werror \
 	-Wextra \

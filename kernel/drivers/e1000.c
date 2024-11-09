@@ -264,48 +264,17 @@ bool e1000_start()
         e1000_rx_init();
         e1000_tx_init();
 
-        dhcp_send_request(mac);
+        dhcp_send_discover(mac);
         return true;
     }
     return false;
 }
 
-// void e1000_receive_packets()
-// {
-//     while (true) {
-//         struct e1000_rx_desc *rx_desc = rx_descs[rx_cur];
-//         const uint16_t len            = rx_descs[rx_cur]->length;
-//
-//         // Check if the descriptor is ready (Descriptor Done - DD bit set)
-//         if (!(rx_desc->status & E1000_RXD_STAT_DD)) {
-//             break; // No more packets to process
-//         }
-//
-//         // Check if the packet has End of Packet (EOP) set
-//         if (!(rx_desc->status & E1000_RXD_STAT_EOP)) {
-//             // TODO: Handle the error: packet is not complete
-//             warningf("Incomplete packet received\n");
-//             continue;
-//         }
-//
-//         network_receive((uint8_t *)rx_desc->addr, len);
-//
-//         // Clear the status to indicate the descriptor is free
-//         rx_desc->status = 0;
-//
-//         // Update the tail index
-//         rx_cur = (rx_cur + 1) % E1000_RX_RING_SIZE;
-//     }
-//
-//     // Update the Receive Descriptor Tail (RDT) register
-//     e1000_write_command(REG_RXDESCTAIL, rx_cur);
-// }
-
 /// @brief Process all available packets in the receive ring
 void e1000_receive()
 {
     while ((rx_descs[rx_cur]->status & E1000_RXD_STAT_DD)) {
-        uint8_t *buf       = (uint8_t *)(uint32_t)rx_descs[rx_cur]->addr;
+        auto const buf     = (uint8_t *)(uint32_t)rx_descs[rx_cur]->addr;
         const uint16_t len = rx_descs[rx_cur]->length;
 
         if (!(rx_descs[rx_cur]->status & E1000_RXD_STAT_EOP)) {
