@@ -44,7 +44,6 @@ struct command_argument *os_parse_command(const char *command, const int max)
     return head;
 }
 
-
 void os_terminal_readline(unsigned char *out, const int max, const bool output_while_typing)
 {
     int i = 0;

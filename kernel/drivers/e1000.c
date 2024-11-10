@@ -191,10 +191,10 @@ void e1000_init(struct pci_device *pci)
     pci_enable_bus_mastering(pci);
     eeprom_exists = false;
     if (e1000_start()) {
-        kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] E1000 started\n");
+        arp_init();
+    } else {
+        kprintf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
     }
-
-    arp_init();
 }
 
 

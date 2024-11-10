@@ -124,7 +124,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps FORCE
 	$(CC) $(INCLUDES) $(FLAGS) $(DEBUG_FLAGS) -c $< -o $@
 
 .PHONY: grub
-grub: ./bin/kernel-grub.bin apps ./bin/boot.bin FORCE
+grub: ./bin/kernel-grub.bin apps FORCE
 	grub-file --is-x86-multiboot ./rootfs/boot/myos.bin
 	./scripts/create-grub-image.sh
 	# VBoxManage convertdd ./disk.img ./disk.vdi
@@ -151,12 +151,11 @@ qemu: all FORCE
 
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
-	#./scripts/create_tap.sh
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./disk.img -m 512 -daemonize  -display gtk,zoom-to-fit=on  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -serial file:serial.log # -d int -D qemu.log
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 512 -daemonize  -display gtk,zoom-to-fit=on  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -serial file:serial.log # -d int -D qemu.log
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE
-	qemu-system-i386 -boot d -hda ./disk.img -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -boot d -drive file=/disk.img,format=raw -m 512 -serial stdio -display gtk,zoom-to-fit=on
 
 .PHONY: qemu_iso
 qemu_iso: iso FORCE
