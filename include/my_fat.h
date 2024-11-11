@@ -67,6 +67,6 @@ typedef struct
     uint32_t file_size;           // File size in bytes
 } __attribute__((packed)) FAT16_DirEntry;
 
-int my_fat16_init();
+int my_fat16_init(void);
 FAT16_DirEntry *fat_find_item(char *path);
 void fat_read_file(FAT16_DirEntry dirEntry, uint8_t *output);

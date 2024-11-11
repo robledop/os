@@ -78,10 +78,10 @@ __attribute__((nonnull))
 int opendir(struct file_directory *directory, const char path[static 1]);
 __attribute__((nonnull))
 int readdir(const struct file_directory *directory, struct directory_entry *entry_out, int index);
-int getkey();
-int getkey_blocking();
+int getkey(void);
+int getkey_blocking(void);
 
-char *get_current_directory();
+char *get_current_directory(void);
 int set_current_directory(const char path[static 1]);
 
-void exit();
+void exit(void);

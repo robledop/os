@@ -159,7 +159,7 @@ struct pci_vendor {
 };
 
 
-void pci_scan();
+void pci_scan(void);
 __attribute__((nonnull))
 void pci_enable_bus_mastering(const struct pci_device *device);
 __attribute__((nonnull))

@@ -47,9 +47,7 @@ struct interrupt_frame {
     uint32_t ss;
 } __attribute__((packed));
 
-void idt_init();
-// void enable_interrupts();
-// void disable_interrupts();
+void idt_init(void);
 
 typedef void *(*SYSCALL_HANDLER_FUNCTION)(struct interrupt_frame *frame);
 typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt, const struct interrupt_frame *frame);

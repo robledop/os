@@ -14,12 +14,12 @@ __attribute__((nonnull))
 void free(void *ptr);
 int waitpid(int pid, const int *return_status);
 int wait(const int *return_status);
-void reboot();
-void shutdown();
-int fork();
+void reboot(void);
+void shutdown(void);
+int fork(void);
 int exec(const char path[static 1], const char **args);
-int getpid();
+int getpid(void);
 int create_process(const char path[static 1], const char *current_directory);
 void sleep(uint32_t milliseconds);
-void yield();
-void ps();
+void yield(void);
+void ps(void);

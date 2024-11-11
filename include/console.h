@@ -20,5 +20,5 @@ typedef struct {
     int input_buffer_tail;
 } Console;
 
-void initialize_consoles();
+void initialize_consoles(void);
 void switch_console(int console_number);

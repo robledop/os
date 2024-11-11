@@ -38,4 +38,4 @@ void arp_receive(uint8_t *packet);
 __attribute__((nonnull))
 void arp_send_reply(uint8_t *packet);
 void arp_send_request(const uint8_t dest_ip[static 4]);
-void arp_init();
+void arp_init(void);

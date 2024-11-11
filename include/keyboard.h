@@ -18,10 +18,10 @@ struct keyboard {
     struct keyboard *next;
 };
 
-void keyboard_init();
+void keyboard_init(void);
 __attribute__((nonnull))
 void keyboard_backspace(struct process *process);
 void keyboard_push(uchar c);
-uchar keyboard_pop();
+uchar keyboard_pop(void);
 __attribute__((nonnull))
 int keyboard_register(struct keyboard *kbd);

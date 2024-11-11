@@ -120,7 +120,7 @@ struct file_descriptor
     struct disk *disk;
 };
 
-void fs_init();
+void fs_init(void);
 int fopen(const char path[static 1], const char mode[static 1]);
 
 __attribute__((nonnull))

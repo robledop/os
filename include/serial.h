@@ -16,6 +16,6 @@
 #define warningf(a, ...)
 #endif
 
-void init_serial();
+void init_serial(void);
 int serial_printf(const char fmt[static 1], ...);
 void serial_put(char a);

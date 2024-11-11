@@ -20,7 +20,7 @@ struct disk {
     void *fs_private;
 };
 
-void disk_init();
+void disk_init(void);
 struct disk *disk_get(int index);
 __attribute__((nonnull)) int disk_read_block(const struct disk idisk[static 1], unsigned int lba, int total,
                                              void *buffer);
