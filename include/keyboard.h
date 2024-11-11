@@ -19,7 +19,9 @@ struct keyboard {
 };
 
 void keyboard_init();
+__attribute__((nonnull))
 void keyboard_backspace(struct process *process);
 void keyboard_push(uchar c);
 uchar keyboard_pop();
+__attribute__((nonnull))
 int keyboard_register(struct keyboard *kbd);

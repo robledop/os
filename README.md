@@ -1,7 +1,7 @@
 # OS (no name)
 
 Just a little operating system I'm developing for fun.  
-Written in C23.
+Written in C23, so it requires a version of GCC that supports it.
 
 ## Documentation
 

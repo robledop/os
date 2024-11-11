@@ -6,8 +6,8 @@
 
 #include <idt.h>
 #include <list.h>
-#include "paging.h"
-#include "process.h"
+#include <paging.h>
+#include <process.h>
 
 #define THREAD_MAGIC 0x1eaadf71
 
@@ -49,16 +49,17 @@ struct thread {
     unsigned magic; // Detects stack overflow.
 };
 
-struct thread *thread_create(struct process *process);
-int thread_free(struct thread *thread);
-void restore_general_purpose_registers(struct registers *registers);
-int copy_string_from_thread(const struct thread *thread, const void *virtual, void *physical, int max);
-void *thread_peek_stack_item(const struct thread *task, int index);
-void *thread_virtual_to_physical_address(const struct thread *task, void *virtual_address);
-int thread_page_thread(const struct thread *thread);
-void thread_save_state(struct thread *thread, const struct interrupt_frame *frame);
-void thread_copy_registers(struct thread *dest, const struct thread *src);
-struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame);
-struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers);
-void thread_switch(struct registers *registers);
-bool thread_is_valid(const struct thread *thread);
+__attribute__((nonnull)) struct thread *thread_create(struct process *process);
+__attribute__((nonnull)) int thread_free(struct thread *thread);
+__attribute__((nonnull)) void restore_general_purpose_registers(struct registers *registers);
+__attribute__((nonnull)) int copy_string_from_thread(const struct thread *thread, const void *virtual, void *physical,
+                                                     int max);
+__attribute__((nonnull)) void *thread_peek_stack_item(const struct thread *task, int index);
+__attribute__((nonnull)) void *thread_virtual_to_physical_address(const struct thread *task, void *virtual_address);
+__attribute__((nonnull)) int thread_page_thread(const struct thread *thread);
+__attribute__((nonnull)) void thread_save_state(struct thread *thread, const struct interrupt_frame *frame);
+__attribute__((nonnull)) void thread_copy_registers(struct thread *dest, const struct thread *src);
+__attribute__((nonnull)) struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame);
+__attribute__((nonnull)) struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers);
+__attribute__((nonnull)) void thread_switch(struct registers *registers);
+__attribute__((nonnull)) bool thread_is_valid(const struct thread *thread);

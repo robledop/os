@@ -8,7 +8,7 @@
 
 /// @brief Convert the character string in "ip" into an unsigned integer.
 /// This assumes that an unsigned integer contains at least 32 bits.
-unsigned int ip_to_int(const char *ip)
+unsigned int ip_to_int(const char ip[static 1])
 {
     unsigned v        = 0;
     const char *start = ip;

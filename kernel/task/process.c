@@ -52,10 +52,6 @@ struct process *find_child_process_by_pid(const struct process *parent, const in
 
 int process_add_child(struct process *parent, struct process *child)
 {
-    if (!parent || !child) {
-        return -EINVARG;
-    }
-
     if (parent->children == nullptr) {
         parent->children = child;
         return ALL_OK;
@@ -70,12 +66,8 @@ int process_add_child(struct process *parent, struct process *child)
     return ALL_OK;
 }
 
-int process_remove_child(struct process *parent, struct process *child)
+int process_remove_child(struct process *parent, const struct process *child)
 {
-    if (!parent || !child) {
-        return -EINVARG;
-    }
-
     if (parent->children == child) {
         parent->children = child->next;
         return ALL_OK;
@@ -650,7 +642,7 @@ out:
 
 int process_set_current_directory(struct process *process, const char directory[static 1])
 {
-    if (!process || strlen(directory) == 0) {
+    if (strlen(directory) == 0) {
         return -EINVARG;
     }
 

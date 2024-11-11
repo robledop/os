@@ -25,7 +25,7 @@ struct heap {
     void *start;
 };
 
-int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *table);
-void *heap_malloc(const struct heap *heap, size_t size);
-void *heap_realloc(const struct heap *heap, void *ptr, size_t size);
-void heap_free(const struct heap *heap, void *ptr);
+__attribute__((nonnull)) int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *table);
+__attribute__((nonnull)) void *heap_malloc(const struct heap *heap, size_t size);
+__attribute__((nonnull)) void *heap_realloc(const struct heap *heap, void *ptr, size_t size);
+__attribute__((nonnull)) void heap_free(const struct heap *heap, void *ptr);

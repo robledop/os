@@ -160,5 +160,7 @@ struct pci_vendor {
 
 
 void pci_scan();
+__attribute__((nonnull))
 void pci_enable_bus_mastering(const struct pci_device *device);
+__attribute__((nonnull))
 uint32_t pci_get_bar(const struct pci_device *dev, uint8_t type);

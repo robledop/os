@@ -48,7 +48,7 @@ int fstat(int fd, struct file_stat *stat)
     return syscall2(SYSCALL_STAT, fd, stat);
 }
 
-int fopen(const char name[static 1], const char *mode)
+int fopen(const char name[static 1], const char mode[static 1])
 {
     return syscall2(SYSCALL_OPEN, name, mode);
 }

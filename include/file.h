@@ -122,10 +122,15 @@ struct file_descriptor
 
 void fs_init();
 int fopen(const char path[static 1], const char mode[static 1]);
+
+__attribute__((nonnull))
 int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 int fseek(int fd, int offset, FILE_SEEK_MODE whence);
+__attribute__((nonnull))
 int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
+__attribute__((nonnull))
 void fs_insert_file_system(struct file_system *filesystem);
+__attribute__((nonnull))
 struct file_system *fs_resolve(struct disk *disk);
 int fs_open_dir(const char name[static 1], struct file_directory *directory);

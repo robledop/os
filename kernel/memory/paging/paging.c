@@ -69,7 +69,6 @@ struct page_directory *paging_create_directory(const uint8_t flags)
 
 void paging_free_directory(struct page_directory *page_directory)
 {
-    ASSERT(page_directory);
     ASSERT(page_directory->directory_entry);
 
     dbgprintf("Freeing page directory %x\n", &page_directory);
@@ -86,7 +85,6 @@ void paging_free_directory(struct page_directory *page_directory)
 
 void paging_switch_directory(const struct page_directory *directory)
 {
-    ASSERT(directory);
     ASSERT(directory->directory_entry);
 
     if (current_directory == directory->directory_entry) {

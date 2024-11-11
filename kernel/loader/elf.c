@@ -232,11 +232,6 @@ out:
 
 void elf_close(struct elf_file *file)
 {
-    if (!file) {
-        warningf("Invalid ELF file\n");
-        return;
-    }
-
     kfree(file->elf_memory);
     kfree(file);
 }

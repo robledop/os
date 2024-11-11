@@ -126,10 +126,9 @@ struct elf32_sym {
     elf32_half st_shndx;
 } __attribute__((packed));
 
-void *elf_get_entry_ptr(const struct elf_header *elf_header);
-uint32_t elf_get_entry(const struct elf_header *elf_header);
-struct elf_file
-{
+__attribute__((nonnull)) void *elf_get_entry_ptr(const struct elf_header *elf_header);
+__attribute__((nonnull)) uint32_t elf_get_entry(const struct elf_header *elf_header);
+struct elf_file {
     char filename[MAX_PATH_LENGTH];
 
     uint32_t in_memory_size;
@@ -143,18 +142,17 @@ struct elf_file
     void *physical_end_address;
 };
 
-int elf_load(const char *filename, struct elf_file **file_out);
-void elf_close(struct elf_file *file);
-void *elf_virtual_base(const struct elf_file *file);
-void *elf_virtual_end(const struct elf_file *file);
-void *elf_phys_base(const struct elf_file *file);
-void *elf_phys_end(const struct elf_file *file);
-
-struct elf_header *elf_header(const struct elf_file *file);
-struct elf32_shdr *elf_sheader(struct elf_header *header);
-void *elf_memory(const struct elf_file *file);
-struct elf32_phdr *elf_pheader(struct elf_header *header);
-struct elf32_phdr *elf_program_header(struct elf_header *header, int index);
-struct elf32_shdr *elf_section(struct elf_header *header, int index);
-void *elf_phdr_phys_address(const struct elf_file *file, const struct elf32_phdr *phdr);
-int elf_process_loaded(struct elf_file *elf_file);
+__attribute__((nonnull)) int elf_load(const char *filename, struct elf_file **file_out);
+__attribute__((nonnull)) void elf_close(struct elf_file *file);
+__attribute__((nonnull)) void *elf_virtual_base(const struct elf_file *file);
+__attribute__((nonnull)) void *elf_virtual_end(const struct elf_file *file);
+__attribute__((nonnull)) void *elf_phys_base(const struct elf_file *file);
+__attribute__((nonnull)) void *elf_phys_end(const struct elf_file *file);
+__attribute__((nonnull)) struct elf_header *elf_header(const struct elf_file *file);
+__attribute__((nonnull)) struct elf32_shdr *elf_sheader(struct elf_header *header);
+__attribute__((nonnull)) void *elf_memory(const struct elf_file *file);
+__attribute__((nonnull)) struct elf32_phdr *elf_pheader(struct elf_header *header);
+__attribute__((nonnull)) struct elf32_phdr *elf_program_header(struct elf_header *header, int index);
+__attribute__((nonnull)) struct elf32_shdr *elf_section(struct elf_header *header, int index);
+__attribute__((nonnull)) void *elf_phdr_phys_address(const struct elf_file *file, const struct elf32_phdr *phdr);
+__attribute__((nonnull)) int elf_process_loaded(struct elf_file *elf_file);

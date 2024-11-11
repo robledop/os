@@ -31,5 +31,5 @@ struct icmp_echo_reply {
 
 typedef bool (*ICMP_ECHO_REPLY_CALLBACK)(struct icmp_echo_reply echo_reply);
 
-void icmp_receive(uint8_t *packet, uint16_t len);
-void icmp_send_echo_request(const uint8_t dest_ip[static 4], const uint16_t sequence);
+__attribute__((nonnull)) void icmp_receive(uint8_t *packet, uint16_t len);
+void icmp_send_echo_request(const uint8_t dest_ip[static 4], uint16_t sequence);

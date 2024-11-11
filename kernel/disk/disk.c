@@ -38,7 +38,7 @@ struct disk *disk_get(const int index)
     return &disk;
 }
 
-int disk_read_block(const struct disk *idisk, const unsigned int lba, const int total, void *buffer)
+int disk_read_block(const struct disk idisk[static 1], const unsigned int lba, const int total, void *buffer)
 {
     ASSERT(idisk == &disk);
 

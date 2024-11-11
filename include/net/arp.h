@@ -33,7 +33,9 @@ struct arp_cache_entry {
 };
 
 struct arp_cache_entry arp_cache_find(const uint8_t ip[static 4]);
+__attribute__((nonnull))
 void arp_receive(uint8_t *packet);
+__attribute__((nonnull))
 void arp_send_reply(uint8_t *packet);
 void arp_send_request(const uint8_t dest_ip[static 4]);
 void arp_init();

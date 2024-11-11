@@ -13,12 +13,8 @@
 
 int thread_init(struct thread *thread, struct process *process);
 
-int thread_free(struct thread *thread)
+__attribute__((nonnull)) int thread_free(struct thread *thread)
 {
-    if (thread == NULL) {
-        return -EINVARG;
-    }
-
     scheduler_unqueue_thread(thread);
     scheduler_remove_current_thread(thread);
 
@@ -139,7 +135,7 @@ int thread_init(struct thread *thread, struct process *process)
 
 bool thread_is_valid(const struct thread *thread)
 {
-    return thread != nullptr && thread->magic == THREAD_MAGIC;
+    return thread->magic == THREAD_MAGIC;
 }
 
 void *thread_peek_stack_item(const struct thread *thread, const int index)
@@ -167,9 +163,9 @@ void thread_save_state(struct thread *thread, const struct interrupt_frame *fram
     thread->registers.eax = frame->eax;
 
     thread->registers.eip    = frame->eip;
-    thread->registers.cs    = frame->cs;
+    thread->registers.cs     = frame->cs;
     thread->registers.eflags = frame->eflags;
-    thread->registers.esp   = frame->esp;
+    thread->registers.esp    = frame->esp;
     // thread->registers.ss    = frame->ss;
 }
 
@@ -184,26 +180,26 @@ void thread_copy_registers(struct thread *dest, const struct thread *src)
     dest->registers.eax = src->registers.eax;
 
     dest->registers.eip    = src->registers.eip;
-    dest->registers.cs    = src->registers.cs;
+    dest->registers.cs     = src->registers.cs;
     dest->registers.eflags = src->registers.eflags;
-    dest->registers.esp   = src->registers.esp;
-    dest->registers.ss    = src->registers.ss;
+    dest->registers.esp    = src->registers.esp;
+    dest->registers.ss     = src->registers.ss;
 }
 struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame)
 {
     const struct registers registers = {
-        .edi   = frame->edi,
-        .esi   = frame->esi,
-        .ebp   = frame->ebp,
-        .ebx   = frame->ebx,
-        .edx   = frame->edx,
-        .ecx   = frame->ecx,
-        .eax   = frame->eax,
+        .edi    = frame->edi,
+        .esi    = frame->esi,
+        .ebp    = frame->ebp,
+        .ebx    = frame->ebx,
+        .edx    = frame->edx,
+        .ecx    = frame->ecx,
+        .eax    = frame->eax,
         .eip    = frame->eip,
-        .cs    = frame->cs,
+        .cs     = frame->cs,
         .eflags = frame->eflags,
-        .esp   = frame->esp,
-        .ss    = frame->ss,
+        .esp    = frame->esp,
+        .ss     = frame->ss,
     };
 
     return registers;
@@ -212,18 +208,18 @@ struct registers interrupt_frame_to_registers(const struct interrupt_frame *fram
 struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers)
 {
     const struct interrupt_frame frame = {
-        .edi   = registers->edi,
-        .esi   = registers->esi,
-        .ebp   = registers->ebp,
-        .ebx   = registers->ebx,
-        .edx   = registers->edx,
-        .ecx   = registers->ecx,
-        .eax   = registers->eax,
+        .edi    = registers->edi,
+        .esi    = registers->esi,
+        .ebp    = registers->ebp,
+        .ebx    = registers->ebx,
+        .edx    = registers->edx,
+        .ecx    = registers->ecx,
+        .eax    = registers->eax,
         .eip    = registers->eip,
-        .cs    = registers->cs,
+        .cs     = registers->cs,
         .eflags = registers->eflags,
-        .esp   = registers->esp,
-        .ss    = registers->ss,
+        .esp    = registers->esp,
+        .ss     = registers->ss,
     };
 
     return frame;

@@ -5,6 +5,5 @@
 #endif
 
 #include "types.h"
-
-int ata_read_sector(uint32_t lba, int total, void *buffer);
+__attribute__((nonnull)) int ata_read_sector(uint32_t lba, int total, void *buffer);
 int ata_get_sector_size();

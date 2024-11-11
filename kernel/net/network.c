@@ -98,7 +98,7 @@ const char *find_ether_type(const uint16_t ether_type)
     return "Unknown";
 }
 
-void network_set_mac(const uint8_t *mac_addr)
+void network_set_mac(const uint8_t mac_addr[static 6])
 {
     if (mac == nullptr) {
         mac = (uint8_t *)kmalloc(6);

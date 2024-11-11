@@ -11,6 +11,6 @@ typedef uint32_t spinlock_t;
         release_lock(&lk);                                                                                             \
     }
 
-void spinlock_init(spinlock_t *lock);
-void spin_lock(spinlock_t *lock);
-void spin_unlock(spinlock_t *lock);
+__attribute__((nonnull)) void spinlock_init(spinlock_t *lock);
+__attribute__((nonnull)) void spin_lock(spinlock_t *lock);
+__attribute__((nonnull)) void spin_unlock(spinlock_t *lock);
