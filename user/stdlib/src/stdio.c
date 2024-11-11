@@ -48,7 +48,7 @@ int fstat(int fd, struct file_stat *stat)
     return syscall2(SYSCALL_STAT, fd, stat);
 }
 
-int fopen(const char *name, const char *mode)
+int fopen(const char name[static 1], const char *mode)
 {
     return syscall2(SYSCALL_OPEN, name, mode);
 }
@@ -68,7 +68,7 @@ void putchar(const unsigned char c)
     syscall1(SYSCALL_PUTCHAR, c);
 }
 
-int print(const char *str, uint32_t size)
+int print(const char str[static 1], uint32_t size)
 {
     return syscall2(SYSCALL_PRINT, str, size + 1);
 }
@@ -97,7 +97,7 @@ int ansi_to_vga_background[] = {
     0x70  // White (Light Grey in VGA)
 };
 
-int printf(const char *fmt, ...)
+int printf(const char fmt[static 1], ...)
 {
     va_list args;
 
@@ -236,7 +236,7 @@ int printf(const char *fmt, ...)
 /// struct file_directory *directory = malloc(sizeof(struct file_directory));
 /// int res = opendir(directory, "pah/to/directory");
 /// \endcode
-int opendir(struct file_directory *directory, const char *path)
+int opendir(struct file_directory *directory, const char path[static 1])
 {
     return syscall2(SYSCALL_OPEN_DIR, directory, path);
 }
@@ -296,7 +296,7 @@ char *get_current_directory()
     return (char *)syscall0(SYSCALL_GET_CURRENT_DIRECTORY);
 }
 // Set the current directory for the current process
-int set_current_directory(const char *path)
+int set_current_directory(const char path[static 1])
 {
     return syscall1(SYSCALL_SET_CURRENT_DIRECTORY, path);
 }

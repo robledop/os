@@ -12,5 +12,5 @@ struct path_part
     struct path_part *next;
 };
 
-struct path_root *path_parser_parse(const char *path, const char *current_directory_path);
+struct path_root *path_parser_parse(const char path[static 1], const char *current_directory_path);
 void path_parser_free(struct path_root *root);

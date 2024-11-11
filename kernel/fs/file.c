@@ -128,7 +128,7 @@ FILE_MODE file_get_mode(const char *mode)
 //  - r: read
 //  - w: write
 //  - a: append
-int fopen(const char *path, const char *mode)
+int fopen(const char path[static 1], const char mode[static 1])
 {
     dbgprintf("Opening file %s in mode %s\n", path, mode);
     int res = 0;
@@ -262,7 +262,7 @@ int fclose(int fd)
     return res;
 }
 
-int fs_open_dir(const char *name, struct file_directory *directory)
+int fs_open_dir(const char name[static 1], struct file_directory *directory)
 {
     const struct path_root *root_path = path_parser_parse(name, nullptr);
 
@@ -282,7 +282,6 @@ int fs_open_dir(const char *name, struct file_directory *directory)
     }
 
     ASSERT(disk->fs->get_subdirectory != nullptr, "File system does not support getting sub directory");
-    ASSERT(name != NULL, "Name is null");
     ASSERT(disk != NULL, "Disk is null");
 
     return disk->fs->get_subdirectory(disk, name, directory);

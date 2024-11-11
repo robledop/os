@@ -134,7 +134,7 @@ void path_parser_free(struct path_root *root)
 #endif
 }
 
-struct path_root *path_parser_parse(const char *path, const char *current_directory_path)
+struct path_root *path_parser_parse(const char path[static 1], const char *current_directory_path)
 {
     dbgprintf("Parsing path %s\n", path);
     int res                = 0;

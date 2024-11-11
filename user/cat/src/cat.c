@@ -1,3 +1,4 @@
+#include <config.h>
 #include <os.h>
 #include <status.h>
 #include <stdio.h>

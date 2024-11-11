@@ -325,6 +325,8 @@ static int process_load_binary(const char *file_name, struct process *process)
 {
     dbgprintf("Loading binary %s\n", file_name);
 
+    void *program = nullptr;
+
     int res      = 0;
     const int fd = fopen(file_name, "r");
     if (!fd) {
@@ -341,8 +343,8 @@ static int process_load_binary(const char *file_name, struct process *process)
         goto out;
     }
 
-    auto const program = kzalloc(stat.size);
-    if (!program) {
+    program = kzalloc(stat.size);
+    if (program == nullptr) {
         ASSERT(false, "Failed to allocate memory for program");
         res = -ENOMEM;
         goto out;
@@ -363,7 +365,7 @@ static int process_load_binary(const char *file_name, struct process *process)
 
 out:
     if (res < 0) {
-        if (program) {
+        if (program != nullptr) {
             kfree(program);
         }
     }
@@ -391,7 +393,7 @@ out:
     return res;
 }
 
-int process_load_data(const char *file_name, struct process *process)
+int process_load_data(const char file_name[static 1], struct process *process)
 {
     dbgprintf("Loading data for process %s\n", file_name);
     int res = 0;
@@ -536,7 +538,7 @@ int process_unmap_memory(const struct process *process)
 }
 
 
-int process_load_enqueue(const char *file_name, struct process **process)
+int process_load_enqueue(const char file_name[static 1], struct process **process)
 {
     dbgprintf("Loading and switching process %s\n", file_name);
 
@@ -549,7 +551,7 @@ int process_load_enqueue(const char *file_name, struct process **process)
     return res;
 }
 
-int process_load(const char *file_name, struct process **process)
+int process_load(const char file_name[static 1], struct process **process)
 {
     dbgprintf("Loading process %s\n", file_name);
     int res       = 0;
@@ -567,7 +569,7 @@ out:
     return res;
 }
 
-int process_load_for_slot(const char *file_name, struct process **process, const uint16_t pid)
+int process_load_for_slot(const char file_name[static 1], struct process **process, const uint16_t pid)
 {
     int res                     = 0;
     struct thread *thread       = nullptr;
@@ -646,9 +648,9 @@ out:
     return res;
 }
 
-int process_set_current_directory(struct process *process, const char *directory)
+int process_set_current_directory(struct process *process, const char directory[static 1])
 {
-    if (!process || !directory || strlen(directory) == 0) {
+    if (!process || strlen(directory) == 0) {
         return -EINVARG;
     }
 

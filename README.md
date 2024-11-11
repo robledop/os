@@ -1,6 +1,7 @@
 # OS (no name)
 
-Just a little operating system I'm developing for fun.
+Just a little operating system I'm developing for fun.  
+Written in C23.
 
 ## Documentation
 
@@ -67,6 +68,7 @@ Just a little operating system I'm developing for fun.
 - ⬜ Network stack
 - ⬜ Make the syscalls more POSIX-like
 - ⬜ GUI
+
 </details>
 
 <details>

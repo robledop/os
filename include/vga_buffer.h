@@ -4,19 +4,16 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "types.h"
 #include "termcolors.h"
+#include "types.h"
 
 
 #define VIDEO_MEMORY 0xB8000
 #define DEFAULT_ATTRIBUTE 0x07 // Light grey on black background
 
 void vga_buffer_init();
-void print(const char *str);
+void print(const char str[static 1]);
 void terminal_clear();
-// void terminal_write_char(char c, uint8_t fcolor, uint8_t bcolor);
-void terminal_putchar(const char c, const uint8_t attr, const int x, const int y);
-void kprintf(const char *fmt, ...);
-
-void ksprintf(const char *str, int max);
-void update_cursor(const int row, const int col);
+void terminal_putchar(char c, uint8_t attr, int x, int y);
+void kprintf(const char fmt[static 1], ...);
+void update_cursor(int row, int col);

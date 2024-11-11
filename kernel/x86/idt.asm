@@ -47,10 +47,9 @@ idt_load:
             pop eax
             pushad
         %else
-            pushad
             ; No error code
-            ; Set EAX to zero
-            xor eax, eax
+            ; Leave EAX alone
+            pushad
         %endif
 
         push esp                        ; pass the stack pointer as the second argument. It contains the interrupt frame

@@ -12,9 +12,9 @@ struct process_info {
     int exit_code;
 };
 
-struct process *scheduler_set_process(const int pid, struct process *process);
+struct process *scheduler_set_process(int pid, struct process *process);
 void scheduler_switch_to_any();
-struct process *scheduler_get_process(const int pid);
+struct process *scheduler_get_process( int pid);
 struct process *scheduler_get_current_process();
 void scheduler_unlink_process(const struct process *process);
 int scheduler_get_free_pid();

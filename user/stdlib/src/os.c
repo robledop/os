@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct command_argument *os_parse_command(const char *command, const int max)
+struct command_argument *os_parse_command(const char command[static 1], const int max)
 {
     struct command_argument *head = nullptr;
     char scommand[1025];
@@ -44,7 +44,7 @@ struct command_argument *os_parse_command(const char *command, const int max)
     return head;
 }
 
-void os_terminal_readline(unsigned char *out, const int max, const bool output_while_typing)
+void os_terminal_readline(unsigned char out[static 1], const int max, const bool output_while_typing)
 {
     int i = 0;
     for (; i < max - 1; i++) {

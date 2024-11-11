@@ -64,19 +64,19 @@ struct file_stat {
 };
 
 void putchar(unsigned char c);
-int printf(const char *fmt, ...);
-int print(const char *str, uint32_t size);
-int fopen(const char *name, const char *mode);
+int printf(const char fmt[static 1], ...);
+int print(const char str[static 1], uint32_t size);
+int fopen(const char name[static 1], const char *mode);
 int fclose(int fd);
 int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 int fstat(int fd, struct file_stat *stat);
 void clear_screen();
-int opendir(struct file_directory *directory, const char *path);
-int readdir(const struct file_directory *directory, struct directory_entry *entry_out, const int index);
+int opendir(struct file_directory *directory, const char path[static 1]);
+int readdir(const struct file_directory *directory, struct directory_entry *entry_out, int index);
 int getkey();
 int getkey_blocking();
 
 char *get_current_directory();
-int set_current_directory(const char *path);
+int set_current_directory(const char path[static 1]);
 
 void exit();

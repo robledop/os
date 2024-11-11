@@ -42,7 +42,8 @@ void set_request_dhcp_options(uint8_t *options, uint8_t ip[4], uint8_t server_ip
 }
 
 
-int dhcp_options_get_dns_servers(const uint8_t options[], uint32_t dns_servers[], size_t *dns_server_count)
+int dhcp_options_get_dns_servers(const uint8_t options[static DHCP_OPTIONS_LEN], uint32_t dns_servers[static 1],
+                                 size_t *dns_server_count)
 {
     size_t offset     = 0;
     *dns_server_count = 0;

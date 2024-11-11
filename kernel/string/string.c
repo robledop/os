@@ -8,7 +8,7 @@
 
 // This file is also included in the stdlib
 
-inline void reverse(char s[])
+inline void reverse(char s[static 1])
 {
     int i, j;
 
@@ -73,7 +73,7 @@ int memcmp(const void *v1, const void *v2, unsigned int n)
 }
 
 // Compare two strings
-int strncmp(const char *p, const char *q, unsigned int n)
+int strncmp(const char p[static 1], const char q[static 1], unsigned int n)
 {
     while (n > 0 && *p && *p == *q) {
         n--, p++, q++;
@@ -94,7 +94,7 @@ char tolower(char s1)
 }
 
 // Compare two strings ignoring case
-int istrncmp(const char *s1, const char *s2, int n)
+int istrncmp(const char s1[static 1], const char s2[static 1], int n)
 {
     while (n-- > 0) {
         const uchar u1 = (unsigned char)*s1++;
@@ -111,7 +111,7 @@ int istrncmp(const char *s1, const char *s2, int n)
 }
 
 // Copy string t to s
-char *strncpy(char *dest, const char *src, const size_t n)
+char *strncpy(char dest[static 1], const char src[static 1], const size_t n)
 {
     size_t i = 0;
     for (i = 0; i < n - 1; i++) {
@@ -127,7 +127,7 @@ char *strncpy(char *dest, const char *src, const size_t n)
 }
 
 // Like strncpy but guaranteed to NUL-terminate.
-char *safestrcpy(char *s, const char *t, int n)
+char *safestrcpy(char s[static 1], const char t[static 1], int n)
 {
     char *os = s;
     if (n <= 0) {
@@ -155,7 +155,7 @@ bool isspace(char c)
 }
 
 // Trim leading and trailing whitespaces
-char *trim(char *str)
+char *trim(char str[static 1])
 {
     while (isspace(*str)) {
         str++;
@@ -171,7 +171,7 @@ char *trim(char *str)
     return str;
 }
 
-char *substring(const char *str, const int start, const int end)
+char *substring(const char str[static 1], const int start, const int end)
 {
 #ifdef __KERNEL__
     auto const substr = (char *)kmalloc(sizeof(char) * (end - start + 2));
@@ -186,7 +186,7 @@ char *substring(const char *str, const int start, const int end)
     return substr;
 }
 
-inline int itoa(int n, char s[])
+inline int itoa(int n, char s[static 1])
 {
     int sign;
 
@@ -208,7 +208,7 @@ inline int itoa(int n, char s[])
     return i;
 }
 
-uint32_t atoi(const char *str)
+uint32_t atoi(const char str[static 1])
 {
     int res = 0;
     for (int i = 0; str[i] != '\0'; ++i) {
@@ -217,7 +217,7 @@ uint32_t atoi(const char *str)
     return res;
 }
 
-inline int itohex(uint32_t n, char s[])
+inline int itohex(uint32_t n, char s[static 1])
 {
     int i = 0;
     do {
@@ -234,7 +234,7 @@ inline int itohex(uint32_t n, char s[])
     return i;
 }
 
-char *strtok(char *str, const char *delim)
+char *strtok(char *str, const char delim[static 1])
 {
     static char *static_str = nullptr; // Stores the string between calls
     int i = 0, j = 0;
@@ -289,13 +289,13 @@ char *strtok(char *str, const char *delim)
 }
 
 /// @brief Duplicate s, returning an identical malloc'd string.
-char *strdup(const char *s)
+char *strdup(const char s[static 1])
 {
     const size_t len = strlen(s);
 #ifdef __KERNEL__
     char *new = kmalloc(len + 1);
 #else
-    char *new = malloc(len + 1);
+    char *new         = malloc(len + 1);
 #endif
 
 
@@ -310,7 +310,7 @@ char *strdup(const char *s)
 /// @param dest the destination string
 /// @param src the source string
 /// @return the concatenated string
-char *strcat(char *dest, const char *src)
+char *strcat(char dest[static 1], const char src[static 1])
 {
     char *d = dest;
     while (*d != '\0') {
@@ -325,7 +325,7 @@ char *strcat(char *dest, const char *src)
     return dest;
 }
 
-int count_words(const char *input)
+int count_words(const char input[static 1])
 {
     int count         = 0;
     char *temp        = strdup(input);
@@ -343,7 +343,7 @@ int count_words(const char *input)
     return count;
 }
 
-bool starts_with(const char *pre, const char *str)
+bool starts_with(const char pre[static 1], const char str[static 1])
 {
     return strncmp(pre, str, strlen(pre)) == 0;
 }

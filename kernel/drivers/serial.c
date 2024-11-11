@@ -34,7 +34,7 @@ void serial_write(const char *str)
     }
 }
 
-int serial_printf(const char *fmt, ...)
+int serial_printf(const char fmt[static 1], ...)
 {
     int written = 0;
 #if defined(DEBUG_SERIAL) || defined(DEBUG_WARNINGS)

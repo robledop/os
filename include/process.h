@@ -77,16 +77,16 @@ struct process {
     // TODO: Add file descriptors
 };
 
-int process_load_enqueue(const char *file_name, struct process **process);
-int process_load(const char *file_name, struct process **process);
-int process_load_for_slot(const char *file_name, struct process **process, uint16_t pid);
+int process_load_enqueue(const char file_name[static 1], struct process **process);
+int process_load(const char file_name[static 1], struct process **process);
+int process_load_for_slot(const char file_name[static 1], struct process **process, uint16_t pid);
 void *process_malloc(struct process *process, size_t size);
 void *process_calloc(struct process *process, size_t nmemb, size_t size);
 void process_free(struct process *process, void *ptr);
 void process_get_arguments(struct process *process, int *argc, char ***argv);
 int process_inject_arguments(struct process *process, const struct command_argument *root_argument);
 int process_zombify(struct process *process);
-int process_set_current_directory(struct process *process, const char *directory);
+int process_set_current_directory(struct process *process, const char directory[static 1]);
 
 int process_wait_pid(struct process *process, int pid);
 struct process *find_child_process_by_pid(const struct process *parent, int pid);
@@ -94,11 +94,11 @@ struct process *find_child_process_by_state(const struct process *parent, enum P
 int process_add_child(struct process *parent, struct process *child);
 int process_remove_child(struct process *parent, struct process *child);
 struct process *process_clone(struct process *process);
-struct process *process_replace(const struct process *parent, const char *file_name);
+struct process *process_replace(const struct process *parent, const char file_name[static 1]);
 
 
-struct process *process_create(const char *file_name);
-int process_load_data(const char *file_name, struct process *process);
+struct process *process_create(const char file_name[static 1]);
+int process_load_data(const char file_name[static 1], struct process *process);
 int process_map_memory(const struct process *process);
 int process_unmap_memory(const struct process *process);
 int process_free_allocations(struct process *process);

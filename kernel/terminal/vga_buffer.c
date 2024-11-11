@@ -191,7 +191,7 @@ void terminal_putchar(const char c, const uint8_t attr, const int x, const int y
     update_cursor(cursor_y, cursor_x);
 }
 
-void print(const char *str)
+void print(const char str[static 1])
 {
     const size_t len = strlen(str);
     for (size_t i = 0; i < len; i++) {
@@ -200,7 +200,7 @@ void print(const char *str)
 }
 
 // BUG: There seems to be a bug that prevents more than 3 arguments from being printed
-void kprintf(const char *fmt, ...)
+void kprintf(const char fmt[static 1], ...)
 {
     // ASSERT(forecolor != 0x00, "Foreground color is black");
 

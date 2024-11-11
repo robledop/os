@@ -121,11 +121,11 @@ struct file_descriptor
 };
 
 void fs_init();
-int fopen(const char *path, const char *mode);
+int fopen(const char path[static 1], const char mode[static 1]);
 int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 int fseek(int fd, int offset, FILE_SEEK_MODE whence);
 int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
 void fs_insert_file_system(struct file_system *filesystem);
 struct file_system *fs_resolve(struct disk *disk);
-int fs_open_dir(const char *name, struct file_directory *directory);
+int fs_open_dir(const char name[static 1], struct file_directory *directory);

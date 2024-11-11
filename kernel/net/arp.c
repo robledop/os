@@ -23,7 +23,7 @@ void arp_cache_remove_expired_entries()
     }
 }
 
-struct arp_cache_entry arp_cache_find(const uint8_t ip[4])
+struct arp_cache_entry arp_cache_find(const uint8_t ip[static 4])
 {
     arp_cache_remove_expired_entries();
 
@@ -36,7 +36,7 @@ struct arp_cache_entry arp_cache_find(const uint8_t ip[4])
     return empty_entry;
 }
 
-void arp_cache_add(uint8_t ip[4], uint8_t mac[6])
+void arp_cache_add(uint8_t ip[static 4], uint8_t mac[static 6])
 {
     for (int i = 0; i < ARP_CACHE_SIZE; i++) {
         if (arp_cache[i].ip[0] == 0) {
@@ -85,7 +85,7 @@ void arp_receive(uint8_t *packet)
     }
 }
 
-void arp_send_request(const uint8_t dest_ip[4])
+void arp_send_request(const uint8_t dest_ip[static 4])
 {
     struct arp_packet *packet = kzalloc(sizeof(struct arp_packet));
     struct ether_header ether_header;

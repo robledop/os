@@ -818,7 +818,7 @@ int get_fs_root_directory(const struct disk *disk, struct file_directory *direct
     return 0;
 }
 
-int fat16_get_subdirectory(struct disk *disk, const char *path, struct file_directory *directory)
+int fat16_get_subdirectory(struct disk *disk, const char path[static 1], struct file_directory *directory)
 {
     // path comes a fully qualified path
     // e.g. 0:/subdirectory/subsubdirectory/file.txt

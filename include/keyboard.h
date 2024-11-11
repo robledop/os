@@ -12,8 +12,7 @@
 typedef int KEYBOARD_CAPSLOCK_STATE;
 
 typedef int (*KEYBOARD_INIT_FUNCTION)();
-struct keyboard
-{
+struct keyboard {
     KEYBOARD_INIT_FUNCTION init;
     char name[20];
     struct keyboard *next;
@@ -21,6 +20,6 @@ struct keyboard
 
 void keyboard_init();
 void keyboard_backspace(struct process *process);
-void keyboard_push(const uchar c);
+void keyboard_push(uchar c);
 uchar keyboard_pop();
 int keyboard_register(struct keyboard *kbd);

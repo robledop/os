@@ -17,5 +17,5 @@
 #endif
 
 void init_serial();
-int serial_printf(const char *fmt, ...);
+int serial_printf(const char fmt[static 1], ...);
 void serial_put(char a);
