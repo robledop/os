@@ -4,7 +4,7 @@
 
 int main(const int argc, char **argv)
 {
-    printf(KBOLD KBLU "\nTests with waitpid()");
+    printf(KRESET KBOLD KBLU "\nTests with waitpid()");
     printf(KRESET KYEL "\nBefore forking, (pid:%d)\n", getpid());
 
     const int rc = fork();
@@ -24,7 +24,7 @@ int main(const int argc, char **argv)
 
     for (int i = 0; i < 10; i++) {
         const char *current_directory = get_current_directory();
-        printf("\n create_process: %d", i);
+        printf("create_process: %d", i);
         const int pid = create_process((char *)"echo lalala", current_directory);
         if (pid < 0) {
         } else {
@@ -38,22 +38,22 @@ int main(const int argc, char **argv)
         if (r < 0) {
             printf("Fork failed\n");
         } else if (r == 0) {
-            printf(KGRN "\nForked child %d (pid:%d)" KWHT, i, getpid());
+            printf(KGRN "Forked child %d (pid:%d)\t" KWHT, i, getpid());
             exit();
         } else {
             wait(nullptr);
-            printf(KYEL "\nParent of %d (pid:%d)" KWHT, i, getpid());
+            printf(KYEL "Parent of %d (pid:%d)\t" KWHT, i, getpid());
         }
     }
 
-    printf(KBOLD KBLU "\nTests without waitpid()\n" KRESET);
+    printf(KBOLD KBLU "Tests without waitpid()\t" KRESET);
 
     const int nowait = fork();
 
     if (nowait < 0) {
         printf("Fork failed\n");
     } else if (nowait == 0) {
-        printf(KCYN "Child (pid:%d)\n", getpid());
+        printf(KCYN "Child (pid:%d)\t", getpid());
         printf("Child will exec blank.elf" KWHT " ");
         exec("0:/bin/blank.elf", nullptr);
 
@@ -78,35 +78,35 @@ int main(const int argc, char **argv)
         if (r < 0) {
             printf("Fork failed\n");
         } else if (r == 0) {
-            printf(KGRN "\nForked child %d (pid:%d)" KWHT, i, getpid());
+            printf(KGRN "\tForked child %d (pid:%d)" KWHT, i, getpid());
             exit();
         } else {
             // waitpid(r, nullptr);
-            printf(KYEL "\nParent of %d (pid:%d)" KWHT, i, getpid());
+            printf(KYEL "\tParent of %d (pid:%d)" KWHT, i, getpid());
         }
     }
 
 
-    printf(KBOLD KBLU "\nTests with wait()\n" KRESET);
+    printf(KBOLD KBLU "\tTests with wait()\t" KRESET);
 
     const int waitp = fork();
 
     if (waitp < 0) {
         printf("Fork failed\n");
     } else if (waitp == 0) {
-        printf(KCYN "Child (pid:%d)\n", getpid());
+        printf(KCYN "Child (pid:%d)\t", getpid());
         printf("Child will exec blank.elf" KWHT " ");
         exec("0:/bin/blank.elf", nullptr);
 
         printf("This should not be printed\n");
     } else {
         wait(nullptr);
-        printf(KYEL "\nAfter forking. Parent of %d (pid:%d)", rc, getpid());
+        printf(KYEL "\tAfter forking. Parent of %d (pid:%d)", rc, getpid());
     }
 
     for (int i = 0; i < 10; i++) {
         const char *current_directory = get_current_directory();
-        printf("\n create_process: %d", i);
+        printf("\t create_process: %d", i);
         const int pid = create_process((char *)"echo lalala", current_directory);
         if (pid < 0) {
         } else {
@@ -119,11 +119,11 @@ int main(const int argc, char **argv)
         if (r < 0) {
             printf("Fork failed\n");
         } else if (r == 0) {
-            printf(KGRN "\nForked child %d (pid:%d)" KWHT, i, getpid());
+            printf(KGRN "\tForked child %d (pid:%d)" KWHT, i, getpid());
             exit();
         } else {
             wait(nullptr);
-            printf(KYEL "\nParent of %d (pid:%d)" KWHT, i, getpid());
+            printf(KYEL "\tParent of %d (pid:%d)" KWHT, i, getpid());
         }
     }
 
