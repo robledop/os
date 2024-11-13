@@ -1,15 +1,14 @@
-#include "fat16.h"
-#include "config.h"
-#include "debug.h"
-#include "disk.h"
-#include "kernel.h"
-#include "kernel_heap.h"
-#include "memory.h"
-#include "serial.h"
-#include "status.h"
-#include "stream.h"
-#include "string.h"
-#include "types.h"
+#include <config.h>
+#include <debug.h>
+#include <disk.h>
+#include <fat16.h>
+#include <kernel.h>
+#include <kernel_heap.h>
+#include <memory.h>
+#include <serial.h>
+#include <status.h>
+#include <stream.h>
+#include <string.h>
 
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 0x02

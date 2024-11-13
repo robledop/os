@@ -1,5 +1,4 @@
-#include "kernel.h"
-#include "types.h"
+#include <kernel.h>
 
 // https://wiki.osdev.org/Stack_Smashing_Protector
 // __stack_chk_guard is initialized in kernel_main

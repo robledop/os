@@ -17,12 +17,10 @@
  * Undefined behavior sanitizer runtime support.
  */
 
+#include <kernel.h>
 #include <scheduler.h>
+#include <vga_buffer.h>
 
-
-#include "kernel.h"
-#include "types.h"
-#include "vga_buffer.h"
 #define SCRAM_UNDEFINED_BEHAVIOR 3
 struct scram_undefined_behavior {
     const char *filename;

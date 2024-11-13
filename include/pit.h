@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include <stdint.h>
 
 // https://wiki.osdev.org/Programmable_Interval_Timer
 

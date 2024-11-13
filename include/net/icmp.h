@@ -1,10 +1,11 @@
 #pragma once
 
-#include "ethernet.h"
-#include "ipv4.h"
+#include <net/ethernet.h>
+#include <net/ipv4.h>
+#include <stdint.h>
 
 
-#include <types.h>
+// #include <types.h>
 
 #define ICMP_REPLY 0x00
 #define ICMP_V4_ECHO 0x08

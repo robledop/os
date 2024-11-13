@@ -4,17 +4,15 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "path_parser.h"
-#include "types.h"
+#include <path_parser.h>
+#include <stdint.h>
 
 typedef unsigned int FS_ITEM_TYPE;
 #define FS_ITEM_TYPE_DIRECTORY 0
 #define FS_ITEM_TYPE_FILE 1
 
-struct fs_item
-{
-    union
-    {
+struct fs_item {
+    union {
         struct fat_directory_entry *item;
         struct fat_directory *directory;
     };
@@ -22,30 +20,15 @@ struct fs_item
 };
 
 typedef unsigned int FILE_SEEK_MODE;
-enum
-{
-    SEEK_SET,
-    SEEK_CURRENT,
-    SEEK_END
-};
+enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
 
 typedef unsigned int FILE_MODE;
-enum
-{
-    FILE_MODE_READ,
-    FILE_MODE_WRITE,
-    FILE_MODE_APPEND,
-    FILE_MODE_INVALID
-};
+enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
 typedef unsigned int FILE_STAT_FLAGS;
-enum
-{
-    FILE_STAT_IS_READ_ONLY = 0b00000001
-};
+enum { FILE_STAT_IS_READ_ONLY = 0b00000001 };
 
-struct file_stat
-{
+struct file_stat {
     FILE_STAT_FLAGS flags;
     uint32_t size;
 };
@@ -65,8 +48,7 @@ typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct fi
 typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(struct disk *disk, const char *path, struct file_directory *directory);
 typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
-struct directory_entry
-{
+struct directory_entry {
     char *name;
     char *ext;
     uint8_t attributes;
@@ -87,16 +69,14 @@ struct directory_entry
     bool is_device;
 };
 
-struct file_directory
-{
+struct file_directory {
     char *name;
     int entry_count;
     void *entries;
     DIRECTORY_GET_ENTRY get_entry;
 };
 
-struct file_system
-{
+struct file_system {
     // file_system should return zero from resolve if the disk is using its file system
     FS_RESOLVE_FUNCTION resolve;
     FS_OPEN_FUNCTION open;
@@ -111,8 +91,7 @@ struct file_system
     char name[20];
 };
 
-struct file_descriptor
-{
+struct file_descriptor {
     int index;
     struct file_system *fs;
     // File descriptor private data
@@ -123,14 +102,10 @@ struct file_descriptor
 void fs_init(void);
 int fopen(const char path[static 1], const char mode[static 1]);
 
-__attribute__((nonnull))
-int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
+__attribute__((nonnull)) int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 int fseek(int fd, int offset, FILE_SEEK_MODE whence);
-__attribute__((nonnull))
-int fstat(int fd, struct file_stat *stat);
+__attribute__((nonnull)) int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
-__attribute__((nonnull))
-void fs_insert_file_system(struct file_system *filesystem);
-__attribute__((nonnull))
-struct file_system *fs_resolve(struct disk *disk);
+__attribute__((nonnull)) void fs_insert_file_system(struct file_system *filesystem);
+__attribute__((nonnull)) struct file_system *fs_resolve(struct disk *disk);
 int fs_open_dir(const char name[static 1], struct file_directory *directory);

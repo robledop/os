@@ -4,9 +4,8 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-// ReSharper disable once CppUnusedIncludeDirective
-#include "config.h"
-#include "types.h"
+#include <config.h>
+#include <stddef.h>
 
 #define HEAP_BLOCK_TAKEN 0x01
 #define HEAP_BLOCK_FREE 0x00

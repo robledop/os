@@ -5,11 +5,10 @@
 #endif
 
 #include <elf.h>
-#include "kernel.h"
-#include "scheduler.h"
-#include "vga_buffer.h"
-
+#include <kernel.h>
+#include <scheduler.h>
 #include <stdarg.h>
+#include <vga_buffer.h>
 
 #define DEBUG_ASSERT
 

@@ -81,7 +81,7 @@ void vga_buffer_write(const char c, const uint8_t attribute, const int x, const 
     *where                   = c | (attribute << 8);
 }
 
-static void write_character(const uchar c, const int x, const int y)
+static void write_character(const uint8_t c, const int x, const int y)
 {
     ASSERT(x < VGA_WIDTH, "X is out of bounds");
     ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
@@ -128,7 +128,7 @@ uint16_t get_cursor_position(void)
 
 void scroll_screen()
 {
-    auto const video_memory = (uchar *)VIDEO_MEMORY;
+    auto const video_memory = (uint8_t *)VIDEO_MEMORY;
     // auto const video_memory = (uchar *)consoles[active_console].framebuffer;
 
     // Move all rows up by one

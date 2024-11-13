@@ -4,8 +4,8 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "types.h"
-#include "config.h"
+#include <config.h>
+#include <stdint.h>
 
 
 #define BYTES_PER_CHAR 2

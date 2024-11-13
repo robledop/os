@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config.h"
-#include "thread.h"
+#include <config.h>
+#include <thread.h>
 
 #define PROCESS_FILE_TYPE_ELF 0
 #define PROCESS_FILE_TYPE_BINARY 1
@@ -65,7 +65,7 @@ struct process {
     uint32_t size;
 
     struct keyboard_buffer {
-        uchar buffer[KEYBOARD_BUFFER_SIZE];
+        uint8_t buffer[KEYBOARD_BUFFER_SIZE];
         int tail;
         int head;
 

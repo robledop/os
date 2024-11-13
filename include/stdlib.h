@@ -4,7 +4,8 @@
 #error "This is a user-space header file. It should not be included in the kernel."
 #endif
 
-#include "types.h"
+#include <stddef.h>
+#include <stdint.h>
 
 enum PROCESS_STATE { RUNNING, ZOMBIE, WAITING, TERMINATED };
 

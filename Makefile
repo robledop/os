@@ -151,6 +151,7 @@ qemu: all FORCE
 
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
+	./scripts/create_tap.sh
 	qemu-system-i386 -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 512 -daemonize  -display gtk,zoom-to-fit=on  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -serial file:serial.log # -d int -D qemu.log
 
 .PHONY: qemu_grub

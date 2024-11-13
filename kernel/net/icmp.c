@@ -91,6 +91,8 @@ void icmp_receive(uint8_t *packet, const uint16_t len)
                       icmp_header->sequence / 256);
 
             icmp_send_echo_reply(packet, len);
+
+            icmp_send_echo_request((uint8_t[]){192, 168, 0, 1}, icmp_header->sequence);
         }
         break;
     case ICMP_REPLY:
@@ -103,7 +105,7 @@ void icmp_receive(uint8_t *packet, const uint16_t len)
     }
 }
 
-void icmp_send_echo_request(const uint8_t dest_ip[4], const uint16_t sequence)
+void icmp_send_echo_request(const uint8_t dest_ip[static 4], const uint16_t sequence)
 {
     const struct arp_cache_entry entry = arp_cache_find(dest_ip);
     if (entry.ip[0] == 0) {

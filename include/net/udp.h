@@ -1,6 +1,5 @@
 #pragma once
-
-#include <types.h>
+#include <stdint.h>
 
 struct udp_header {
     uint16_t src_port;

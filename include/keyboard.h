@@ -4,7 +4,7 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "process.h"
+#include <process.h>
 
 #define KEYBOARD_CAPSLOCK_ON 0x01
 #define KEYBOARD_CAPSLOCK_OFF 0x00
@@ -19,9 +19,7 @@ struct keyboard {
 };
 
 void keyboard_init(void);
-__attribute__((nonnull))
-void keyboard_backspace(struct process *process);
-void keyboard_push(uchar c);
-uchar keyboard_pop(void);
-__attribute__((nonnull))
-int keyboard_register(struct keyboard *kbd);
+__attribute__((nonnull)) void keyboard_backspace(struct process *process);
+void keyboard_push(uint8_t c);
+uint8_t keyboard_pop(void);
+__attribute__((nonnull)) int keyboard_register(struct keyboard *kbd);

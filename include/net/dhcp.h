@@ -3,7 +3,8 @@
 #include <net/ethernet.h>
 #include <net/ipv4.h>
 #include <net/udp.h>
-#include <types.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #define DHCP_CHADDR_LEN 6
 #define DHCP_SNAME_LEN 64

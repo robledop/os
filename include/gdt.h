@@ -4,10 +4,9 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "types.h"
+#include <stdint.h>
 
-struct gdt_entry
-{
+struct gdt_entry {
     uint16_t limit_low;
     uint16_t base_low;
     uint8_t base_middle;
@@ -16,8 +15,7 @@ struct gdt_entry
     uint8_t base_high;
 } __attribute__((packed));
 
-struct gdt_ptr
-{
+struct gdt_ptr {
     uint16_t limit;
     uint32_t base;
 } __attribute__((packed));

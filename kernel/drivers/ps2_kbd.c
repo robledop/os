@@ -29,12 +29,12 @@ void kbd_led_handling(const unsigned char ledstatus)
 }
 
 // Taken from xv6
-uchar keyboard_get_char()
+uint8_t keyboard_get_char()
 {
     spin_lock(&keyboard_getchar_lock);
 
     static unsigned int shift;
-    static uchar *charcode[4] = {normalmap, shiftmap, ctlmap, ctlmap};
+    static uint8_t *charcode[4] = {normalmap, shiftmap, ctlmap, ctlmap};
 
     const unsigned int st = inb(KBD_STATUS_PORT);
     if ((st & KBD_DATA_IN_BUFFER) == 0) {
@@ -64,7 +64,7 @@ uchar keyboard_get_char()
 
     shift |= shiftcode[data];
     shift ^= togglecode[data];
-    uchar c = charcode[shift & (CTRL | SHIFT)][data];
+    uint8_t c = charcode[shift & (CTRL | SHIFT)][data];
     if (shift & CAPSLOCK) {
         if ('a' <= c && c <= 'z') {
             c += 'A' - 'a';
@@ -98,7 +98,7 @@ void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame 
 
     pic_acknowledge(interrupt);
 
-    const uchar c = keyboard_get_char();
+    const uint8_t c = keyboard_get_char();
     // Delete key
     if (c > 0 && c != 233) {
         keyboard_push(c);
@@ -106,7 +106,7 @@ void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame 
 
     auto const thread = scheduler_get_thread_sleeping_for_keyboard();
     if (thread) {
-        thread->process->signal       = SIGWAKEUP;
+        thread->process->signal = SIGWAKEUP;
         // thread->process->sleep_reason = SLEEP_REASON_NONE;
     }
 

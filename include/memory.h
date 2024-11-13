@@ -1,6 +1,7 @@
 #pragma once
 
-#include "types.h"
+#include <stddef.h>
+#include <stdint.h>
 
 __attribute__((nonnull)) void *memset(void *ptr, int value, size_t size);
 

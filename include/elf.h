@@ -5,7 +5,7 @@
 #endif
 
 #include <config.h>
-#include <types.h>
+#include <stdint.h>
 
 #define PF_X 0x01
 #define PF_W 0x02

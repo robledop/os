@@ -5,13 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <types.h>
 
 // @brief Generate a stack overflow to test the stack guard page
 void stack_overflow();
 void print_registers();
 bool directory_exists(const char *path);
-void shell_terminal_readline(uchar *out, int max, bool output_while_typing);
+void shell_terminal_readline(uint8_t *out, int max, bool output_while_typing);
 void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
@@ -69,7 +68,7 @@ int main(int argc, char **argv)
         char *current_directory = get_current_directory();
         printf(KGRN "%s> " KWHT, current_directory);
 
-        uchar buffer[1024] = {0};
+        uint8_t buffer[1024] = {0};
         shell_terminal_readline(buffer, sizeof(buffer), true);
 
         if (strlen((char *)buffer) != 0) {
@@ -138,7 +137,7 @@ int main(int argc, char **argv)
 }
 
 
-void shell_terminal_readline(uchar *out, const int max, const bool output_while_typing)
+void shell_terminal_readline(uint8_t *out, const int max, const bool output_while_typing)
 {
     uint8_t current_history_index = history_index;
     int i                         = 0;

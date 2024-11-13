@@ -207,7 +207,7 @@ struct registers interrupt_frame_to_registers(const struct interrupt_frame *fram
 
 struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers)
 {
-    const struct interrupt_frame frame = {
+    return (const struct interrupt_frame){
         .edi    = registers->edi,
         .esi    = registers->esi,
         .ebp    = registers->ebp,
@@ -221,8 +221,6 @@ struct interrupt_frame registers_to_interrupt_frame(const struct registers *regi
         .esp    = registers->esp,
         .ss     = registers->ss,
     };
-
-    return frame;
 }
 
 struct registers thread_load_current_registers()

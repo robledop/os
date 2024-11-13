@@ -18,7 +18,7 @@ void keyboard_init()
 
 int keyboard_register(struct keyboard *kbd)
 {
-    if (kbd->init == NULL) {
+    if (kbd->init == nullptr) {
         warningf("keyboard->init is NULL\n");
         ASSERT(false, "keyboard->init is NULL");
         return -EINVARG;
@@ -47,7 +47,7 @@ void keyboard_backspace(struct process *process)
     process->keyboard.buffer[real_index] = 0x00;
 }
 
-void keyboard_push(const uchar c)
+void keyboard_push(const uint8_t c)
 {
     if (c == 0x00) {
         return;
@@ -70,7 +70,7 @@ void keyboard_push(const uchar c)
     process->keyboard.tail               = (process->keyboard.tail + 1) % KEYBOARD_BUFFER_SIZE;
 }
 
-uchar keyboard_pop()
+uint8_t keyboard_pop()
 {
     if (!scheduler_get_current_thread()) {
         warningf("No current thread\n");
@@ -80,7 +80,7 @@ uchar keyboard_pop()
     struct process *process = scheduler_get_current_thread()->process;
 
     const int real_index = process->keyboard.head % KEYBOARD_BUFFER_SIZE;
-    const uchar c        = process->keyboard.buffer[real_index];
+    const uint8_t c      = process->keyboard.buffer[real_index];
 
     if (c == 0x00) {
         return 0;

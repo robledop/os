@@ -1,7 +1,7 @@
 #pragma once
 
 #include <pci.h>
-#include <types.h>
+#include <stdint.h>
 
 #define INTEL_VEND 0x8086    // Vendor ID for Intel
 #define E1000_DEV 0x100E     // Device ID for the e1000 Qemu, Bochs, and VirtualBox emulated NICs
@@ -150,8 +150,5 @@ struct e1000_tx_desc {
     volatile uint16_t special;
 } __attribute__((packed));
 
-__attribute__((nonnull))
-void e1000_init(struct pci_device *pci);
-
-__attribute__((nonnull))
-int e1000_send_packet(const void *p_data, uint16_t p_len);
+__attribute__((nonnull)) void e1000_init(struct pci_device *pci);
+__attribute__((nonnull)) int e1000_send_packet(const void *p_data, uint16_t p_len);

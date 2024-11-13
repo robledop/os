@@ -12,7 +12,6 @@
 #include <string.h>
 #include <syscall.h>
 #include <thread.h>
-#include <types.h>
 #include <vga_buffer.h>
 #include <x86.h>
 
@@ -417,7 +416,7 @@ void *sys_print(struct interrupt_frame *frame)
 
 void *sys_getkey(struct interrupt_frame *frame)
 {
-    const uchar c = keyboard_pop();
+    const uint8_t c = keyboard_pop();
     if (c == 0) {
         scheduler_get_current_thread()->process->state        = SLEEPING;
         scheduler_get_current_thread()->process->sleep_reason = SLEEP_REASON_KEYBOARD;

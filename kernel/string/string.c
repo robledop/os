@@ -1,5 +1,4 @@
-#include "string.h"
-#include "types.h"
+#include <string.h>
 #ifdef __KERNEL__
 #include "kernel_heap.h"
 #else
@@ -13,7 +12,7 @@ inline void reverse(char s[static 1])
     int i, j;
 
     for (i = 0, j = (int)strlen(s) - 1; i < j; i++, j--) {
-        const int c = (uchar)s[i];
+        const int c = (uint8_t)s[i];
         s[i]        = s[j];
         s[j]        = c;
     }
@@ -97,8 +96,8 @@ char tolower(char s1)
 int istrncmp(const char s1[static 1], const char s2[static 1], int n)
 {
     while (n-- > 0) {
-        const uchar u1 = (unsigned char)*s1++;
-        const uchar u2 = (unsigned char)*s2++;
+        const uint8_t u1 = (unsigned char)*s1++;
+        const uint8_t u2 = (unsigned char)*s2++;
         if (u1 != u2 && tolower(u1) != tolower(u2)) {
             return u1 - u2;
         }

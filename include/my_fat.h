@@ -4,7 +4,7 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "types.h"
+#include <stdint.h>
 
 // Tests with the FAT16 file system
 
@@ -27,8 +27,7 @@
 // Bad cluster marker
 #define FAT16_BAD_CLUSTER 0xFFF7
 
-typedef struct
-{
+typedef struct {
     uint8_t jmp_boot[3];         // Jump instruction to boot code
     uint8_t oem_name[8];         // OEM Name
     uint16_t bytes_per_sector;   // Bytes per sector (e.g., 512)
@@ -45,10 +44,9 @@ typedef struct
     uint32_t total_sectors_32;   // Total sectors (if FAT32)
 } __attribute__((packed)) FAT16_BPB;
 
-typedef struct
-{
-    char name[8];      // File name
-    char ext[3];      // File name
+typedef struct {
+    char name[8];       // File name
+    char ext[3];        // File name
     uint8_t attributes; // File attributes
     uint8_t reserved;   // Reserved byte
     // Millisecond stamp at file creation time. This field actually

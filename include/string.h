@@ -1,6 +1,7 @@
 #pragma once
 
-#include "types.h"
+#include <stddef.h>
+#include <stdint.h>
 
 size_t strlen(const char *s);
 size_t strnlen(const char *s, size_t maxlen);

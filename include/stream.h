@@ -4,7 +4,7 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include "ata.h"
+#include <ata.h>
 
 struct disk_stream {
     // Byte position in the disk

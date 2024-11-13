@@ -1,4 +1,4 @@
-#include "stdio.h"
+#include <stdio.h>
 
 // Fibonacci recursive
 uint64_t fib(uint64_t n)

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <types.h>
-
 #define IP_PROTOCOL_ICMP 1
 #define IP_PROTOCOL_TCP 6
 #define IP_PROTOCOL_UDP 17
+#include <stdint.h>
 
 struct ipv4_header {
     // 4 bits IHL (Internet Header Length)

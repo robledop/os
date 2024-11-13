@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <stdint.h>
 
 #define ETH_ADDRESS_LEN 6  /* Octets in one ethernet addr */
 #define ETH_HLEN 14        /* Total octets in header. */

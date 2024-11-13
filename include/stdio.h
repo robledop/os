@@ -4,8 +4,8 @@
 #error "This is a user-space header file. It should not be included in the kernel."
 #endif
 
-#include "termcolors.h"
-#include "types.h"
+#include <stdint.h>
+#include <termcolors.h>
 
 
 typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
@@ -69,15 +69,12 @@ int print(const char str[static 1], uint32_t size);
 int fopen(const char name[static 1], const char mode[static 1]);
 int fclose(int fd);
 
-__attribute__((nonnull))
-int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
-__attribute__((nonnull))
-int fstat(int fd, struct file_stat *stat);
+__attribute__((nonnull)) int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
+__attribute__((nonnull)) int fstat(int fd, struct file_stat *stat);
 void clear_screen();
-__attribute__((nonnull))
-int opendir(struct file_directory *directory, const char path[static 1]);
-__attribute__((nonnull))
-int readdir(const struct file_directory *directory, struct directory_entry *entry_out, int index);
+__attribute__((nonnull)) int opendir(struct file_directory *directory, const char path[static 1]);
+__attribute__((nonnull)) int readdir(const struct file_directory *directory, struct directory_entry *entry_out,
+                                     int index);
 int getkey(void);
 int getkey_blocking(void);
 

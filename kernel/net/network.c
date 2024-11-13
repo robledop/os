@@ -9,7 +9,6 @@
 #include <net/ipv4.h>
 #include <net/network.h>
 #include <net/udp.h>
-#include <types.h>
 
 bool network_ready       = false;
 uint8_t *my_ip_address   = nullptr;

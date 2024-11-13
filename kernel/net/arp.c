@@ -32,8 +32,7 @@ struct arp_cache_entry arp_cache_find(const uint8_t ip[static 4])
             return arp_cache[i];
         }
     }
-    const struct arp_cache_entry empty_entry = {0};
-    return empty_entry;
+    return (struct arp_cache_entry){0};
 }
 
 void arp_cache_add(uint8_t ip[static 4], uint8_t mac[static 6])
@@ -146,7 +145,4 @@ void arp_send_reply(uint8_t *packet)
 
     network_send_packet(reply_packet, sizeof(struct arp_packet));
     kfree(reply_packet);
-
-    uint8_t ip[4] = {192, 168, 0, 1};
-    arp_send_request(ip);
 }

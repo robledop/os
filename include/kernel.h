@@ -5,7 +5,7 @@
 #endif
 
 #include <multiboot.h>
-#include <types.h>
+#include <stdint.h>
 
 void kernel_main(const multiboot_info_t *mbd, uint32_t magic);
 void panic(const char *msg);

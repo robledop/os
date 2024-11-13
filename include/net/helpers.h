@@ -1,6 +1,6 @@
 #pragma once
+#include <stdint.h>
 
-#include <types.h>
 
 uint16_t checksum(void *addr, int count, int start_sum);
 

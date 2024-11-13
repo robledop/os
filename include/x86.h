@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include <stdint.h>
 
 // Interrupt flags enabled
 #define EFLAGS_CF 0x00000001

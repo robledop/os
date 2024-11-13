@@ -17,7 +17,7 @@ C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
 FLAGS = -g \
 	-ffreestanding \
-	-O0 \
+	-Og \
 	-nostdlib \
 	-falign-jumps \
 	-falign-functions \
