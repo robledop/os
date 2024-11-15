@@ -154,15 +154,17 @@ bool isspace(char c)
 }
 
 // Trim leading and trailing whitespaces
-char *trim(char str[static 1])
+char *trim(char str[static 1], size_t max)
 {
-    while (isspace(*str)) {
+    size_t i = 0;
+    while (isspace(*str) && i < max) {
         str++;
+        i++;
     }
     if (*str == 0) {
         return str;
     }
-    char *end = str + strlen(str) - 1;
+    char *end = str + strnlen(str, max - i) - 1;
     while (end > str && isspace(*end)) {
         end--;
     }
@@ -184,6 +186,14 @@ char *substring(const char str[static 1], const int start, const int end)
     substr[end - start + 1] = '\0';
     return substr;
 }
+
+// void substring(const char str[static 1], const int start, const int end, char *buffer)
+// {
+//     for (int i = start; i <= end; i++) {
+//         buffer[i - start] = str[i];
+//     }
+//     buffer[end - start + 1] = '\0';
+// }
 
 inline int itoa(int n, char s[static 1])
 {

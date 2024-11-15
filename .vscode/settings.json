@@ -20,7 +20,7 @@
     "types.h": "c",
     "io.h": "c",
     "ata.h": "c",
-    "disk.h": "c",
+    "vfs.h": "c",
     "file.h": "c",
     "stdbool.h": "c",
     "fat16.h": "c",

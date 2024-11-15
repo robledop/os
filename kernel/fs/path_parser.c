@@ -77,9 +77,6 @@ static const char *get_path_part(const char **path)
 
 struct path_part *parse_path_part(struct path_part *last_part, const char **path)
 {
-    dbgprintf("Parsing path part\n");
-    dbgprintf("Last part: %s\n", last_part ? last_part->part : "NULL");
-    dbgprintf("Path: %s\n", *path);
     const char *path_part_str = get_path_part(path);
     if (path_part_str == nullptr) {
         return nullptr;
@@ -91,7 +88,6 @@ struct path_part *parse_path_part(struct path_part *last_part, const char **path
     struct path_part *path_part = calloc(sizeof(struct path_part), 1);
 #endif
     if (path_part == nullptr) {
-
 #ifdef __KERNEL__
         kfree((void *)path_part_str);
 #else
@@ -162,6 +158,7 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
     struct path_part *first_part = parse_path_part(nullptr, &tmp_path);
     if (!first_part) {
         warningf("Failed to parse first part\n");
+        kfree(root);
         goto out;
     }
 

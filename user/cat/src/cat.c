@@ -55,6 +55,7 @@ int main(const int argc, char **argv)
 
     printf(KRESET KCYN "\n%s", buffer);
 
+
     fclose(fd);
 
     return 0;

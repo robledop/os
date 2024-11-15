@@ -36,6 +36,7 @@ STAGE2_FLAGS = -ffreestanding \
 	-nodefaultlibs \
 	-save-temps \
 	-Wextra \
+	-fsanitize=undefined \
 	-std=gnu23 \
 	-pedantic \
 	-Wall
@@ -61,6 +62,7 @@ FLAGS = -ffreestanding \
 	-save-temps \
 	-std=gnu23 \
 	-fstack-protector \
+	-fsanitize=undefined \
 	-pedantic \
 	-Werror \
 	-Wextra \
@@ -143,24 +145,28 @@ iso: grub FORCE
 
 .PHONY: qemu_debug
 qemu_debug: all FORCE
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 512 -daemonize -serial file:serial.log -d int -D qemu.log
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -hda ./bin/disk.img -m 64 -daemonize -serial file:serial.log -d int -D qemu.log
 
 .PHONY: qemu
 qemu: all FORCE
-	qemu-system-i386 -boot d -hda ./bin/disk.img -m 512 -serial stdio
+	qemu-system-i386 -boot d -hda ./bin/disk.img -m 64 -serial stdio
 
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
 	./scripts/create_tap.sh
-	qemu-system-i386 -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 512 -daemonize  -display gtk,zoom-to-fit=on  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -serial file:serial.log # -d int -D qemu.log
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 64 -daemonize  -display gtk,zoom-to-fit=on  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -serial file:serial.log # -d int -D qemu.log
+
+qemu_grub_debug_no_net: grub FORCE
+	./scripts/create_tap.sh
+	qemu-system-i386 -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 64 -daemonize  -display gtk,zoom-to-fit=on  -serial file:serial.log # -d int -D qemu.log
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE
-	qemu-system-i386 -boot d -drive file=/disk.img,format=raw -m 512 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -boot d -drive file=/disk.img,format=raw -m 64 -serial stdio -display gtk,zoom-to-fit=on
 
 .PHONY: qemu_iso
 qemu_iso: iso FORCE
-	qemu-system-i386 -boot d -cdrom ./myos.iso -m 512 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
+	qemu-system-i386 -boot d -cdrom ./myos.iso -m 64 -daemonize -serial file:serial.log -display gtk,zoom-to-fit=on -d int -D qemu.log
 
 .PHONY: apps
 apps: FORCE
@@ -178,7 +184,7 @@ clean: apps_clean
 .PHONY: test
 test: grub
 	# TODO: Add test cases
-	qemu-system-i386 -boot d -hda ./disk.img -m 128 -serial stdio -display none -d int -D qemu.log
+	qemu-system-i386 -boot d -hda ./disk.img -m 64 -serial stdio -display none -d int -D qemu.log
 
 # Force rebuild of all files
 .PHONY: FORCE

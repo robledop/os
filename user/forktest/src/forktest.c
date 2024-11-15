@@ -23,13 +23,12 @@ int main(const int argc, char **argv)
     }
 
     for (int i = 0; i < 10; i++) {
-        const char *current_directory = get_current_directory();
+        char *current_directory = get_current_directory();
         printf("create_process: %d", i);
         const int pid = create_process((char *)"echo lalala", current_directory);
         if (pid < 0) {
         } else {
             waitpid(pid, nullptr);
-            // wait(nullptr);
         }
     }
 

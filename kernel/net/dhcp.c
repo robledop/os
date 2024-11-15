@@ -96,7 +96,7 @@ int dhcp_options_get_dns_servers(const uint8_t options[static DHCP_OPTIONS_LEN],
 }
 
 
-uint32_t dhcp_options_get_ip_option(const uint8_t options[DHCP_OPTIONS_LEN], int option)
+uint32_t dhcp_options_get_ip_option(const uint8_t options[static DHCP_OPTIONS_LEN], int option)
 {
     int offset = 0;
     while (offset < DHCP_OPTIONS_LEN) {
@@ -127,7 +127,7 @@ uint32_t dhcp_options_get_ip_option(const uint8_t options[DHCP_OPTIONS_LEN], int
                     return 0;
                 }
                 // Extract the subnet mask
-                uint32_t subnet_mask = (options[offset] << 24) | (options[offset + 1] << 16) |
+                const uint32_t subnet_mask = ((uint32_t)options[offset] << 24) | (options[offset + 1] << 16) |
                     (options[offset + 2] << 8) | options[offset + 3];
                 return subnet_mask;
             } else {

@@ -11,8 +11,7 @@ enum PROCESS_STATE { RUNNING, ZOMBIE, WAITING, TERMINATED };
 
 void *malloc(size_t size);
 void *calloc(int number_of_items, int size);
-__attribute__((nonnull))
-void free(void *ptr);
+__attribute__((nonnull)) void free(void *ptr);
 int waitpid(int pid, const int *return_status);
 int wait(const int *return_status);
 void reboot(void);

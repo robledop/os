@@ -63,7 +63,7 @@ void print_results(const struct file_directory *directory)
     for (int i = 0; i < directory->entry_count; i++) {
         struct directory_entry entry;
         const int res = readdir(directory, &entry, i);
-        if (res < 0) {
+       if (res < 0) {
             printf("Failed to read entry %d\n", i);
         }
         if (entry.is_long_name) {

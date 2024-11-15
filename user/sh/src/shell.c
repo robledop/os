@@ -87,6 +87,13 @@ int main(int argc, char **argv)
             continue;
         }
 
+        bool return_immediately = false;
+        return_immediately      = str_ends_with((char *)buffer, " &");
+
+        if (return_immediately) {
+            buffer[strlen((char *)buffer) - 2] = 0x00;
+        }
+
         // const int pid = fork();
         //
         // if (pid < 0) {
@@ -110,15 +117,12 @@ int main(int argc, char **argv)
         //     printf("Failed to exec\n");
         //     exit();
         // } else {
+        //     if (return_immediately) {
+        //         continue;
+        //     }
         //     waitpid(pid, nullptr);
         // }
 
-        bool return_immediately = false;
-        return_immediately      = str_ends_with((char *)buffer, " &");
-
-        if (return_immediately) {
-            buffer[strlen((char *)buffer) - 2] = 0x00;
-        }
 
         const int pid = create_process((char *)buffer, current_directory);
         if (pid < 0) {
@@ -130,6 +134,7 @@ int main(int argc, char **argv)
             }
             waitpid(pid, nullptr);
         }
+
         putchar('\n');
     }
 
@@ -245,7 +250,7 @@ int cmd_lookup(const char *name)
 void change_directory(char *args, char *current_directory)
 {
     char new_dir[MAX_PATH_LENGTH] = {0};
-    strncpy(new_dir, trim((char *)args), MAX_PATH_LENGTH);
+    strncpy(new_dir, trim((char *)args, MAX_PATH_LENGTH), MAX_PATH_LENGTH);
 
     if (strlen(new_dir) == 0) {
         printf("\n");

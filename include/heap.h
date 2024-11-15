@@ -6,6 +6,7 @@
 
 #include <config.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define HEAP_BLOCK_TAKEN 0x01
 #define HEAP_BLOCK_FREE 0x00
@@ -28,3 +29,4 @@ __attribute__((nonnull)) int heap_create(struct heap *heap, void *ptr, void *end
 __attribute__((nonnull)) void *heap_malloc(const struct heap *heap, size_t size);
 __attribute__((nonnull)) void *heap_realloc(const struct heap *heap, void *ptr, size_t size);
 __attribute__((nonnull)) void heap_free(const struct heap *heap, void *ptr);
+__attribute__((nonnull)) uint32_t heap_count_free_blocks(const struct heap *heap);

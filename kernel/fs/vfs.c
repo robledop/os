@@ -2,13 +2,15 @@
 #include <debug.h>
 #include <disk.h>
 #include <fat16.h>
-#include <file.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memory.h>
 #include <serial.h>
 #include <status.h>
 #include <string.h>
+#include <vfs.h>
+
+struct file_directory *root_directory;
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
@@ -36,15 +38,10 @@ void fs_insert_file_system(struct file_system *filesystem)
     *fs = filesystem;
 }
 
-static void fs_static_load()
-{
-    fs_insert_file_system(fat16_init());
-}
-
 void fs_load()
 {
     memset(file_systems, 0, sizeof(file_systems));
-    fs_static_load();
+    fs_insert_file_system(fat16_init());
 }
 
 void fs_init()
@@ -192,6 +189,10 @@ out:
     if (ISERR(res)) {
         res = 0;
     }
+
+    if (root_path) {
+        path_parser_free(root_path);
+    }
     return res;
 }
 
@@ -280,9 +281,7 @@ int fs_open_dir(const char name[static 1], struct file_directory *directory)
         ASSERT(disk->fs->get_root_directory != nullptr, "File system does not support getting root directory");
         return disk->fs->get_root_directory(disk, directory);
     }
-
     ASSERT(disk->fs->get_subdirectory != nullptr, "File system does not support getting sub directory");
-    ASSERT(disk != NULL, "Disk is null");
 
     return disk->fs->get_subdirectory(disk, name, directory);
 }

@@ -103,12 +103,6 @@ struct pci_header {
     // Represents that status and allows control of a devices BIST (built-in self test).
     uint8_t BIST;
     uint32_t bars[6];
-    // uint32_t BAR0;
-    // uint32_t BAR1;
-    // uint32_t BAR2;
-    // uint32_t BAR3;
-    // uint32_t BAR4;
-    // uint32_t BAR5;
     uint32_t cardbus_cis_pointer;
     uint16_t subsystem_vendor_id;
     uint16_t subsystem_id;
@@ -122,7 +116,6 @@ struct pci_header {
     uint8_t min_grant;
     uint8_t max_latency;
 } __attribute__((packed));
-
 
 #define PCI_BAR_MEM 0x0
 #define PCI_BAR_IO 0x1
@@ -143,6 +136,7 @@ struct pci_driver {
     uint8_t subclass;
     uint16_t vendor_id;
     uint16_t device_id;
+    /// Initialize the driver for the device.
     void (*init)(struct pci_device *device);
 };
 
@@ -152,15 +146,11 @@ struct pci_class {
     const char *name;
 };
 
-
 struct pci_vendor {
     uint16_t id;
     const char *name;
 };
 
-
 void pci_scan(void);
-__attribute__((nonnull))
-void pci_enable_bus_mastering(const struct pci_device *device);
-__attribute__((nonnull))
-uint32_t pci_get_bar(const struct pci_device *dev, uint8_t type);
+__attribute__((nonnull)) void pci_enable_bus_mastering(const struct pci_device *device);
+__attribute__((nonnull)) uint32_t pci_get_bar(const struct pci_device *dev, uint8_t type);

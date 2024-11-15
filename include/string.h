@@ -13,7 +13,7 @@ char *safestrcpy(char s[static 1], const char t[static 1], int n);
 bool isdigit(char c);
 int tonumericdigit(char c);
 bool isspace(char c);
-char *trim(char str[static 1]);
+char *trim(char str[static 1], size_t max);
 char *substring(const char str[static 1], int start, int end);
 
 int istrncmp(const char s1[static 1], const char s2[static 1], int n);

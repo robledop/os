@@ -18,7 +18,7 @@ gdt_flush:
     mov ss, ax
 
     ; Far jump to reload the code segment selector and flush the pipeline
-    jmp 0x08:flush_label
+    jmp KERNEL_CODE_SELECTOR:flush_label
 
 flush_label:
     ret

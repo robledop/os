@@ -27,8 +27,6 @@ typedef unsigned int FAT_ITEM_TYPE;
 #define FAT_FILE_VOLUME_LABEL 0x08
 #define FAT_FILE_SUBDIRECTORY 0x10
 #define FAT_FILE_ARCHIVE 0x20
-#define FAT_FILE_DEVICE 0x40
-#define FAT_FILE_RESERVED 0x80
 #define FAT_FILE_LONG_NAME 0x0F
 
 struct fat_header_extended {
@@ -120,11 +118,15 @@ struct file_system *fat16_fs;
 
 struct file_system *fat16_init()
 {
-    fat16_fs          = kzalloc(sizeof(struct file_system));
+    fat16_fs = kzalloc(sizeof(struct file_system));
+
     fat16_fs->resolve = fat16_resolve;
     fat16_fs->open    = fat16_open;
-    fat16_fs->read = fat16_read, fat16_fs->seek = fat16_seek, fat16_fs->stat = fat16_stat,
-    fat16_fs->close = fat16_close,
+    fat16_fs->read    = fat16_read;
+    fat16_fs->seek    = fat16_seek;
+    fat16_fs->stat    = fat16_stat;
+    fat16_fs->close   = fat16_close;
+    fat16_fs->ioctl   = nullptr;
 
     fat16_fs->get_root_directory = get_fs_root_directory, fat16_fs->get_subdirectory = fat16_get_subdirectory,
 
@@ -183,14 +185,14 @@ int fat16_get_total_items_for_directory(const struct disk *disk, const uint32_t 
             continue;
         }
 
-        char *name = trim(substring((char *)entry.name, 0, 7));
-        char *ext  = trim(substring((char *)entry.ext, 0, 2));
-        dbgprintf("Reading entry: %s.%s\n", name, ext);
-        dbgprintf("Entry attributes: %x\n", entry.attributes);
-        dbgprintf("Entry size: %d\n", entry.size);
-
-        kfree(name);
-        kfree(ext);
+        // char *name = trim((char *)entry.name, 8);
+        // char *ext  = trim((char *)entry.ext, 3);
+        // dbgprintf("Reading entry: %s.%s\n", name, ext);
+        // dbgprintf("Entry attributes: %x\n", entry.attributes);
+        // dbgprintf("Entry size: %d\n", entry.size);
+        //
+        // kfree(name);
+        // kfree(ext);
 
         i++;
     }
@@ -299,20 +301,20 @@ int fat16_resolve(struct disk *disk)
         goto out;
     }
 
-    char *oem_name = trim(substring((char *)fat_private->header.primary_header.oem_name, 0, 7));
-    dbgprintf("OEM Name: %s\n", oem_name);
+    // char *oem_name = trim((char *)fat_private->header.primary_header.oem_name, 8);
+    // dbgprintf("OEM Name: %s\n", oem_name);
+    //
+    // char *volume_label = trim((char *)fat_private->header.shared.extended_header.volume_label, 11);
+    // dbgprintf("Volume label: %s\n", volume_label);
+    //
+    // char *system_id = trim((char *)fat_private->header.shared.extended_header.system_id_string, 11);
+    // dbgprintf("System ID: %s\n", system_id);
+    //
+    // dbgprintf("Root directory entries: %d\n", fat_private->root_directory.entry_count);
 
-    char *volume_label = trim(substring((char *)fat_private->header.shared.extended_header.volume_label, 0, 10));
-    dbgprintf("Volume label: %s\n", volume_label);
-
-    char *system_id = trim(substring((char *)fat_private->header.shared.extended_header.system_id_string, 0, 10));
-    dbgprintf("System ID: %s\n", system_id);
-
-    dbgprintf("Root directory entries: %d\n", fat_private->root_directory.entry_count);
-
-    kfree(oem_name);
-    kfree(system_id);
-    kfree(volume_label);
+    // kfree(oem_name);
+    // kfree(system_id);
+    // kfree(volume_label);
 
 out:
     if (stream) {
@@ -622,7 +624,6 @@ struct fat_item *fat16_get_directory_entry(struct disk *disk, const struct path_
     }
 
 out:
-    dbgprintf("Found item: %s\n", current_item ? "yes" : "no");
     return current_item;
 }
 
@@ -769,12 +770,10 @@ int fat16_close(void *private)
 
 struct directory_entry get_directory_entry(void *fat_directory_entries, int index)
 {
-    // struct fat_directory_entry *entry = (struct fat_directory_entry *)entries[index];
     struct fat_directory_entry *entries = (struct fat_directory_entry *)fat_directory_entries;
     struct fat_directory_entry *entry   = entries + index;
 
     struct directory_entry directory_entry = {
-        .attributes           = entry->attributes,
         .size                 = entry->size,
         .access_date          = entry->access_date,
         .creation_date        = entry->creation_date,
@@ -783,7 +782,6 @@ struct directory_entry get_directory_entry(void *fat_directory_entries, int inde
         .modification_date    = entry->modification_date,
         .modification_time    = entry->modification_time,
         .is_archive           = entry->attributes & FAT_FILE_ARCHIVE,
-        .is_device            = entry->attributes & FAT_FILE_DEVICE,
         .is_directory         = entry->attributes & FAT_FILE_SUBDIRECTORY,
         .is_hidden            = entry->attributes & FAT_FILE_HIDDEN,
         .is_long_name         = entry->attributes == FAT_FILE_LONG_NAME,
@@ -793,33 +791,57 @@ struct directory_entry get_directory_entry(void *fat_directory_entries, int inde
     };
 
     // TODO: Check for a memory leak here
-    char *name = trim(substring((char *)entry->name, 0, 7));
-    char *ext  = trim(substring((char *)entry->ext, 0, 2));
+    char *name = trim((char *)entry->name, 8);
+    char *ext  = trim((char *)entry->ext, 3);
+
+    for (size_t i = 0; i < strlen(name); i++) {
+        name[i] = tolower(name[i]);
+    }
+
+    for (size_t i = 0; i < strlen(ext); i++) {
+        ext[i] = tolower(ext[i]);
+    }
 
     directory_entry.name = name;
     directory_entry.ext  = ext;
 
-    // kfree(name);
-    // kfree(ext);
     return directory_entry;
 }
 
 int get_fs_root_directory(const struct disk *disk, struct file_directory *directory)
 {
-    const struct fat_private *fat_private      = disk->fs_private;
-    const struct file_directory root_directory = {
+    const struct fat_private *fat_private = disk->fs_private;
+
+    *directory = (struct file_directory){
         .name        = "0:/",
-        .entry_count = fat_private->root_directory.entry_count,
-        .entries     = fat_private->root_directory.entries,
+        .entry_count = fat_private->root_directory.entry_count + 1,
         .get_entry   = get_directory_entry,
     };
-    *directory = root_directory;
+
+    directory->entries = kzalloc(sizeof(struct fat_directory_entry) * directory->entry_count + 1);
+    memcpy(directory->entries,
+           fat_private->root_directory.entries,
+           fat_private->root_directory.entry_count * sizeof(struct fat_directory_entry));
+
+    struct fat_directory_entry entry = {
+        .name       = "dev",
+        .ext        = {0},
+        .attributes = FAT_FILE_SUBDIRECTORY | FAT_FILE_READ_ONLY | FAT_FILE_SYSTEM,
+        .size       = 1,
+    };
+
+    struct fat_directory_entry entries[directory->entry_count];
+
+    memcpy((struct fat_directory_entry *)directory->entries + directory->entry_count - 1,
+           &entry,
+           sizeof(struct fat_directory_entry));
+    memcpy(entries, directory->entries, directory->entry_count * sizeof(struct fat_directory_entry));
+
     return 0;
 }
 
 int fat16_get_subdirectory(struct disk *disk, const char path[static 1], struct file_directory *directory)
 {
-    // path comes a fully qualified path
     // e.g. 0:/subdirectory/subsubdirectory/file.txt
     // use strtok to get the name of the first subdirectory
     char *path_copy = strdup(path);

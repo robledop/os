@@ -1,6 +1,5 @@
 #include <debug.h>
 #include <elf.h>
-#include <file.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memory.h>
@@ -12,6 +11,7 @@
 #include <status.h>
 #include <string.h>
 #include <thread.h>
+#include <vfs.h>
 
 spinlock_t process_lock = 0;
 
@@ -123,6 +123,9 @@ static struct process_allocation *process_get_allocation_by_address(struct proce
 int process_free_allocations(struct process *process)
 {
     for (int i = 0; i < MAX_PROGRAM_ALLOCATIONS; i++) {
+        if (process->allocations[i].ptr == nullptr) {
+            continue;
+        }
         process_free(process, process->allocations[i].ptr);
     }
 
@@ -134,11 +137,15 @@ int process_free_program_data(const struct process *process)
     int res = 0;
     switch (process->file_type) {
     case PROCESS_FILE_TYPE_BINARY:
-        kfree(process->pointer);
+        if (process->pointer) {
+            kfree(process->pointer);
+        }
         break;
 
     case PROCESS_FILE_TYPE_ELF:
-        elf_close(process->elf_file);
+        if (process->elf_file) {
+            elf_close(process->elf_file);
+        }
         break;
 
     default:
@@ -162,14 +169,22 @@ int process_zombify(struct process *process)
     res = process_free_program_data(process);
     ASSERT(res == 0, "Failed to free program data for process");
 
-    kfree(process->stack);
+    if (process->stack) {
+        kfree(process->stack);
+    }
     process->stack = nullptr;
-    thread_free(process->thread);
+    if (process->thread) {
+        thread_free(process->thread);
+    }
     process->thread = nullptr;
-    paging_free_directory(process->page_directory);
+    if (process->page_directory) {
+        paging_free_directory(process->page_directory);
+    }
     process->page_directory = nullptr;
 
-    scheduler_unlink_process(process);
+    if (strlen(process->file_name) > 0) {
+        scheduler_unlink_process(process);
+    }
 
     spin_unlock(&process_lock);
     return res;
@@ -189,9 +204,7 @@ int process_count_command_arguments(const struct command_argument *root_argument
 
 int process_inject_arguments(struct process *process, const struct command_argument *root_argument)
 {
-    int res = 0;
-    ASSERT(root_argument->current_directory, "Current directory is not set");
-
+    int res                                = 0;
     const struct command_argument *current = root_argument;
     int i                                  = 0;
 
@@ -521,6 +534,10 @@ int process_unmap_memory(const struct process *process)
 
     ASSERT(res >= 0, "Failed to unmap memory for process");
 
+    if (process->stack == nullptr) {
+        return res;
+    }
+
     res = paging_map_to(process->page_directory,
                         (char *)USER_STACK_BOTTOM, // stack grows down
                         process->stack,
@@ -607,7 +624,7 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
     dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, pid);
 
     thread = thread_create(proc);
-    if (ERROR_I(thread) == 0) {
+    if (ISERR(thread)) {
         warningf("Failed to create thread\n");
         ASSERT(false, "Failed to create thread");
         res = -ENOMEM;
@@ -631,11 +648,10 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
 
 out:
     if (ISERR(res)) {
-        if (proc && proc->thread) {
-            thread_free(proc->thread);
+        if (proc) {
+            process_zombify(proc);
+            kfree(proc);
         }
-
-        // TODO: free process data
     }
     return res;
 }
@@ -686,7 +702,9 @@ int process_wait_pid(struct process *process, const int pid)
     if (child->state == ZOMBIE) {
         process_remove_child(process, child);
         scheduler_unlink_process(child);
-        thread_free(child->thread);
+        if (child->thread) {
+            thread_free(child->thread);
+        }
 
         const int status  = child->exit_code;
         process->state    = RUNNING;
@@ -768,6 +786,9 @@ void process_copy_arguments(struct process *dest, const struct process *src)
 void process_copy_thread(struct process *dest, const struct process *src)
 {
     struct thread *thread = thread_create(dest);
+    if (ISERR(thread)) {
+        panic("Failed to create thread");
+    }
     thread_copy_registers(thread, src->thread);
     dest->thread          = thread;
     dest->thread->process = dest;
@@ -807,4 +828,12 @@ struct process *process_clone(struct process *process)
     clone->state = RUNNING;
 
     return clone;
+}
+
+void process_command_argument_free(struct command_argument *argument)
+{
+    if (argument->next) {
+        process_command_argument_free(argument->next);
+    }
+    kfree(argument);
 }

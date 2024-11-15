@@ -1,10 +1,9 @@
-#include "stdio.h"
 #include <memory.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syscall.h>
-
-#define MAX_FMT_STR 10240
 
 // FAT Directory entry attributes
 #define FAT_FILE_READ_ONLY 0x01
@@ -13,8 +12,6 @@
 #define FAT_FILE_VOLUME_LABEL 0x08
 #define FAT_FILE_SUBDIRECTORY 0x10
 #define FAT_FILE_ARCHIVE 0x20
-#define FAT_FILE_DEVICE 0x40
-#define FAT_FILE_RESERVED 0x80
 #define FAT_FILE_LONG_NAME 0x0F
 
 struct fat_directory_entry {
@@ -258,34 +255,45 @@ int opendir(struct file_directory *directory, const char path[static 1])
 /// \endcode
 int readdir(const struct file_directory *directory, struct directory_entry *entry_out, const int index)
 {
-    const struct fat_directory_entry *entry = directory->entries + (index * sizeof(struct fat_directory_entry));
-    struct directory_entry directory_entry  = {
-         .attributes           = entry->attributes,
-         .size                 = entry->size,
-         .access_date          = entry->access_date,
-         .creation_date        = entry->creation_date,
-         .creation_time        = entry->creation_time,
-         .creation_time_tenths = entry->creation_time_tenths,
-         .modification_date    = entry->modification_date,
-         .modification_time    = entry->modification_time,
-         .is_archive           = entry->attributes & FAT_FILE_ARCHIVE,
-         .is_device            = entry->attributes & FAT_FILE_DEVICE,
-         .is_directory         = entry->attributes & FAT_FILE_SUBDIRECTORY,
-         .is_hidden            = entry->attributes & FAT_FILE_HIDDEN,
-         .is_long_name         = entry->attributes == FAT_FILE_LONG_NAME,
-         .is_read_only         = entry->attributes & FAT_FILE_READ_ONLY,
-         .is_system            = entry->attributes & FAT_FILE_SYSTEM,
-         .is_volume_label      = entry->attributes & FAT_FILE_VOLUME_LABEL,
+    struct fat_directory_entry *entry      = directory->entries + (index * sizeof(struct fat_directory_entry));
+    struct directory_entry directory_entry = {
+        .size                 = entry->size,
+        .access_date          = entry->access_date,
+        .creation_date        = entry->creation_date,
+        .creation_time        = entry->creation_time,
+        .creation_time_tenths = entry->creation_time_tenths,
+        .modification_date    = entry->modification_date,
+        .modification_time    = entry->modification_time,
+        .is_archive           = entry->attributes & FAT_FILE_ARCHIVE,
+        .is_directory         = entry->attributes & FAT_FILE_SUBDIRECTORY,
+        .is_hidden            = entry->attributes & FAT_FILE_HIDDEN,
+        .is_long_name         = entry->attributes == FAT_FILE_LONG_NAME,
+        .is_read_only         = entry->attributes & FAT_FILE_READ_ONLY,
+        .is_system            = entry->attributes & FAT_FILE_SYSTEM,
+        .is_volume_label      = entry->attributes & FAT_FILE_VOLUME_LABEL,
     };
 
-    // TODO: Check for a memory leak here
-    char *name = trim(substring((char *)entry->name, 0, 7));
-    char *ext  = trim(substring((char *)entry->ext, 0, 2));
+    // TODO: Fix this memory leak
+    char *name = calloc(8, 1);
+    char *ext  = calloc(3, 1);
+
+    // Convert names to lowercase for no good reason
+    for (size_t i = 0; i < strnlen((char *)entry->name, 8); i++) {
+        name[i] = tolower(entry->name[i]);
+    }
+
+    for (size_t i = 0; i < strnlen((char *)entry->ext, 3); i++) {
+        ext[i] = tolower(entry->ext[i]);
+    }
+
+    name = trim(name, 8);
+    ext  = trim(ext, 3);
 
     directory_entry.name = name;
     directory_entry.ext  = ext;
 
     *entry_out = directory_entry;
+
 
     return 0;
 }

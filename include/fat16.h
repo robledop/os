@@ -4,7 +4,7 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include <file.h>
+#include <vfs.h>
 
 struct file_system *fat16_init(void);
 __attribute__((nonnull)) void fat16_print_partition_stats(const struct disk *disk);

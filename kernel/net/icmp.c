@@ -54,13 +54,13 @@ void icmp_send_echo_reply(uint8_t *packet, const uint16_t len)
            payload,
            len - sizeof(struct ether_header) - sizeof(struct ipv4_header) - sizeof(struct icmp_header));
 
-    dbgprintf("Echo reply: %d.%d.%d.%d\t MAC: %s\t icmp_seq: %d\n",
-              reply_packet->ip_header.dest_ip[0],
-              reply_packet->ip_header.dest_ip[1],
-              reply_packet->ip_header.dest_ip[2],
-              reply_packet->ip_header.dest_ip[3],
-              print_mac_address(reply_packet->ether_header.dest_host),
-              reply_packet->icmp_header.sequence / 256);
+    // dbgprintf("Echo reply: %d.%d.%d.%d\t MAC: %s\t icmp_seq: %d\n",
+    //           reply_packet->ip_header.dest_ip[0],
+    //           reply_packet->ip_header.dest_ip[1],
+    //           reply_packet->ip_header.dest_ip[2],
+    //           reply_packet->ip_header.dest_ip[3],
+    //           print_mac_address(reply_packet->ether_header.dest_host),
+    //           reply_packet->icmp_header.sequence / 256);
 
     network_send_packet(reply_packet, len);
     kfree(reply_packet);
@@ -82,13 +82,13 @@ void icmp_receive(uint8_t *packet, const uint16_t len)
     switch (icmp_header->type) {
     case ICMP_V4_ECHO:
         {
-            dbgprintf("Echo request: %d.%d.%d.%d\t MAC: %s\t icmp_seq: %d\n",
-                      ipv4_header->source_ip[0],
-                      ipv4_header->source_ip[1],
-                      ipv4_header->source_ip[2],
-                      ipv4_header->source_ip[3],
-                      print_mac_address(ether_header->src_host),
-                      icmp_header->sequence / 256);
+            // dbgprintf("Echo request: %d.%d.%d.%d\t MAC: %s\t icmp_seq: %d\n",
+            //           ipv4_header->source_ip[0],
+            //           ipv4_header->source_ip[1],
+            //           ipv4_header->source_ip[2],
+            //           ipv4_header->source_ip[3],
+            //           print_mac_address(ether_header->src_host),
+            //           icmp_header->sequence / 256);
 
             icmp_send_echo_reply(packet, len);
 

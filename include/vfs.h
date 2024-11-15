@@ -11,13 +11,13 @@ typedef unsigned int FS_ITEM_TYPE;
 #define FS_ITEM_TYPE_DIRECTORY 0
 #define FS_ITEM_TYPE_FILE 1
 
-struct fs_item {
-    union {
-        struct fat_directory_entry *item;
-        struct fat_directory *directory;
-    };
-    FS_ITEM_TYPE type;
-};
+// struct fs_item {
+//     union {
+//         struct fat_directory_entry *item;
+//         struct fat_directory *directory;
+//     };
+//     FS_ITEM_TYPE type;
+// };
 
 typedef unsigned int FILE_SEEK_MODE;
 enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
@@ -39,6 +39,7 @@ typedef int (*FS_READ_FUNCTION)(struct disk *disk, const void *private, uint32_t
 typedef int (*FS_SEEK_FUNCTION)(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
 typedef int (*FS_CLOSE_FUNCTION)(void *private);
 typedef int (*FS_STAT_FUNCTION)(struct disk *disk, void *private, struct file_stat *stat);
+typedef void (*FS_IOCTL_FUNCTION)(int fd, uint64_t request, void *arg);
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 
 struct directory_entry;
@@ -51,7 +52,6 @@ typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 struct directory_entry {
     char *name;
     char *ext;
-    uint8_t attributes;
     uint8_t creation_time_tenths;
     uint16_t creation_time;
     uint16_t creation_date;
@@ -59,19 +59,20 @@ struct directory_entry {
     uint16_t modification_time;
     uint16_t modification_date;
     uint32_t size;
-    bool is_directory;
-    bool is_read_only;
-    bool is_hidden;
-    bool is_system;
-    bool is_volume_label;
-    bool is_long_name;
-    bool is_archive;
-    bool is_device;
+    bool is_directory    : 1;
+    bool is_read_only    : 1;
+    bool is_hidden       : 1;
+    bool is_system       : 1;
+    bool is_volume_label : 1;
+    bool is_long_name    : 1;
+    bool is_archive      : 1;
+    bool is_device       : 1;
 };
 
 struct file_directory {
     char *name;
     int entry_count;
+    // TODO: This is currently a fat_directory_entry, but it should be a generic directory entry
     void *entries;
     DIRECTORY_GET_ENTRY get_entry;
 };
@@ -84,6 +85,7 @@ struct file_system {
     FS_SEEK_FUNCTION seek;
     FS_STAT_FUNCTION stat;
     FS_CLOSE_FUNCTION close;
+    FS_IOCTL_FUNCTION ioctl;
 
     FS_GET_ROOT_DIRECTORY_FUNCTION get_root_directory;
     FS_GET_SUB_DIRECTORY_FUNCTION get_subdirectory;

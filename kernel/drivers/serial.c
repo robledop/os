@@ -57,6 +57,7 @@ int serial_printf(const char fmt[static 1], ...)
                 itoa(num, str);
                 serial_write(str);
                 break;
+            case 'p':
             case 'x':
                 num = va_arg(args, int);
                 itohex(num, str);

@@ -4,6 +4,7 @@
 #error "This is a user-space header file. It should not be included in the kernel."
 #endif
 
+#include <config.h>
 #include <stdint.h>
 #include <termcolors.h>
 
@@ -13,7 +14,6 @@ typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 struct directory_entry {
     char *name;
     char *ext;
-    uint8_t attributes;
     uint8_t creation_time_tenths;
     uint16_t creation_time;
     uint16_t creation_date;
@@ -21,14 +21,14 @@ struct directory_entry {
     uint16_t modification_time;
     uint16_t modification_date;
     uint32_t size;
-    bool is_directory;
-    bool is_read_only;
-    bool is_hidden;
-    bool is_system;
-    bool is_volume_label;
-    bool is_long_name;
-    bool is_archive;
-    bool is_device;
+    bool is_directory    : 1;
+    bool is_read_only    : 1;
+    bool is_hidden       : 1;
+    bool is_system       : 1;
+    bool is_volume_label : 1;
+    bool is_long_name    : 1;
+    bool is_archive      : 1;
+    bool is_device       : 1;
 };
 
 struct file_directory {
@@ -41,7 +41,7 @@ struct file_directory {
 struct command_argument {
     char argument[512];
     struct command_argument *next;
-    char *current_directory;
+    char current_directory[MAX_PATH_LENGTH];
 };
 
 struct process_arguments {

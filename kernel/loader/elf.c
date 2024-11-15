@@ -1,10 +1,10 @@
 #include <elf.h>
-#include <file.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <serial.h>
 #include <status.h>
 #include <string.h>
+#include <vfs.h>
 
 constexpr char elf_signature[] = {0x7f, 'E', 'L', 'F'};
 
@@ -189,11 +189,16 @@ out:
 
 int elf_load(const char *filename, struct elf_file **file_out)
 {
+    int res;
+    int fd = 0;
     dbgprintf("Loading ELF file %s\n", filename);
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
-    int fd                    = 0;
+    if (!elf_file) {
+        res = -ENOMEM;
+        goto out;
+    }
 
-    int res = fopen(filename, "r");
+    res = fopen(filename, "r");
     if (res <= 0) {
         warningf("Failed to open file %s\n", filename);
         res = -EIO;
@@ -226,6 +231,14 @@ int elf_load(const char *filename, struct elf_file **file_out)
     *file_out = elf_file;
 
 out:
+    if (ISERR(res)) {
+        if (elf_file && elf_file->elf_memory) {
+            kfree(elf_file->elf_memory);
+        }
+        if (elf_file) {
+            kfree(elf_file);
+        }
+    }
     fclose(fd);
     return res;
 }

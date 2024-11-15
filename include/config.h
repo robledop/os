@@ -5,7 +5,7 @@
 
 #define TOTAL_INTERRUPTS 512
 
-#define HEAP_SIZE_BYTES 128 * 1024 * 1024 // 500 MiB
+#define HEAP_SIZE_BYTES  62 * 1024 * 1024
 #define HEAP_BLOCK_SIZE 4096
 
 // https://wiki.osdev.org/Memory_Map_(x86)

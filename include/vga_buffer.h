@@ -4,9 +4,8 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include <termcolors.h>
 #include <stdint.h>
-
+#include <termcolors.h>
 
 #define VIDEO_MEMORY 0xB8000
 #define DEFAULT_ATTRIBUTE 0x07 // Light grey on black background

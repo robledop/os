@@ -23,7 +23,7 @@ enum SLEEP_REASON { SLEEP_REASON_NONE, SLEEP_REASON_KEYBOARD };
 struct command_argument {
     char argument[512];
     struct command_argument *next;
-    char *current_directory;
+    char current_directory[MAX_PATH_LENGTH];
 };
 
 struct process_allocation {
@@ -95,10 +95,12 @@ __attribute__((nonnull)) struct process *find_child_process_by_state(const struc
 __attribute__((nonnull)) int process_add_child(struct process *parent, struct process *child);
 __attribute__((nonnull)) int process_remove_child(struct process *parent, const struct process *child);
 __attribute__((nonnull)) struct process *process_clone(struct process *process);
-__attribute__((nonnull)) struct process *process_replace(const struct process *parent, const char file_name[static 1]);
-__attribute__((nonnull)) struct process *process_create(const char file_name[static 1]);
+// __attribute__((nonnull)) struct process *process_replace(const struct process *parent, const char file_name[static
+// 1]);
+// __attribute__((nonnull)) struct process *process_create(const char file_name[static 1]);
 __attribute__((nonnull)) int process_load_data(const char file_name[static 1], struct process *process);
 __attribute__((nonnull)) int process_map_memory(const struct process *process);
 __attribute__((nonnull)) int process_unmap_memory(const struct process *process);
 __attribute__((nonnull)) int process_free_allocations(struct process *process);
 __attribute__((nonnull)) int process_free_program_data(const struct process *process);
+__attribute__((nonnull)) void process_command_argument_free(struct command_argument *argument);

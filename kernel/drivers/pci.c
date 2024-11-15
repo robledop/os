@@ -117,7 +117,6 @@ struct pci_class classes[] = {
     {0x11, 0x10, "Communication Synchronizer"                 },
     {0x11, 0x20, "Signal Processing Management"               },
     {0x11, 0x80, "Other Signal Processing Controller"         },
-
     {0x12, 0x00, "Processing Accelerator"                     },
     {0x13, 0x00, "Non-Essential Instrumentation"              },
     {0x40, 0x00, "Co-Processor"                               },

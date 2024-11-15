@@ -105,7 +105,8 @@ static void heap_mark_blocks_taken(const struct heap *heap, const uint32_t start
     }
 
     // Mark the rest of the blocks as taken
-    for (uint32_t i = start_block; i <= end_block + blocks_needed; i++) {
+    for (uint32_t i = start_block; i <= end_block; i++) {
+        // kprintf(KBOLD KYEL "." KRESET);
         heap->table->entries[i] = entry;
         entry                   = HEAP_BLOCK_TAKEN;
         // If this is not the last block, mark it as having a next block
@@ -186,6 +187,20 @@ void *heap_malloc_blocks(const struct heap *heap, const uint32_t blocks_needed)
     return address;
 }
 
+uint32_t heap_count_free_blocks(const struct heap *heap)
+{
+    const struct heap_table *table = heap->table;
+    uint32_t free_blocks           = 0;
+
+    for (size_t i = 0; i < table->total; i++) {
+        if (heap_get_entry_type(table->entries[i]) == HEAP_BLOCK_FREE) {
+            free_blocks++;
+        }
+    }
+
+    return free_blocks;
+}
+
 // Mark a range of blocks as free
 // heap: The heap to mark the blocks in
 void heap_mark_blocks_free(const struct heap *heap, const uint32_t start_block)
@@ -194,13 +209,15 @@ void heap_mark_blocks_free(const struct heap *heap, const uint32_t start_block)
     for (size_t i = start_block; i < table->total; i++) {
         const HEAP_BLOCK_TABLE_ENTRY entry = table->entries[i];
         table->entries[i]                  = HEAP_BLOCK_FREE;
+        // kprintf(KBOLD KBLU "." KRESET);
 
         // If the block has no next block, stop
-        if (!(entry & HEAP_BLOCK_HAS_NEXT)) {
+        if ((entry & HEAP_BLOCK_HAS_NEXT) != HEAP_BLOCK_HAS_NEXT) {
             break;
         }
     }
 }
+
 
 // Convert an address to a block number
 uint32_t heap_address_to_block(const struct heap *heap, void *address)

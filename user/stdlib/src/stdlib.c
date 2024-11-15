@@ -68,10 +68,6 @@ int create_process(const char path[static 1], const char *current_directory)
         return -EBADPATH;
     }
 
-    if (root_command_argument->current_directory == NULL) {
-        root_command_argument->current_directory = calloc(1, MAX_PATH_LENGTH);
-    }
-
     strncpy(root_command_argument->current_directory, current_directory, MAX_PATH_LENGTH);
 
     return syscall1(SYSCALL_CREATE_PROCESS, root_command_argument);

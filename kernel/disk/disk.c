@@ -1,7 +1,7 @@
 #include "disk.h"
 #include <ata.h>
 #include <debug.h>
-#include <file.h>
+#include <vfs.h>
 #include <kernel.h>
 #include <memory.h>
 #include <serial.h>

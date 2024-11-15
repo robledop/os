@@ -39,7 +39,7 @@ thread_switch:
     ; We also manipulate the flags to make sure interrupts are enabled
     pushfd
     pop eax
-    or eax, 0x200          ; enable interrupts
+    or eax, (1 << 9)          ; enable interrupts
     push eax
 
     ; push the code segment
@@ -64,8 +64,8 @@ thread_switch:
     add esp, 4
 
     ; enter user mode
-    ; pops ip, cs, flags, esp, ss (in this order) from the stack
-    ; and jumps to the new address in cs:ip
+    ; pops eip, cs, flags, esp, ss (in this order) from the stack
+    ; and jumps to the new address in cs:eip
     iretd
 
 ; void restore_general_purpose_registers(struct registers* regs)

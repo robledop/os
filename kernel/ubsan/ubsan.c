@@ -33,9 +33,11 @@ struct scram_undefined_behavior {
 
 void scram(const int event, const struct scram_undefined_behavior *info)
 {
-    kprintf(KYEL "\nCurrent task:" KWHT " %s (%d)\n",
-            scheduler_get_current_thread()->process->file_name,
-            scheduler_get_current_thread()->process->pid);
+    if (scheduler_get_current_thread()) {
+        kprintf(KYEL "\nCurrent thread:" KWHT " %s (%d)\n",
+                scheduler_get_current_process()->file_name,
+                scheduler_get_current_process()->pid);
+    }
     kprintf(KYEL "Event:" KWHT " %d\n", event);
     kprintf(KYEL "File:" KWHT " %s\n", info->filename);
     kprintf(KYEL "Line:" KWHT " %d\n", info->line);

@@ -1,5 +1,4 @@
 #include <debug.h>
-#include <file.h>
 #include <idt.h>
 #include <kernel.h>
 #include <kernel_heap.h>
@@ -12,6 +11,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <thread.h>
+#include <vfs.h>
 #include <vga_buffer.h>
 #include <x86.h>
 
@@ -165,10 +165,14 @@ void *sys_exec(struct interrupt_frame *frame)
 {
     spin_lock(&exec_lock);
 
-    const void *path_ptr = thread_peek_stack_item(scheduler_get_current_thread(), 1);
+    const void *path_ptr  = thread_peek_stack_item(scheduler_get_current_thread(), 1);
+    void *virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 0);
 
-    char **args_ptr = thread_virtual_to_physical_address(scheduler_get_current_thread(),
-                                                         thread_peek_stack_item(scheduler_get_current_thread(), 0));
+    char **args_ptr = nullptr;
+
+    if (virtual_address) {
+        args_ptr = thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
+    }
 
     char path[MAX_PATH_LENGTH] = {0};
     copy_string_from_thread(scheduler_get_current_thread(), path_ptr, path, sizeof(path));
@@ -189,7 +193,6 @@ void *sys_exec(struct interrupt_frame *frame)
 
     struct command_argument *root_argument = kzalloc(sizeof(struct command_argument));
     strncpy(root_argument->argument, path, sizeof(root_argument->argument));
-    root_argument->current_directory = kzalloc(MAX_PATH_LENGTH);
     strncpy(root_argument->current_directory,
             scheduler_get_current_thread()->process->current_directory,
             sizeof(root_argument->current_directory));
@@ -298,14 +301,18 @@ void *sys_open_dir(struct interrupt_frame *frame)
 
 void *sys_get_program_arguments(struct interrupt_frame *frame)
 {
-    const struct process *process       = scheduler_get_current_thread()->process;
-    struct process_arguments *arguments = thread_virtual_to_physical_address(
-        scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 0));
+    const struct process *process = scheduler_get_current_thread()->process;
+    void *virtual_address         = thread_peek_stack_item(scheduler_get_current_thread(), 0);
+    if (!virtual_address) {
+        return nullptr;
+    }
+    struct process_arguments *arguments =
+        thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
 
     arguments->argc = process->arguments.argc;
     arguments->argv = process->arguments.argv;
 
-    return NULL;
+    return nullptr;
 }
 
 void *sys_clear_screen(struct interrupt_frame *frame)
@@ -317,10 +324,10 @@ void *sys_clear_screen(struct interrupt_frame *frame)
 
 void *sys_stat(struct interrupt_frame *frame)
 {
-    const int fd = get_integer_argument(1);
+    const int fd          = get_integer_argument(1);
+    void *virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 0);
 
-    struct file_stat *stat = thread_virtual_to_physical_address(
-        scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 0));
+    struct file_stat *stat = thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
 
     return (void *)fstat(fd, stat);
 }
@@ -433,12 +440,10 @@ void *sys_putchar(struct interrupt_frame *frame)
 
 void *sys_putchar_color(struct interrupt_frame *frame)
 {
-    // scheduler_save_current_thread(frame);
     const uint8_t attribute = (unsigned char)get_integer_argument(0);
     const char c            = (char)get_integer_argument(1);
 
     terminal_putchar(c, attribute, -1, -1);
-    // terminal_write_char(c, forecolor, backcolor);
     return nullptr;
 }
 
@@ -464,9 +469,12 @@ void *sys_free(struct interrupt_frame *frame)
 
 void *sys_wait_pid(struct interrupt_frame *frame)
 {
-    const int pid    = get_integer_argument(1);
-    int *status_ptr  = thread_virtual_to_physical_address(scheduler_get_current_thread(),
-                                                         thread_peek_stack_item(scheduler_get_current_thread(), 0));
+    const int pid     = get_integer_argument(1);
+    void *virtual_ptr = thread_peek_stack_item(scheduler_get_current_thread(), 0);
+    int *status_ptr   = nullptr;
+    if (virtual_ptr) {
+        status_ptr = thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_ptr);
+    }
     const int status = process_wait_pid(scheduler_get_current_thread()->process, pid);
     if (status_ptr) {
         *status_ptr = status;
@@ -480,16 +488,17 @@ void *sys_create_process(struct interrupt_frame *frame)
 {
     spin_lock(&create_process_lock);
 
-    struct command_argument *arguments = thread_virtual_to_physical_address(
-        scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 0));
+    void *virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 0);
+    struct command_argument *arguments =
+        thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
     if (!arguments || strlen(arguments->argument) == 0) {
         warningf("Invalid arguments\n");
         spin_unlock(&create_process_lock);
         return ERROR(-EINVARG);
     }
 
-    const struct command_argument *root_command_argument = &arguments[0];
-    const char *program_name                             = root_command_argument->argument;
+    struct command_argument *root_command_argument = &arguments[0];
+    const char *program_name                       = root_command_argument->argument;
 
     char path[MAX_PATH_LENGTH];
     strncpy(path, "0:/bin/", sizeof(path));
@@ -499,6 +508,8 @@ void *sys_create_process(struct interrupt_frame *frame)
     int res                 = process_load_enqueue(path, &process);
     if (res < 0) {
         warningf("Failed to load process %s\n", program_name);
+        process_free(scheduler_get_current_process(), virtual_address);
+        process_command_argument_free(root_command_argument);
         spin_unlock(&create_process_lock);
         return ERROR(res);
     }
@@ -506,6 +517,8 @@ void *sys_create_process(struct interrupt_frame *frame)
     res = process_inject_arguments(process, root_command_argument);
     if (res < 0) {
         warningf("Failed to inject arguments for process %s\n", program_name);
+        process_free(scheduler_get_current_process(), virtual_address);
+        process_command_argument_free(root_command_argument);
         spin_unlock(&create_process_lock);
         return ERROR(res);
     }
@@ -516,6 +529,8 @@ void *sys_create_process(struct interrupt_frame *frame)
     process->priority               = 1;
     process_add_child(current_process, process);
 
+    process_free(scheduler_get_current_process(), virtual_address);
+    process_command_argument_free(root_command_argument);
     spin_unlock(&create_process_lock);
 
     return (void *)(int)process->pid;
@@ -523,24 +538,24 @@ void *sys_create_process(struct interrupt_frame *frame)
 
 struct command_argument *parse_command(char **args)
 {
-    if (args[0] == NULL) {
+    if (*args == nullptr) {
         return nullptr;
     }
 
     struct command_argument *head = kmalloc(sizeof(struct command_argument));
-    if (head == NULL) {
+    if (head == nullptr) {
         return nullptr;
     }
 
-    strncpy(head->argument, args[0], sizeof(head->argument));
+    strncpy(head->argument, *args, sizeof(head->argument));
     head->next = nullptr;
 
     struct command_argument *current = head;
 
     int i = 1;
-    while (args[i] != NULL) {
+    while (args[i] != nullptr) {
         struct command_argument *next = kmalloc(sizeof(struct command_argument));
-        if (next == NULL) {
+        if (next == nullptr) {
             break;
         }
 

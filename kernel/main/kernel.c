@@ -1,6 +1,6 @@
 #include <debug.h>
 #include <disk.h>
-#include <file.h>
+#include <vfs.h>
 #include <gdt.h>
 #include <idt.h>
 #include <io.h>

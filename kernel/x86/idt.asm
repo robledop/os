@@ -19,7 +19,6 @@ idt_load:
     pop ebp
     ret
 
-
 ;struct interrupt_frame {
 ;    uint32_t edi;
 ;    uint32_t esi;
@@ -34,7 +33,6 @@ idt_load:
 ;    uint32_t flags;
 ;    uint32_t esp;
 ;    uint32_t ss;
-
 
 %macro interrupt 1
     global int%1

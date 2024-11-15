@@ -1,13 +1,15 @@
-#include "kernel_heap.h"
-#include "config.h"
-#include "debug.h"
-#include "heap.h"
-#include "kernel.h"
-#include "memory.h"
-#include "serial.h"
+#include <config.h>
+#include <debug.h>
+#include <heap.h>
+#include <kernel.h>
+#include <kernel_heap.h>
+#include <memory.h>
+#include <serial.h>
 
 struct heap kernel_heap;
 struct heap_table kernel_heap_table;
+uint32_t allocations = 0;
+uint32_t frees       = 0;
 
 // https://wiki.osdev.org/Memory_Map_(x86)
 
@@ -27,7 +29,12 @@ void kernel_heap_init()
 
 void *kmalloc(const size_t size)
 {
-    return heap_malloc(&kernel_heap, size);
+    allocations++;
+    // kprintf("Free blocks: %d\n", heap_count_free_blocks(&kernel_heap));
+    void *result = heap_malloc(&kernel_heap, size);
+    dbgprintf("kmalloc: %p\t", result);
+    // stack_trace();
+    return result;
 }
 
 void *kzalloc(const size_t size)
@@ -49,5 +56,7 @@ void *krealloc(void *ptr, const size_t size)
 
 void kfree(void *ptr)
 {
+    frees++;
+    dbgprintf("kfree: %p\n", ptr);
     heap_free(&kernel_heap, ptr);
 }
