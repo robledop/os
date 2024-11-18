@@ -12,3 +12,4 @@ void *kmalloc(size_t size);
 __attribute__((nonnull)) void kfree(void *ptr);
 void *kzalloc(size_t size);
 __attribute__((nonnull)) void *krealloc(void *ptr, const size_t size);
+void kernel_heap_print_stats();

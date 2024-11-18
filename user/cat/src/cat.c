@@ -22,7 +22,7 @@ int main(const int argc, char **argv)
 
     int fd = 0;
 
-    if (starts_with("0:/", file)) {
+    if (starts_with("/", file)) {
         fd = fopen(file, "r");
     } else {
         strncpy(full_path, current_directory, MAX_PATH_LENGTH);

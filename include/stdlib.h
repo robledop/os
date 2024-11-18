@@ -23,3 +23,4 @@ int create_process(const char path[static 1], const char *current_directory);
 void sleep(uint32_t milliseconds);
 void yield(void);
 void ps(void);
+void memstat();

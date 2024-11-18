@@ -125,19 +125,6 @@ char *strncpy(char dest[static 1], const char src[static 1], const size_t n)
     return dest;
 }
 
-// Like strncpy but guaranteed to NUL-terminate.
-char *safestrcpy(char s[static 1], const char t[static 1], int n)
-{
-    char *os = s;
-    if (n <= 0) {
-        return os;
-    }
-    while (--n > 0 && (*s++ = *t++) != 0)
-        ;
-    *s = 0;
-    return os;
-}
-
 bool isdigit(char c)
 {
     return c >= '0' && c <= '9';

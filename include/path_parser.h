@@ -1,7 +1,9 @@
 #pragma once
+#include <stdint.h>
 
 struct path_root {
     int drive_number;
+    uint32_t inode_number;
     struct path_part *first;
 };
 

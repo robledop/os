@@ -7,35 +7,35 @@
 #include <config.h>
 #include <stdint.h>
 #include <termcolors.h>
+#include <inode.h>
 
 
-typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
+typedef struct file_directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
-struct directory_entry {
-    char *name;
-    char *ext;
-    uint8_t creation_time_tenths;
-    uint16_t creation_time;
-    uint16_t creation_date;
-    uint16_t access_date;
-    uint16_t modification_time;
-    uint16_t modification_date;
-    uint32_t size;
-    bool is_directory    : 1;
-    bool is_read_only    : 1;
-    bool is_hidden       : 1;
-    bool is_system       : 1;
-    bool is_volume_label : 1;
-    bool is_long_name    : 1;
-    bool is_archive      : 1;
-    bool is_device       : 1;
-};
+// struct file_directory_entry {
+//     char *name;
+//     char *ext;
+//     uint8_t creation_time_tenths;
+//     uint16_t creation_time;
+//     uint16_t creation_date;
+//     uint16_t access_date;
+//     uint16_t modification_time;
+//     uint16_t modification_date;
+//     uint32_t size;
+//     bool is_directory    : 1;
+//     bool is_read_only    : 1;
+//     bool is_hidden       : 1;
+//     bool is_system       : 1;
+//     bool is_volume_label : 1;
+//     bool is_long_name    : 1;
+//     bool is_archive      : 1;
+//     bool is_device       : 1;
+// };
 
 struct file_directory {
     char *name;
     int entry_count;
     void *entries;
-    DIRECTORY_GET_ENTRY get_entry;
 };
 
 struct command_argument {
@@ -72,8 +72,8 @@ int fclose(int fd);
 __attribute__((nonnull)) int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 __attribute__((nonnull)) int fstat(int fd, struct file_stat *stat);
 void clear_screen();
-__attribute__((nonnull)) int opendir(struct file_directory *directory, const char path[static 1]);
-__attribute__((nonnull)) int readdir(const struct file_directory *directory, struct directory_entry *entry_out,
+__attribute__((nonnull)) int opendir(struct dir_entries *directory, const char path[static 1]);
+__attribute__((nonnull)) int readdir(const struct dir_entries *directory, struct dir_entry **entry_out,
                                      int index);
 int getkey(void);
 int getkey_blocking(void);

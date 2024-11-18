@@ -4,20 +4,15 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
+#include <inode.h>
 #include <path_parser.h>
 #include <stdint.h>
+
+#define MAX_MOUNT_POINTS 10
 
 typedef unsigned int FS_ITEM_TYPE;
 #define FS_ITEM_TYPE_DIRECTORY 0
 #define FS_ITEM_TYPE_FILE 1
-
-// struct fs_item {
-//     union {
-//         struct fat_directory_entry *item;
-//         struct fat_directory *directory;
-//     };
-//     FS_ITEM_TYPE type;
-// };
 
 typedef unsigned int FILE_SEEK_MODE;
 enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
@@ -34,22 +29,21 @@ struct file_stat {
 };
 
 struct disk;
-typedef void *(*FS_OPEN_FUNCTION)(struct disk *disk, const struct path_part *path, const FILE_MODE mode);
+typedef void *(*FS_OPEN_FUNCTION)(const struct path_root *path, FILE_MODE mode);
 typedef int (*FS_READ_FUNCTION)(struct disk *disk, const void *private, uint32_t size, uint32_t nmemb, char *out);
 typedef int (*FS_SEEK_FUNCTION)(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
 typedef int (*FS_CLOSE_FUNCTION)(void *private);
 typedef int (*FS_STAT_FUNCTION)(struct disk *disk, void *private, struct file_stat *stat);
-typedef void (*FS_IOCTL_FUNCTION)(int fd, uint64_t request, void *arg);
+typedef int (*FS_IOCTL_FUNCTION)(int fd, uint64_t request, void *arg);
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 
 struct directory_entry;
 struct file_directory;
 
-typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct file_directory *directory);
-typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(struct disk *disk, const char *path, struct file_directory *directory);
-typedef struct directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
+typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct dir_entries *directory);
+typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(const struct disk *disk, const char *path, struct dir_entries *directory);
 
-struct directory_entry {
+struct file_directory_entry {
     char *name;
     char *ext;
     uint8_t creation_time_tenths;
@@ -72,9 +66,12 @@ struct directory_entry {
 struct file_directory {
     char *name;
     int entry_count;
-    // TODO: This is currently a fat_directory_entry, but it should be a generic directory entry
-    void *entries;
-    DIRECTORY_GET_ENTRY get_entry;
+    struct dir_entries *entries;
+};
+
+enum FS_TYPE {
+    FS_TYPE_FAT16,
+    FS_TYPE_RAMFS,
 };
 
 struct file_system {
@@ -91,6 +88,7 @@ struct file_system {
     FS_GET_SUB_DIRECTORY_FUNCTION get_subdirectory;
 
     char name[20];
+    enum FS_TYPE type;
 };
 
 struct file_descriptor {
@@ -101,7 +99,15 @@ struct file_descriptor {
     struct disk *disk;
 };
 
+struct mount_point {
+    struct file_system *fs;
+    char *prefix;
+    uint32_t disk;
+    struct inode *inode;
+};
+
 void fs_init(void);
+void fs_add_mount_point(const char *prefix, uint32_t disk, struct file_system *fs, struct inode *inode);
 int fopen(const char path[static 1], const char mode[static 1]);
 
 __attribute__((nonnull)) int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
@@ -110,4 +116,7 @@ __attribute__((nonnull)) int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
 __attribute__((nonnull)) void fs_insert_file_system(struct file_system *filesystem);
 __attribute__((nonnull)) struct file_system *fs_resolve(struct disk *disk);
-int fs_open_dir(const char name[static 1], struct file_directory *directory);
+int fs_open_dir(const char name[static 1], struct dir_entries **directory);
+int fs_get_non_root_mount_point_count();
+int fs_find_mount_point(const char *prefix);
+struct mount_point *fs_get_mount_point(int index);

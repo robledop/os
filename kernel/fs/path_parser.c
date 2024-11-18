@@ -4,6 +4,8 @@
 #include <serial.h>
 #include <status.h>
 #include <string.h>
+#include <vfs.h>
+#include <vga_buffer.h>
 #ifndef __KERNEL__
 #include <stdlib.h>
 #endif
@@ -14,7 +16,7 @@ static int path_valid_format(const char *path)
     return len >= 3 && isdigit(path[0]) && memcmp((void *)&path[1], ":/", 2) == 0;
 }
 
-static int get_drive_by_path(const char **path)
+static int get_drive_by_path(char **path)
 {
     dbgprintf("Getting drive by path %s\n", *path);
     if (!path_valid_format(*path)) {
@@ -30,7 +32,7 @@ static int get_drive_by_path(const char **path)
     return drive_number;
 }
 
-static struct path_root *create_root(const int drive_number)
+static struct path_root *create_root(const int drive_number, const uint32_t inode_number)
 {
 #ifdef __KERNEL__
     struct path_root *root = kzalloc(sizeof(struct path_root));
@@ -39,6 +41,7 @@ static struct path_root *create_root(const int drive_number)
 #endif
 
     root->drive_number = drive_number;
+    root->inode_number = inode_number;
     root->first        = nullptr;
 
     return root;
@@ -46,6 +49,10 @@ static struct path_root *create_root(const int drive_number)
 
 static const char *get_path_part(const char **path)
 {
+    if (starts_with("/", *path)) {
+        *path += 1;
+    }
+
 #ifdef __KERNEL__
     char *path_part = kzalloc(MAX_PATH_LENGTH);
 #else
@@ -130,11 +137,34 @@ void path_parser_free(struct path_root *root)
 #endif
 }
 
+static struct mount_point *determine_mount_point(const char *path)
+{
+    char *path_dup = strdup(path);
+    if (strncmp("/", path_dup, 1) == 0) {
+        path_dup++;
+    }
+    int mount_point_index;
+    char *beginning = strtok(path_dup, "/");
+    if (!beginning) {
+        mount_point_index = fs_find_mount_point("/");
+    } else {
+        char s[strlen(beginning) + 1] = {};
+        strcat(s, "/");
+        strcat(s, beginning);
+        mount_point_index = fs_find_mount_point(s);
+        if (mount_point_index < 0) {
+            mount_point_index = fs_find_mount_point("/");
+        }
+    }
+    struct mount_point *mount_point = fs_get_mount_point(mount_point_index);
+
+    kfree(path_dup);
+    return mount_point;
+}
+
 struct path_root *path_parser_parse(const char path[static 1], const char *current_directory_path)
 {
     dbgprintf("Parsing path %s\n", path);
-    int res                = 0;
-    const char *tmp_path   = path;
     struct path_root *root = nullptr;
 
     if (strlen(path) > MAX_PATH_LENGTH) {
@@ -142,20 +172,21 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
         goto out;
     }
 
-    // This will remove the 0:/ part from the path
-    res = get_drive_by_path(&tmp_path);
-    if (res < 0) {
-        warningf("Failed to get drive by path\n");
-        goto out;
+    struct mount_point *mount_point = determine_mount_point(path);
+
+    if (mount_point->inode == nullptr) {
+        root = create_root(mount_point->disk, -1);
+    } else {
+        root = create_root(-1, mount_point->inode->inode_number);
     }
 
-    root = create_root(res);
     if (!root) {
         warningf("Failed to create root\n");
         goto out;
     }
 
-    struct path_part *first_part = parse_path_part(nullptr, &tmp_path);
+    struct path_part *first_part = parse_path_part(nullptr, &path);
+
     if (!first_part) {
         warningf("Failed to parse first part\n");
         kfree(root);
@@ -163,10 +194,10 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
     }
 
     root->first            = first_part;
-    struct path_part *part = parse_path_part(first_part, &tmp_path);
+    struct path_part *part = parse_path_part(first_part, &path);
 
     while (part) {
-        part = parse_path_part(part, &tmp_path);
+        part = parse_path_part(part, &path);
     }
 
 out:

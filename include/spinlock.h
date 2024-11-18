@@ -1,5 +1,4 @@
 #pragma once
-
 #include <stdint.h>
 
 typedef uint32_t spinlock_t;

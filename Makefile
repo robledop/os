@@ -16,7 +16,7 @@ AS_INCLUDES = -I ./include
 AS_HEADERS = config.asm
 DEBUG_FLAGS = -g
 STAGE2_FLAGS = -ffreestanding \
-	-Og \
+	-O0 \
 	-nostdlib \
 	-falign-jumps \
 	-falign-functions \
@@ -42,7 +42,7 @@ STAGE2_FLAGS = -ffreestanding \
 	-Wall
 
 FLAGS = -ffreestanding \
-	-Og \
+	-O0 \
 	-nostdlib \
 	-falign-jumps \
 	-falign-functions \

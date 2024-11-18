@@ -1,11 +1,11 @@
-#include "disk.h"
 #include <ata.h>
 #include <debug.h>
-#include <vfs.h>
+#include <disk.h>
 #include <kernel.h>
 #include <memory.h>
 #include <serial.h>
 
+__attribute__((nonnull)) struct file_system *fs_resolve(struct disk *disk);
 struct disk disk;
 
 void disk_init()

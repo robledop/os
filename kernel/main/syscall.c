@@ -1,8 +1,10 @@
 #include <debug.h>
+#include <heap.h>
 #include <idt.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
+#include <memory.h>
 #include <process.h>
 #include <scheduler.h>
 #include <serial.h>
@@ -59,6 +61,7 @@ void register_syscalls()
     register_syscall(SYSCALL_SLEEP, sys_sleep);
     register_syscall(SYSCALL_YIELD, sys_yield);
     register_syscall(SYSCALL_PS, sys_ps);
+    register_syscall(SYSCALL_MEMSTAT, sys_memstat);
 }
 
 static void insert_spaces(char *str, const int start, const int len)
@@ -67,6 +70,13 @@ static void insert_spaces(char *str, const int start, const int len)
         str[i] = ' ';
     }
     str[len] = '\0';
+}
+
+void *sys_memstat(struct interrupt_frame *frame)
+{
+    kernel_heap_print_stats();
+
+    return nullptr;
 }
 
 void *sys_ps(struct interrupt_frame *frame)
@@ -219,8 +229,8 @@ void *sys_exec(struct interrupt_frame *frame)
     process_unmap_memory(process);
 
     char full_path[MAX_PATH_LENGTH] = {0};
-    if (istrncmp(path, "0:/", 3) != 0) {
-        strcat(full_path, "0:/bin/");
+    if (istrncmp(path, "/", 1) != 0) {
+        strcat(full_path, "/bin/");
         strcat(full_path, path);
     } else {
         strcat(full_path, path);
@@ -290,13 +300,19 @@ void *sys_open_dir(struct interrupt_frame *frame)
 
     copy_string_from_thread(scheduler_get_current_thread(), path_ptr, path, sizeof(path));
 
-    struct file_directory *directory = thread_virtual_to_physical_address(
+    struct dir_entries *directory = thread_virtual_to_physical_address(
         scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 1));
 
     ASSERT(directory, "Invalid directory");
 
-    // TODO: Use process_malloc to allocate memory for the directory entries
-    return (void *)fs_open_dir((const char *)path, directory);
+    struct dir_entries *dir_tmp;
+    int res = fs_open_dir((const char *)path, &dir_tmp);
+    if (res < 0) {
+        return (void *)res;
+    }
+
+    memcpy(directory, dir_tmp, sizeof(struct dir_entries));
+    return (void *)res;
 }
 
 void *sys_get_program_arguments(struct interrupt_frame *frame)
@@ -501,8 +517,8 @@ void *sys_create_process(struct interrupt_frame *frame)
     const char *program_name                       = root_command_argument->argument;
 
     char path[MAX_PATH_LENGTH];
-    strncpy(path, "0:/bin/", sizeof(path));
-    strncpy(path + 7, program_name, sizeof(path) - 3);
+    strncpy(path, "/bin/", sizeof(path));
+    strncpy(path + strlen("/bin/"), program_name, sizeof(path));
 
     struct process *process = nullptr;
     int res                 = process_load_enqueue(path, &process);

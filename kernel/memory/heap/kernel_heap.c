@@ -60,3 +60,10 @@ void kfree(void *ptr)
     dbgprintf("kfree: %p\n", ptr);
     heap_free(&kernel_heap, ptr);
 }
+
+void kernel_heap_print_stats()
+{
+    kprintf("\nmalloc: %d\n", allocations);
+    kprintf("free: %d\n", frees);
+    kprintf("Free blocks: %d\n", heap_count_free_blocks(&kernel_heap));
+}

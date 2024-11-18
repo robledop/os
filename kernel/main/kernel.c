@@ -1,6 +1,5 @@
 #include <debug.h>
 #include <disk.h>
-#include <vfs.h>
 #include <gdt.h>
 #include <idt.h>
 #include <io.h>
@@ -13,10 +12,12 @@
 #include <pic.h>
 #include <pit.h>
 #include <process.h>
+#include <rootfs.h>
 #include <scheduler.h>
 #include <serial.h>
 #include <syscall.h>
 #include <thread.h>
+#include <vfs.h>
 #include <vga_buffer.h>
 #include <x86.h>
 
@@ -72,11 +73,12 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     display_grub_info(mbd, magic);
     init_symbols(mbd);
     scheduler_init();
+    fs_init();
     pci_scan();
     wait_for_network();
-
-    fs_init();
     disk_init();
+    rootfs_init();
+
     register_syscalls();
     keyboard_init();
     scheduler_start();
@@ -93,12 +95,12 @@ void start_shell(const int console)
 {
     dbgprintf("Loading shell\n");
     struct process *process = nullptr;
-    int res                 = process_load_enqueue("0:/bin/sh", &process);
+    int res                 = process_load_enqueue("/bin/sh", &process);
     if (res < 0) {
         panic("Failed to load shell");
     }
 
-    res = process_set_current_directory(process, "0:/");
+    res = process_set_current_directory(process, "/");
     if (res < 0) {
         panic("Failed to set current directory");
     }

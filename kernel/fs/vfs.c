@@ -5,12 +5,14 @@
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memory.h>
+#include <rootfs.h>
 #include <serial.h>
 #include <status.h>
 #include <string.h>
 #include <vfs.h>
 
-struct file_directory *root_directory;
+
+struct mount_point *mount_points[MAX_MOUNT_POINTS];
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
 struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
@@ -46,8 +48,66 @@ void fs_load()
 
 void fs_init()
 {
+    memset(mount_points, 0, sizeof(mount_points));
     memset(file_descriptors, 0, sizeof(file_descriptors));
+
     fs_load();
+}
+
+int fs_find_mount_point(const char *prefix)
+{
+    if (prefix == nullptr) {
+        return -1;
+    }
+
+    for (int i = 0; i < MAX_MOUNT_POINTS; i++) {
+        if (mount_points[i] != nullptr) {
+            if (mount_points[i]->prefix &&
+                strncmp(mount_points[i]->prefix, prefix, strlen(mount_points[i]->prefix)) == 0 &&
+                strlen(prefix) == strlen(mount_points[i]->prefix)) {
+                return i;
+            }
+        }
+    }
+
+    return -1;
+}
+
+struct mount_point *fs_get_mount_point(const int index)
+{
+    return mount_points[index];
+}
+
+int fs_find_free_mount_point()
+{
+    for (int i = 0; i < MAX_MOUNT_POINTS; i++) {
+        if (mount_points[i] == nullptr) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+void fs_add_mount_point(const char *prefix, uint32_t disk, struct file_system *fs, struct inode *inode)
+{
+    const int index = fs_find_free_mount_point();
+    if (index == -1) {
+        panic("No free mount points\n");
+        return;
+    }
+
+    struct mount_point *mount_point = (struct mount_point *)kzalloc(sizeof(struct mount_point));
+    if (!mount_point) {
+        warningf("Failed to allocate memory for mount point\n");
+        return;
+    }
+
+    mount_point->fs     = fs;
+    mount_point->disk   = disk;
+    mount_point->prefix = strdup(prefix);
+    mount_point->inode  = inode;
+    mount_points[index] = mount_point;
 }
 
 static void file_free_descriptor(struct file_descriptor *desc)
@@ -163,7 +223,10 @@ int fopen(const char path[static 1], const char mode[static 1])
         goto out;
     }
 
-    void *descriptor_private_data = disk->fs->open(disk, root_path->first, file_mode);
+    struct inode *inode = rootfs_lookup(root_path->first->part);
+    // inode->ops->open(root_path, file_mode);
+
+    void *descriptor_private_data = disk->fs->open(root_path, file_mode);
     if (ISERR(descriptor_private_data)) {
         warningf("Failed to open file\n");
         res = ERROR_I(descriptor_private_data);
@@ -263,25 +326,46 @@ int fclose(int fd)
     return res;
 }
 
-int fs_open_dir(const char name[static 1], struct file_directory *directory)
+int fs_get_non_root_mount_point_count()
 {
-    const struct path_root *root_path = path_parser_parse(name, nullptr);
+    int count = 0;
+    for (int i = 0; i < MAX_MOUNT_POINTS; i++) {
+        if (mount_points[i] != nullptr &&
+            // Skip root mount point
+            !(strlen(mount_points[i]->prefix) == 1 && strncmp(mount_points[i]->prefix, "/", 1) == 0)) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+int fs_open_dir(const char name[static 1], struct dir_entries **directory)
+{
+    struct path_root *root_path = path_parser_parse(name, nullptr);
 
     if (root_path == NULL) {
         warningf("Failed to parse path\n");
         return -EBADPATH;
     }
 
-    struct disk *disk = disk_get(root_path->drive_number);
+    if (root_path->first == nullptr) {
+        *directory = rootfs_get_root_directory();
 
-    ASSERT(disk != nullptr, "Failed to get disk");
-    ASSERT(disk->fs != nullptr, "Disk has no file system");
-
-    if (root_path->first == NULL) {
-        ASSERT(disk->fs->get_root_directory != nullptr, "File system does not support getting root directory");
-        return disk->fs->get_root_directory(disk, directory);
+        kfree(root_path);
+        return 0;
     }
-    ASSERT(disk->fs->get_subdirectory != nullptr, "File system does not support getting sub directory");
 
-    return disk->fs->get_subdirectory(disk, name, directory);
+    if (root_path->drive_number >= 0) {
+        const struct disk *disk = disk_get(root_path->drive_number);
+        return disk->fs->get_subdirectory(disk, name, *directory);
+    } else {
+        char* name_dup = strdup(name);
+        if (strncmp(name_dup, "/", 1) == 0) {
+            name_dup++;
+        }
+        struct inode *inode = rootfs_lookup(strtok(name_dup, "/"));
+        *directory          = (struct dir_entries *)inode->data;
+        return 0;
+    }
 }

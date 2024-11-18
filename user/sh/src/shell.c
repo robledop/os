@@ -28,6 +28,7 @@ const cmd commands[] = {
     {"so",       stack_overflow },
     {"ps",       ps             },
     {"reg",      print_registers},
+    {"memstat",  memstat        },
 };
 
 int number_of_commands = sizeof(commands) / sizeof(struct cmd);
@@ -199,7 +200,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             break;
         }
 
-        if (key == '\b' && i <= 0) {
+       if (key == '\b' && i <= 0) {
             i = -1;
             continue;
         }
@@ -257,7 +258,7 @@ void change_directory(char *args, char *current_directory)
         return;
     }
 
-    if (strncmp(new_dir, "0:/", 3) == 0) {
+    if (strncmp(new_dir, "/", 3) == 0) {
         if (!directory_exists(new_dir)) {
             printf("\nDirectory does not exist: %s\n", new_dir);
             return;
@@ -279,7 +280,7 @@ void change_directory(char *args, char *current_directory)
             strcat(new_dir, "/");
         }
 
-        char root[MAX_PATH_LENGTH] = "0:";
+        char root[MAX_PATH_LENGTH];
 
         set_current_directory(strcat(root, new_dir));
     } else if (strncmp(new_dir, "..", 2) == 0) {
@@ -322,16 +323,16 @@ void change_directory(char *args, char *current_directory)
 
 bool directory_exists(const char *path)
 {
-    struct file_directory *directory = calloc(1, sizeof(struct file_directory));
+    struct dir_entries *directory = calloc(1, sizeof(struct dir_entries));
     char current_directory[MAX_PATH_LENGTH];
     const char *current_dir = get_current_directory();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
     int res = 0;
 
-    if (strncmp(path, "0:/", 3) == 0) {
+    if (strncmp(path, "/", 3) == 0) {
         res = opendir(directory, path);
     } else if (strncmp(path, "/", 1) == 0) {
-        char root[MAX_PATH_LENGTH] = "0:";
+        char root[MAX_PATH_LENGTH] = "/";
         const char *new_path       = strcat(root, path);
         res                        = opendir(directory, new_path);
     } else {

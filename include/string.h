@@ -9,7 +9,6 @@ int strnlen_terminator(const char *s, size_t maxlen, char terminator);
 int memcmp(const void *v1, const void *v2, unsigned int n);
 int strncmp(const char p[static 1], const char q[static 1], unsigned int n);
 char *strncpy(char dest[static 1], const char src[static 1], size_t n);
-char *safestrcpy(char s[static 1], const char t[static 1], int n);
 bool isdigit(char c);
 int tonumericdigit(char c);
 bool isspace(char c);

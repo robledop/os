@@ -25,6 +25,9 @@
 // Resource temporarily unavailable
 #define EAGAIN 11
 
+// Not a directory
+#define ENOTDIR 12
+
 static inline char *get_error_message(const int error)
 {
     switch (error) {
@@ -50,6 +53,8 @@ static inline char *get_error_message(const int error)
         return "No such file or directory";
     case -EAGAIN:
         return "Resource temporarily unavailable";
+    case -ENOTDIR:
+        return "Not a directory";
     default:
         return "Unknown error";
     }

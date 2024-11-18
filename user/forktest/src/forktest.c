@@ -14,7 +14,7 @@ int main(const int argc, char **argv)
     } else if (rc == 0) {
         printf(KCYN "Child (pid:%d)\n", getpid());
         printf("Child will exec blank.elf" KWHT " ");
-        exec("0:/bin/blank.elf", nullptr);
+        exec("/bin/blank.elf", nullptr);
 
         printf("This should not be printed\n");
     } else {
@@ -54,7 +54,7 @@ int main(const int argc, char **argv)
     } else if (nowait == 0) {
         printf(KCYN "Child (pid:%d)\t", getpid());
         printf("Child will exec blank.elf" KWHT " ");
-        exec("0:/bin/blank.elf", nullptr);
+        exec("/bin/blank.elf", nullptr);
 
         printf("This should not be printed\n");
     } else {
@@ -95,7 +95,7 @@ int main(const int argc, char **argv)
     } else if (waitp == 0) {
         printf(KCYN "Child (pid:%d)\t", getpid());
         printf("Child will exec blank.elf" KWHT " ");
-        exec("0:/bin/blank.elf", nullptr);
+        exec("/bin/blank.elf", nullptr);
 
         printf("This should not be printed\n");
     } else {

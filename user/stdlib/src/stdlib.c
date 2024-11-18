@@ -87,3 +87,8 @@ void ps()
 {
     syscall0(SYSCALL_PS);
 }
+
+void memstat()
+{
+    syscall0(SYSCALL_MEMSTAT);
+}
