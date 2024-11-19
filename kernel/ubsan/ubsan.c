@@ -34,15 +34,15 @@ struct scram_undefined_behavior {
 void scram(const int event, const struct scram_undefined_behavior *info)
 {
     if (scheduler_get_current_thread()) {
-        kprintf(KYEL "\nCurrent thread:" KWHT " %s (%d)\n",
+        printf(KYEL "\nCurrent thread:" KWHT " %s (%d)\n",
                 scheduler_get_current_process()->file_name,
                 scheduler_get_current_process()->pid);
     }
-    kprintf(KYEL "Event:" KWHT " %d\n", event);
-    kprintf(KYEL "File:" KWHT " %s\n", info->filename);
-    kprintf(KYEL "Line:" KWHT " %d\n", info->line);
-    kprintf(KYEL "Column:" KWHT " %d\n", info->column);
-    kprintf(KYEL "Violation:" KWHT " %s\n", info->violation);
+    printf(KYEL "Event:" KWHT " %d\n", event);
+    printf(KYEL "File:" KWHT " %s\n", info->filename);
+    printf(KYEL "Line:" KWHT " %lu\n", info->line);
+    printf(KYEL "Column:" KWHT " %lu\n", info->column);
+    printf(KYEL "Violation:" KWHT " %s\n", info->violation);
     panic("Undefined behavior detected");
 
     __builtin_unreachable();

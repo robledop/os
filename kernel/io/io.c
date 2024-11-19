@@ -1,6 +1,7 @@
 #include "io.h"
 #include <cpuid.h>
 #include "vga_buffer.h"
+#include <printf.h>
 
 // Vendor strings from CPUs.
 #define CPUID_VENDOR_AMD "AuthenticAMD"
@@ -180,60 +181,60 @@ void cpu_print_info()
     if (largest_standard_function >= 0x01) {
         cpuid(0x01, &eax, &ebx, &ecx, &edx);
 
-        kprintf("Features:");
+        printf("Features:");
 
         if (edx & CPUID_FEAT_EDX_PSE) {
-            kprintf(" PSE");
+            printf(" PSE");
         }
         if (edx & CPUID_FEAT_EDX_PAE) {
-            kprintf(" PAE");
+            printf(" PAE");
         }
         if (edx & CPUID_FEAT_EDX_APIC) {
-            kprintf(" APIC");
+            printf(" APIC");
         }
         if (edx & CPUID_FEAT_EDX_MTRR) {
-            kprintf(" MTRR");
+            printf(" MTRR");
         }
 
-        kprintf("\n");
+        printf("\n");
 
-        kprintf("Instructions:");
+        printf("Instructions:");
 
         if (edx & CPUID_FEAT_EDX_TSC) {
-            kprintf(" TSC");
+            printf(" TSC");
         }
         if (edx & CPUID_FEAT_EDX_MSR) {
-            kprintf(" MSR");
+            printf(" MSR");
         }
         if (edx & CPUID_FEAT_EDX_SSE) {
-            kprintf(" SSE");
+            printf(" SSE");
         }
         if (edx & CPUID_FEAT_EDX_SSE2) {
-            kprintf(" SSE2");
+            printf(" SSE2");
         }
         if (ecx & CPUID_FEAT_ECX_SSE3) {
-            kprintf(" SSE3");
+            printf(" SSE3");
         }
         if (ecx & CPUID_FEAT_ECX_SSSE3) {
-            kprintf(" SSSE3");
+            printf(" SSSE3");
         }
         if (ecx & bit_SSE4_1) {
-            kprintf(" SSE41");
+            printf(" SSE41");
         }
         if (ecx & bit_SSE4_2) {
-            kprintf(" SSE42");
+            printf(" SSE42");
         }
         if (ecx & bit_AVX) {
-            kprintf(" AVX");
+            printf(" AVX");
         }
         if (ecx & bit_F16C) {
-            kprintf(" F16C");
+            printf(" F16C");
         }
         if (ecx & bit_RDRND) {
-            kprintf(" RDRAND");
+            printf(" RDRAND");
         }
 
-        kprintf("\n");
+        printf("\n");
     }
 
     // Extended Function 0x00 - Largest Extended Function
@@ -247,7 +248,7 @@ void cpu_print_info()
         cpuid(0x80000001, &eax, &ebx, &ecx, &edx);
 
         if (edx & CPUID_FEAT_EDX_IA64) {
-            kprintf("64-bit Architecture\n");
+            printf("64-bit Architecture\n");
         }
     }
 
@@ -276,6 +277,6 @@ void cpu_print_info()
             ++p;
         }
 
-        kprintf("CPU Name: %s\n", p);
+        printf("CPU Name: %s\n", p);
     }
 }

@@ -29,7 +29,7 @@ void assert(const char *snippet, const char *file, int line, const char *message
 
 // #define ASSERT(condition, message)
 //     if (!(condition)) {
-//         kprintf(KRED "Assertion failed in" KYEL " %s" KRED " on line" KYEL " %d." KRED " Process:" KYEL " %s" KWHT,
+//         printf(KRED "Assertion failed in" KYEL " %s" KRED " on line" KYEL " %d." KRED " Process:" KYEL " %s" KWHT,
 //                 __FILE__,
 //                 __LINE__,
 //                 scheduler_get_current_thread()->process->file_name);

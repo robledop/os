@@ -1,32 +1,25 @@
-#include "vga_buffer.h"
-
+#include <config.h>
+#include <debug.h>
+#include <io.h>
+#include <memory.h>
+#include <printf.h>
 #include <spinlock.h>
 #include <stdarg.h>
-#include "config.h"
-#include "console.h"
-#include "debug.h"
-#include "io.h"
-#include "memory.h"
-#include "string.h"
-
-// extern int active_console;
-// extern Console consoles[NUM_CONSOLES];
+#include <string.h>
+#include <vga_buffer.h>
 
 #define BYTES_PER_CHAR 2 // 1 byte for character, 1 byte for attribute (color)
 #define SCREEN_SIZE (VGA_WIDTH * VGA_HEIGHT * BYTES_PER_CHAR)
 #define ROW_SIZE (VGA_WIDTH * BYTES_PER_CHAR)
-// #define DEFAULT_FOREGROUND 0x07
-// #define DEFAULT_BACKGROUND 0x00
-
-// uint8_t forecolor = 0x0F; // Default white
-// uint8_t backcolor = 0x00; // Default cyan
-
 uint8_t attribute = DEFAULT_ATTRIBUTE;
-
 static int cursor_y;
 static int cursor_x;
-// int blinking = 0;
-// int bold     = 0;
+
+bool param_escaping   = false;
+bool param_inside     = false;
+bool param_first_done = false;
+int params[10]        = {0};
+int param_count       = 1;
 
 int ansi_to_vga_foreground[] = {
     0x00, // Black
@@ -51,7 +44,6 @@ int ansi_to_vga_background[] = {
 };
 
 spinlock_t vga_lock;
-
 
 void enable_cursor(const uint8_t cursor_start, const uint8_t cursor_end)
 {
@@ -85,7 +77,6 @@ static void write_character(const uint8_t c, const int x, const int y)
 {
     ASSERT(x < VGA_WIDTH, "X is out of bounds");
     ASSERT(y < VGA_HEIGHT, "Y is out of bounds");
-    // ASSERT(forecolor != 0x00, "Foreground color is black");
 
     // Left arrow key
     if (c == 228) {
@@ -199,140 +190,8 @@ void print(const char str[static 1])
     }
 }
 
-// BUG: There seems to be a bug that prevents more than 3 arguments from being printed
-void kprintf(const char fmt[static 1], ...)
-{
-    // ASSERT(forecolor != 0x00, "Foreground color is black");
-
-    va_list args;
-
-    size_t x_offset = 0;
-    int num         = 0;
-
-    va_start(args, fmt);
-
-    while (*fmt != '\0') {
-        char str[MAX_FMT_STR];
-        switch (*fmt) {
-        case '%':
-            memset(str, 0, MAX_FMT_STR);
-            switch (*(fmt + 1)) {
-            case 'd':
-                num = va_arg(args, int);
-                itoa(num, str);
-                print(str);
-                x_offset += strlen(str);
-                break;
-
-            case 'p':
-            case 'x':
-                num = va_arg(args, int);
-                itohex(num, str);
-                print("0x");
-                print(str);
-                x_offset += strlen(str);
-                break;
-
-            case 's':
-                const char *str_arg = va_arg(args, char *);
-                print(str_arg);
-                x_offset += strlen(str_arg);
-                break;
-
-            case 'c':
-                const char char_arg = (char)va_arg(args, int);
-                terminal_putchar(char_arg, attribute, -1, -1);
-                // terminal_write_char(char_arg, forecolor, backcolor);
-                x_offset++;
-                break;
-
-            default:
-                break;
-            }
-            fmt++;
-            break;
-        case '\033':
-            {
-                // Handle ANSI escape sequences
-                fmt++;
-                if (*fmt != '[') {
-                    break;
-                }
-                fmt++;
-                int params[10];
-                int param_count = 0;
-                while (true) {
-                    int param = 0;
-                    while (*fmt >= '0' && *fmt <= '9') {
-                        param = param * 10 + (*fmt - '0');
-                        fmt++;
-                    }
-                    params[param_count++] = param;
-                    if (*fmt == ';') {
-                        fmt++;
-                    } else {
-                        break;
-                    }
-                }
-                static int blinking = 0;
-                static bool bold    = false;
-
-                if (*fmt == 'm') {
-                    for (int i = 0; i < param_count; i++) {
-                        switch (params[i]) {
-                        case 0:
-                            attribute = DEFAULT_ATTRIBUTE;
-                            blinking  = 0;
-                            bold      = false;
-                            break;
-                        case 1:
-                            bold = true;
-                            break;
-                        case 5:
-                            blinking = 1;
-                            break;
-                        case 22:
-                            bold = false;
-                            break;
-                        case 25:
-                            blinking = 0;
-                            break;
-
-                        default:
-                            {
-                                int forecolor = 0x07;
-                                int backcolor = 0x00;
-                                if (params[i] >= 30 && params[i] <= 37) {
-                                    const int color_index = params[i] - 30;
-                                    forecolor             = ansi_to_vga_foreground[color_index];
-                                    if (bold) {
-                                        forecolor |= 0x08; // Set intensity bit for bold text
-                                    }
-                                } else if (params[i] >= 40 && params[i] <= 47) {
-                                    const int color_index = params[i] - 40;
-                                    backcolor             = ansi_to_vga_foreground[color_index]; // Use the same mapping
-                                }
-
-                                attribute = ((blinking & 1) << 7) | ((backcolor & 0x07) << 4) | (forecolor & 0x0F);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            break;
-        default:
-            terminal_putchar(*fmt, attribute, -1, -1);
-        }
-        fmt++;
-    }
-
-    va_end(args);
-}
-
 void terminal_clear()
 {
-    // spin_lock(&vga_lock);
     cursor_x = 0;
     cursor_y = 0;
     for (int y = 0; y < VGA_HEIGHT; y++) {
@@ -342,8 +201,6 @@ void terminal_clear()
     }
 
     enable_cursor(14, 15);
-
-    // spin_unlock(&vga_lock);
 }
 
 void vga_buffer_init()
@@ -352,4 +209,123 @@ void vga_buffer_init()
     cursor_y = 0;
     spinlock_init(&vga_lock);
     terminal_clear();
+}
+
+void ansi_reset()
+{
+    param_escaping   = false;
+    param_inside     = false;
+    param_first_done = false;
+
+    param_inside = 0;
+    memset(params, 0, sizeof(params));
+    param_count = 1;
+}
+
+bool param_process(int c)
+{
+    if (c >= '0' && c <= '9') {
+        if (!param_first_done) {
+            params[0] = params[0] * 10 + (c - '0');
+        } else {
+            params[1] = params[1] * 10 + (c - '0');
+        }
+
+        return false;
+    }
+
+    if (c == ';') {
+        param_count++;
+        if (param_first_done) {
+            return true;
+        }
+
+        param_first_done = true;
+        return false;
+    }
+
+    switch (c) {
+    case 'm':
+        static bool bold    = false;
+        static int blinking = 0;
+
+        for (int i = 0; i < param_count; i++) {
+            switch (params[i]) {
+            case 0:
+                attribute = DEFAULT_ATTRIBUTE;
+                blinking  = 0;
+                bold      = false;
+                break;
+            case 1:
+                bold = true;
+                break;
+            case 5:
+                blinking = 1;
+                break;
+            case 22:
+                bold = false;
+                break;
+            case 25:
+                blinking = 0;
+                break;
+            default:
+                if (params[i] >= 30 && params[i] <= 47) {
+                    int forecolor = 0x07;
+                    int backcolor = 0x00;
+                    if (params[i] >= 30 && params[i] <= 37) {
+                        const int color_index = params[i] - 30;
+                        forecolor             = ansi_to_vga_foreground[color_index];
+                        if (bold) {
+                            forecolor |= 0x08; // Set intensity bit for bold text
+                        }
+                    } else if (params[i] >= 40 && params[i] <= 47) {
+                        const int color_index = params[i] - 40;
+                        backcolor             = ansi_to_vga_foreground[color_index]; // Use the same mapping
+                    }
+
+                    attribute = ((blinking & 1) << 7) | ((backcolor & 0x07) << 4) | (forecolor & 0x0F);
+                }
+            }
+        }
+
+        break;
+
+    default:
+        panic("Escape sequence not implemented");
+    }
+
+    return true;
+}
+
+bool handle_ansi(int c)
+{
+    if (c == 0x1B) {
+        ansi_reset();
+        param_escaping = true;
+        return true;
+    }
+
+    if (param_escaping && c == '[') {
+        ansi_reset();
+        param_escaping = true;
+        param_inside   = true;
+        return true;
+    }
+
+    if (param_escaping && param_inside) {
+        if (param_process(c)) {
+            ansi_reset();
+        }
+        return true;
+    }
+
+    return false;
+}
+
+void putchar_(char c)
+{
+    if (handle_ansi(c)) {
+        return;
+    }
+    terminal_putchar(c, attribute, -1, -1);
 }

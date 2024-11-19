@@ -29,7 +29,7 @@ int ata_get_sector_size()
     // unsigned short word_106 = identify_data[106];
     // int multiple_logical_sectors = (word_106 & (1 << 13)) >> 13;
     // uint32_t exponent_N = (word_106 >> 4) & 0xFF;
-    // kprintf("Multiple logical sectors: %d, N: %d\n", multiple_logical_sectors, exponent_N);
+    // printf("Multiple logical sectors: %d, N: %d\n", multiple_logical_sectors, exponent_N);
 
     // if (multiple_logical_sectors)
     // {

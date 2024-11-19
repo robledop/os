@@ -30,7 +30,7 @@ void kernel_heap_init()
 void *kmalloc(const size_t size)
 {
     allocations++;
-    // kprintf("Free blocks: %d\n", heap_count_free_blocks(&kernel_heap));
+    // printf("Free blocks: %d\n", heap_count_free_blocks(&kernel_heap));
     void *result = heap_malloc(&kernel_heap, size);
     dbgprintf("kmalloc: %p\t", result);
     // stack_trace();
@@ -63,7 +63,7 @@ void kfree(void *ptr)
 
 void kernel_heap_print_stats()
 {
-    kprintf("\nmalloc: %d\n", allocations);
-    kprintf("free: %d\n", frees);
-    kprintf("Free blocks: %d\n", heap_count_free_blocks(&kernel_heap));
+    printf("\nmalloc: %lu\n", allocations);
+    printf("free: %lu\n", frees);
+    printf("Free blocks: %lu\n", heap_count_free_blocks(&kernel_heap));
 }

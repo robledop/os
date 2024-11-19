@@ -114,43 +114,45 @@ void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
     // Page fault exception
     if (interrupt == 14) {
         const uint32_t faulting_address = read_cr2();
-        kprintf(KYEL "\nFaulting address:" KWHT " %x\n", faulting_address);
+        printf(KYEL "\nFaulting address:" KWHT " %lu\n", faulting_address);
 
         // If the faulting address is not in the user space, try to find the closest function symbol
         if (!(frame->eax & PAGE_FAULT_USER_MASK)) {
             auto const symbol = debug_function_symbol_lookup(faulting_address);
             if (symbol.name) {
-                kprintf(KYEL "Closest function symbol:" KWHT " %s (%x)\n", symbol.name, symbol.address);
+                printf(KYEL "Closest function symbol:" KWHT " %s (%lu)\n", symbol.name, symbol.address);
             }
         }
 
-        kprintf(KYEL "Error code:" KWHT " %x\n", frame->eax);
-        kprintf(KYEL "P:" KWHT " %s ", frame->eax & PAGE_FAULT_PRESENT_MASK ? "true" : "false");
-        kprintf(KYEL "W:" KWHT " %s ", frame->eax & PAGE_FAULT_WRITE_MASK ? "true" : "false");
-        kprintf(KYEL "U:" KWHT " %s ", frame->eax & PAGE_FAULT_USER_MASK ? "true" : "false");
-        kprintf(KYEL "R:" KWHT " %s ", frame->eax & PAGE_FAULT_RESERVED_MASK ? "true" : "false");
-        kprintf(KYEL "I:" KWHT " %s ", frame->eax & PAGE_FAULT_ID_MASK ? "true" : "false");
-        kprintf(KYEL "PK:" KWHT " %s ", frame->eax & PAGE_FAULT_PK_MASK ? "true" : "false");
-        kprintf(KYEL "SS:" KWHT " %s\n", frame->eax & PAGE_FAULT_SS_MASK ? "true" : "false");
+        printf(KYEL "Error code:" KWHT " %lu\n", frame->eax);
+        printf(KYEL "P:" KWHT " %s ", frame->eax & PAGE_FAULT_PRESENT_MASK ? "true" : "false");
+        printf(KYEL "W:" KWHT " %s ", frame->eax & PAGE_FAULT_WRITE_MASK ? "true" : "false");
+        printf(KYEL "U:" KWHT " %s ", frame->eax & PAGE_FAULT_USER_MASK ? "true" : "false");
+        printf(KYEL "R:" KWHT " %s ", frame->eax & PAGE_FAULT_RESERVED_MASK ? "true" : "false");
+        printf(KYEL "I:" KWHT " %s ", frame->eax & PAGE_FAULT_ID_MASK ? "true" : "false");
+        printf(KYEL "PK:" KWHT " %s ", frame->eax & PAGE_FAULT_PK_MASK ? "true" : "false");
+        printf(KYEL "SS:" KWHT " %s\n", frame->eax & PAGE_FAULT_SS_MASK ? "true" : "false");
     } else if (EXCEPTION_HAS_ERROR_CODE(interrupt)) {
-        kprintf(KYEL "Error code:" KWHT " %x\n", frame->eax);
+        printf(KYEL "Error code:" KWHT " %lu\n", frame->eax);
     }
 
-    kprintf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
+    printf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
 
     if (frame->cs == KERNEL_CODE_SELECTOR) {
-        kprintf(KBOLD KWHT "The exception occurred in kernel mode.\n" KRESET);
+        printf(KBOLD KWHT "The exception occurred in kernel mode.\n" KRESET);
     } else {
-        kprintf(KBOLD KWHT "The exception occurred in user mode.\n" KRESET);
+        printf(KBOLD KWHT "The exception occurred in user mode.\n" KRESET);
     }
 
     debug_stats();
 
-    const int pid = scheduler_get_current_process()->pid;
-    char name[MAX_PATH_LENGTH];
-    strncpy(name, scheduler_get_current_process()->file_name, sizeof(name));
-    process_zombify(scheduler_get_current_process());
-    kprintf("The process %s (%d) has been terminated.\n", name, pid);
+    if (scheduler_get_current_process()) {
+        const int pid = scheduler_get_current_process()->pid;
+        char name[MAX_PATH_LENGTH];
+        strncpy(name, scheduler_get_current_process()->file_name, sizeof(name));
+        process_zombify(scheduler_get_current_process());
+        printf("The process %s (%d) has been terminated.\n", name, pid);
+    }
 
     sti();
 }

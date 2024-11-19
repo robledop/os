@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     // ReSharper disable once CppDFAEndlessLoop
     while (1) {
         char *current_directory = get_current_directory();
-        printf(KGRN "%s> " KWHT, current_directory);
+        printf(KRESET KWHT "%s" KGRN "> " KWHT, current_directory);
 
         uint8_t buffer[1024] = {0};
         shell_terminal_readline(buffer, sizeof(buffer), true);
@@ -200,7 +200,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             break;
         }
 
-       if (key == '\b' && i <= 0) {
+        if (key == '\b' && i <= 0) {
             i = -1;
             continue;
         }
@@ -357,15 +357,15 @@ void print_registers()
     asm volatile("movl %%edi, %0" : "=r"(edi));
     asm volatile("pushfl; popl %0" : "=r"(eflags));
 
-    printf("\nESP:\t%x\n"
-           "EBP:    %x\n"
-           "EAX:    %x\n"
-           "EBX:    %x\n"
-           "ECX:    %x\n"
-           "EDX:    %x\n"
-           "ESI:    %x\n"
-           "EDI:    %x\n"
-           "EFLAGS: %x\n",
+    printf("\nESP:\t%lX\n"
+           "EBP:    %lx\n"
+           "EAX:    %lx\n"
+           "EBX:    %lx\n"
+           "ECX:    %lx\n"
+           "EDX:    %lx\n"
+           "ESI:    %lx\n"
+           "EDI:    %lx\n"
+           "EFLAGS: %lx\n",
            esp,
            ebp,
            eax,

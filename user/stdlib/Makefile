@@ -33,8 +33,8 @@ FLAGS = -g \
 
 FLAGS += -D__USER__
 
-all: $(FILES) ./build/memory.o ./build/string.o
-	ar rcs libstdlib.a $(FILES) ./build/memory.o ./build/string.o
+all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o
+	ar rcs libstdlib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -47,6 +47,9 @@ all: $(FILES) ./build/memory.o ./build/string.o
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 ./build/string.o: ../../kernel/string/string.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+
+./build/printf.o: ../../kernel/lib/printf.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 clean:

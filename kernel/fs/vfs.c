@@ -4,6 +4,7 @@
 #include <fat16.h>
 #include <kernel.h>
 #include <kernel_heap.h>
+#include <memfs.h>
 #include <memory.h>
 #include <rootfs.h>
 #include <serial.h>
@@ -89,7 +90,7 @@ int fs_find_free_mount_point()
     return -1;
 }
 
-void fs_add_mount_point(const char *prefix, uint32_t disk, struct file_system *fs, struct inode *inode)
+void fs_add_mount_point(const char *prefix, const uint32_t disk_number, struct inode *inode)
 {
     const int index = fs_find_free_mount_point();
     if (index == -1) {
@@ -97,14 +98,21 @@ void fs_add_mount_point(const char *prefix, uint32_t disk, struct file_system *f
         return;
     }
 
-    struct mount_point *mount_point = (struct mount_point *)kzalloc(sizeof(struct mount_point));
+    struct mount_point *mount_point = kzalloc(sizeof(struct mount_point));
     if (!mount_point) {
         warningf("Failed to allocate memory for mount point\n");
         return;
     }
 
-    mount_point->fs     = fs;
-    mount_point->disk   = disk;
+    const struct disk *disk = disk_get(disk_number);
+
+    if (disk) {
+        mount_point->fs = disk->fs;
+    } else {
+        mount_point->fs = nullptr;
+    }
+
+    mount_point->disk   = disk_number;
     mount_point->prefix = strdup(prefix);
     mount_point->inode  = inode;
     mount_points[index] = mount_point;
@@ -121,7 +129,7 @@ static int file_new_descriptor(struct file_descriptor **desc_out)
     int res = -ENOMEM;
     for (int i = 0; i < MAX_FILE_DESCRIPTORS; i++) {
         if (file_descriptors[i] == nullptr) {
-            struct file_descriptor *desc = (struct file_descriptor *)kzalloc(sizeof(struct file_descriptor));
+            struct file_descriptor *desc = kzalloc(sizeof(struct file_descriptor));
             if (desc == nullptr) {
                 warningf("Failed to allocate memory for file descriptor\n");
                 res = -ENOMEM;
@@ -140,7 +148,7 @@ static int file_new_descriptor(struct file_descriptor **desc_out)
     return res;
 }
 
-static struct file_descriptor *file_get_descriptor(int index)
+static struct file_descriptor *file_get_descriptor(const int index)
 {
     if (index < 1 || index > MAX_FILE_DESCRIPTORS) {
         return nullptr;
@@ -167,29 +175,23 @@ FILE_MODE file_get_mode(const char *mode)
 {
     if (strncmp(mode, "r", 1) == 0) {
         return FILE_MODE_READ;
-    } else if (strncmp(mode, "w", 1) == 0) {
+    }
+
+    if (strncmp(mode, "w", 1) == 0) {
         return FILE_MODE_WRITE;
-    } else if (strncmp(mode, "a", 1) == 0) {
+    }
+
+    if (strncmp(mode, "a", 1) == 0) {
         return FILE_MODE_APPEND;
     }
 
     return FILE_MODE_INVALID;
 }
 
-// Open a file
-// Returns a file descriptor
-// fopen returns 0 on error
-// Parameters:
-// - path: the path to the file
-// - mode: the mode to open the file in
-//  - r: read
-//  - w: write
-//  - a: append
 int fopen(const char path[static 1], const char mode[static 1])
 {
-    dbgprintf("Opening file %s in mode %s\n", path, mode);
-    int res = 0;
-
+    int res                     = 0;
+    struct disk *disk           = nullptr;
     struct path_root *root_path = path_parser_parse(path, nullptr);
     if (!root_path) {
         warningf("Failed to parse path\n");
@@ -203,17 +205,19 @@ int fopen(const char path[static 1], const char mode[static 1])
         goto out;
     }
 
-    struct disk *disk = disk_get(root_path->drive_number);
-    if (!disk) {
-        warningf("Failed to get disk\n");
-        res = -EIO;
-        goto out;
-    }
+    if (root_path->drive_number >= 0) {
+        disk = disk_get(root_path->drive_number);
+        if (!disk) {
+            warningf("Failed to get disk\n");
+            res = -EIO;
+            goto out;
+        }
 
-    if (disk->fs == NULL) {
-        warningf("Disk has no file system\n");
-        res = -EIO;
-        goto out;
+        if (disk->fs == nullptr) {
+            warningf("Disk has no file system\n");
+            res = -EIO;
+            goto out;
+        }
     }
 
     const FILE_MODE file_mode = file_get_mode(mode);
@@ -223,28 +227,35 @@ int fopen(const char path[static 1], const char mode[static 1])
         goto out;
     }
 
-    struct inode *inode = rootfs_lookup(root_path->first->part);
-    // inode->ops->open(root_path, file_mode);
+    struct inode *inode = root_inode_lookup(root_path->first->part);
 
-    void *descriptor_private_data = disk->fs->open(root_path, file_mode);
+    // ! This means we can only have memfs directories mounted at the root,
+    // ! and the device files cannot be in a sub sub directory.
+    if (inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
+        memfs_lookup(inode, root_path->first->next->part, &inode);
+    }
+    struct file_descriptor *desc = nullptr;
+
+    void *descriptor_private_data = inode->ops->open(root_path, file_mode);
     if (ISERR(descriptor_private_data)) {
         warningf("Failed to open file\n");
         res = ERROR_I(descriptor_private_data);
         goto out;
     }
-
-    struct file_descriptor *desc = nullptr;
-    res                          = file_new_descriptor(&desc);
+    res = file_new_descriptor(&desc);
     if (ISERR(res)) {
         warningf("Failed to create file descriptor\n");
         goto out;
     }
-
-    desc->fs      = disk->fs;
     desc->fs_data = descriptor_private_data;
-    desc->disk    = disk;
+    if (disk) {
+        desc->disk    = disk;
+        desc->fs      = disk->fs;
+        desc->fs_type = disk->fs->type;
+    }
 
-    res = desc->index;
+    desc->inode = inode;
+    res         = desc->index;
 
 out:
     // fopen returns 0 on error
@@ -259,19 +270,18 @@ out:
     return res;
 }
 
-int fstat(int fd, struct file_stat *stat)
+int fstat(const int fd, struct file_stat *stat)
 {
-    dbgprintf("Getting file stat for file descriptor %d\n", fd);
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
     }
 
-    return desc->fs->stat(desc->disk, desc->fs_data, stat);
+    return desc->inode->ops->stat(desc, stat);
 }
 
-int fseek(int fd, int offset, FILE_SEEK_MODE whence)
+int fseek(const int fd, const int offset, const FILE_SEEK_MODE whence)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -279,32 +289,21 @@ int fseek(int fd, int offset, FILE_SEEK_MODE whence)
         return -EINVARG;
     }
 
-    return desc->fs->seek(desc->fs_data, offset, whence);
+    return desc->inode->ops->seek(desc, offset, whence);
 }
 
-int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
+int fread(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
 {
-    dbgprintf("Reading %d bytes from file descriptor %d\n", size * nmemb, fd);
-    if (size == 0 || nmemb == 0 || fd < 1) {
-        warningf("Invalid arguments\n");
-        return -EINVARG;
-    }
-
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
     }
 
-    if (desc->fs == nullptr || desc->fs->read == nullptr) {
-        warningf("File system does not support read\n");
-        return -EINVARG;
-    }
-
-    return desc->fs->read(desc->disk, desc->fs_data, size, nmemb, (char *)ptr);
+    return desc->inode->ops->read(desc, size, nmemb, (char *)ptr);
 }
 
-int fclose(int fd)
+int fclose(const int fd)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -312,12 +311,7 @@ int fclose(int fd)
         return -EINVARG;
     }
 
-    if (desc->fs == nullptr || desc->fs->close == nullptr) {
-        warningf("File system does not support close\n");
-        return -EINVARG;
-    }
-
-    int res = desc->fs->close(desc->fs_data);
+    const int res = desc->inode->ops->close(desc);
 
     if (res == ALL_OK) {
         file_free_descriptor(desc);
@@ -340,32 +334,31 @@ int fs_get_non_root_mount_point_count()
     return count;
 }
 
-int fs_open_dir(const char name[static 1], struct dir_entries **directory)
+int fs_open_dir(const char path[static 1], struct dir_entries **directory)
 {
-    struct path_root *root_path = path_parser_parse(name, nullptr);
+    struct path_root *root_path = path_parser_parse(path, nullptr);
 
-    if (root_path == NULL) {
+    if (root_path == nullptr) {
         warningf("Failed to parse path\n");
         return -EBADPATH;
     }
 
     if (root_path->first == nullptr) {
-        *directory = rootfs_get_root_directory();
-
-        kfree(root_path);
-        return 0;
+        *directory = root_inode_get_root_directory();
+        path_parser_free(root_path);
+        return ALL_OK;
     }
 
     if (root_path->drive_number >= 0) {
         const struct disk *disk = disk_get(root_path->drive_number);
-        return disk->fs->get_subdirectory(disk, name, *directory);
-    } else {
-        char* name_dup = strdup(name);
-        if (strncmp(name_dup, "/", 1) == 0) {
-            name_dup++;
-        }
-        struct inode *inode = rootfs_lookup(strtok(name_dup, "/"));
-        *directory          = (struct dir_entries *)inode->data;
-        return 0;
+        path_parser_free(root_path);
+        return disk->fs->get_subdirectory(path, *directory);
     }
+
+    // This means we can only have memfs directories mounted at the root,
+    const struct inode *inode = root_inode_lookup(root_path->first->part);
+    *directory                = (struct dir_entries *)inode->data;
+    path_parser_free(root_path);
+
+    return ALL_OK;
 }

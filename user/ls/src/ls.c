@@ -36,29 +36,9 @@ int main(int argc, char **argv)
 
 void print_results(const struct dir_entries *directory)
 {
-    printf(KRESET "\n Entries in directory: %d\n", directory->count);
+    printf(KRESET "\n Entries in directory: %lu\n", directory->count);
+    printf(KBOLD KBLU " %-14s%-14s%-14s\n", "Name", "Size", "inode" KRESET KWHT);
 
-    printf(KBOLD KBLU " Name");
-
-    for (size_t i = 0; i < 10; i++) {
-        printf(" ");
-    }
-
-    printf("Created");
-
-    for (size_t i = 0; i < 14; i++) {
-        printf(" ");
-    }
-
-    printf("Size");
-
-    for (size_t i = 0; i < 13; i++) {
-        printf(" ");
-    }
-
-    printf("Attributes" KRESET KWHT);
-
-    printf("\n");
 
     for (int i = 0; i < directory->count; i++) {
         struct dir_entry *dir_entry;
@@ -67,7 +47,23 @@ void print_results(const struct dir_entries *directory)
             printf("Failed to read entry %d\n", i);
         }
 
-        printf(" %s\t%d\t%d", dir_entry->name, dir_entry->inode->size, dir_entry->inode->inode_number);
+        switch (dir_entry->inode->type) {
+        case INODE_FILE:
+            printf(" %-14s%-14lu%-14lu\n", dir_entry->name, dir_entry->inode->size, dir_entry->inode->inode_number);
+            break;
+        case INODE_DIRECTORY:
+            printf(KCYN " %-14s" KBOLD KWHT "%-14s" KRESET "%-14lu\n",
+                   dir_entry->name,
+                   "[DIR]",
+                   dir_entry->inode->inode_number);
+            break;
+        case INODE_DEVICE:
+            printf(KBOLD KRED " %-14s" KWHT "%-14s" KRESET "%-14lu\n",
+                   dir_entry->name,
+                   "[DEV]",
+                   dir_entry->inode->inode_number);
+            break;
+        }
 
         // if (entry.is_long_name) {
         //     continue;
@@ -136,7 +132,5 @@ void print_results(const struct dir_entries *directory)
         // if (entry.is_volume_label) {
         //     printf(" [V]");
         // }
-
-        printf("\n");
     }
 }

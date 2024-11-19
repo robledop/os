@@ -11,6 +11,7 @@
 #include <pci.h>
 #include <pic.h>
 #include <pit.h>
+#include <printf.h>
 #include <process.h>
 #include <rootfs.h>
 #include <scheduler.h>
@@ -32,7 +33,7 @@ int __cli_count             = 0;
 
 [[noreturn]] void panic(const char *msg)
 {
-    kprintf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
+    printf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
     debug_stats();
 
     while (1) {
@@ -51,8 +52,8 @@ void wait_for_network()
     }
     cli();
     if (!network_is_ready()) {
-        kprintf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] ");
-        kprintf(KBOLD KYEL "Network failed to start\n" KRESET KWHT);
+        printf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] ");
+        printf(KBOLD KYEL "Network failed to start\n" KRESET KWHT);
     }
 }
 
@@ -77,13 +78,13 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     pci_scan();
     wait_for_network();
     disk_init();
-    rootfs_init();
+    root_inode_init();
 
     register_syscalls();
     keyboard_init();
     scheduler_start();
 
-    kprintf("\nStarting the shell");
+    printf("\nStarting the shell");
     start_shell(0);
 
     schedule();
@@ -129,8 +130,8 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
 
         if (type == MULTIBOOT_MEMORY_AVAILABLE) {
             if (mmmt->len > 0x100000) {
-                kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
-                kprintf("Available memory: %d MiB\n", mmmt->len / 1024 / 1024);
+                printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+                printf("Available memory: %u MiB\n", (uint16_t)(mmmt->len / 1024 / 1024));
             }
         }
     }

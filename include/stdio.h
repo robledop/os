@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <termcolors.h>
 #include <inode.h>
+#include <printf.h>
 
 
 typedef struct file_directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
@@ -49,22 +50,22 @@ struct process_arguments {
     char **argv;
 };
 
-typedef unsigned int FILE_SEEK_MODE;
-enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
+// typedef unsigned int FILE_SEEK_MODE;
+// enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
+//
+// typedef unsigned int FILE_MODE;
+// enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
-typedef unsigned int FILE_MODE;
-enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
-
-typedef unsigned int FILE_STAT_FLAGS;
-enum { FILE_STAT_IS_READ_ONLY = 0b00000001 };
-
-struct file_stat {
-    FILE_STAT_FLAGS flags;
-    unsigned int size;
-};
+// typedef unsigned int FILE_STAT_FLAGS;
+// enum { FILE_STAT_IS_READ_ONLY = 0b00000001 };
+//
+// struct file_stat {
+//     FILE_STAT_FLAGS flags;
+//     unsigned int size;
+// };
 
 void putchar(unsigned char c);
-int printf(const char fmt[static 1], ...);
+// int printf(const char fmt[static 1], ...);
 int print(const char str[static 1], uint32_t size);
 int fopen(const char name[static 1], const char mode[static 1]);
 int fclose(int fd);

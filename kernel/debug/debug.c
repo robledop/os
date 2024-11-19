@@ -14,7 +14,7 @@ static struct elf32_shdr *elf_section_headers;
 
 void stack_trace(void)
 {
-    kprintf(KBOLD KWHT "Stack trace:\n" KRESET);
+    printf(KBOLD KWHT "Stack trace:\n" KRESET);
 
     const stack_frame_t *stack = __builtin_frame_address(0);
     // struct stack_frame *stack;
@@ -22,10 +22,10 @@ void stack_trace(void)
     int max = 10;
     while (stack && stack->eip != 0 && max-- > 0) {
         auto const symbol = debug_function_symbol_lookup(stack->eip);
-        kprintf("\t%p [%s + %d]\n",
-                stack->eip,
-                (symbol.name == NULL) ? "[unknown]" : symbol.name,
-                stack->eip - symbol.address);
+        printf("\t%lx [" KCYN "%s" KWHT " + %lx]\n",
+               stack->eip,
+               (symbol.name == NULL) ? "[unknown]" : symbol.name,
+               stack->eip - symbol.address);
         stack = stack->ebp;
     }
 }
@@ -104,13 +104,13 @@ void init_symbols(const multiboot_info_t *mbd)
 
 void assert(const char *snippet, const char *file, int line, const char *message, ...)
 {
-    kprintf(KBOLD KWHT "assert failed %s:%d %s" KRESET, file, line, snippet);
+    printf(KBOLD KWHT "assert failed %s:%d %s" KRESET, file, line, snippet);
 
     if (*message) {
         va_list arg;
         va_start(arg, message);
         const char *data = va_arg(arg, char *);
-        kprintf(data, arg);
+        printf(data, arg);
         panic(message);
     }
     panic("Assertion failed");
@@ -118,7 +118,7 @@ void assert(const char *snippet, const char *file, int line, const char *message
 
 void print_registers()
 {
-    kprintf(KBOLD KWHT "Registers:\n" KRESET);
+    printf(KBOLD KWHT "Registers:\n" KRESET);
     uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
     asm volatile("movl %%eax, %0" : "=r"(eax));
     asm volatile("movl %%ebx, %0" : "=r"(ebx));
@@ -129,79 +129,79 @@ void print_registers()
     asm volatile("movl %%ebp, %0" : "=r"(ebp));
     asm volatile("movl %%esp, %0" : "=r"(esp));
     asm volatile("1: movl $1b, %0" : "=r"(eip));
-    kprintf("\tEAX: %p", eax);
-    kprintf("\tEBX: %p", ebx);
-    kprintf("\tECX: %p", ecx);
-    kprintf("\tEDX: %p\n", edx);
-    kprintf("\tESI: %p", esi);
-    kprintf("\tEDI: %p", edi);
-    kprintf("\tEBP: %p", ebp);
-    kprintf("\tESP: %p\n", esp);
-    kprintf("\tEIP: %p", eip);
+    printf("\tEAX: %#010lx", eax);
+    printf("\tEBX: %#010lx", ebx);
+    printf("\tECX: %#010lx", ecx);
+    printf("\tEDX: %#010lx\n", edx);
+    printf("\tESI: %#010lx", esi);
+    printf("\tEDI: %#010lx", edi);
+    printf("\tEBP: %#010lx", ebp);
+    printf("\tESP: %#010lx\n", esp);
+    printf("\tEIP: %#010lx", eip);
     auto eflags = read_eflags();
 
-    kprintf("\tEFLAGS: %p ", eflags);
+    printf("\tEFLAGS: %#08lx ", eflags);
 
     if (eflags & EFLAGS_ALL) {
-        kprintf("( ");
+        printf("( ");
     }
     if (eflags & EFLAGS_CF) {
-        kprintf("CF ");
+        printf("CF ");
     }
     if (eflags & EFLAGS_PF) {
-        kprintf("PF ");
+        printf("PF ");
     }
     if (eflags & EFLAGS_AF) {
-        kprintf("AF ");
+        printf("AF ");
     }
     if (eflags & EFLAGS_ZF) {
-        kprintf("ZF ");
+        printf("ZF ");
     }
     if (eflags & EFLAGS_SF) {
-        kprintf("SF ");
+        printf("SF ");
     }
     if (eflags & EFLAGS_TF) {
-        kprintf("TF ");
+        printf("TF ");
     }
     if (eflags & EFLAGS_IF) {
-        kprintf("IF ");
+        printf("IF ");
     }
     if (eflags & EFLAGS_DF) {
-        kprintf("DF ");
+        printf("DF ");
     }
     if (eflags & EFLAGS_OF) {
-        kprintf("OF ");
+        printf("OF ");
     }
     if (eflags & EFLAGS_IOPL) {
-        kprintf("IOPL ");
+        printf("IOPL ");
     }
     if (eflags & EFLAGS_NT) {
-        kprintf("NT ");
+        printf("NT ");
     }
     if (eflags & EFLAGS_RF) {
-        kprintf("RF ");
+        printf("RF ");
     }
     if (eflags & EFLAGS_VM) {
-        kprintf("VM ");
+        printf("VM ");
     }
     if (eflags & EFLAGS_AC) {
-        kprintf("AC ");
+        printf("AC ");
     }
     if (eflags & EFLAGS_VIF) {
-        kprintf("VIF ");
+        printf("VIF ");
     }
     if (eflags & EFLAGS_VIP) {
-        kprintf("VIP ");
+        printf("VIP ");
     }
     if (eflags & EFLAGS_ID) {
-        kprintf("ID ");
+        printf("ID ");
     }
     if (eflags & EFLAGS_AI) {
-        kprintf("AI ");
+        printf("AI ");
     }
 
     if (eflags & EFLAGS_ALL) {
-        kprintf(")");
+        printf(")");
     }
-    kprintf("\n");
+    printf("\n");
 }

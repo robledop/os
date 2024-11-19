@@ -1,6 +1,8 @@
+#include <kernel.h>
 #include <kernel_heap.h>
 #include <memfs.h>
 #include <memory.h>
+#include <rootfs.h>
 #include <status.h>
 #include <string.h>
 
@@ -8,14 +10,12 @@
 
 static uint32_t next_inode_number = 1;
 
-struct inode_operations file_inode_ops = {
-    .open    = memfs_open,
-    .read    = memfs_read,
-    .write   = memfs_write,
-    .release = memfs_release,
-};
-
-struct inode_operations directory_inode_ops = {
+struct inode_operations memfs_directory_inode_ops = {
+    .open          = memfs_open,
+    .read          = memfs_read,
+    .write         = memfs_write,
+    .close         = memfs_close,
+    .stat          = memfs_stat,
     .create_file   = memfs_create_file,
     .create_device = memfs_create_device,
     .lookup        = memfs_lookup,
@@ -40,9 +40,9 @@ static void *create_directory_entries()
     return entries;
 }
 
-struct inode *memfs_create_inode(enum inode_type type)
+struct inode *memfs_create_inode(const enum inode_type type, struct inode_operations *ops)
 {
-    auto new_inode = (struct inode *)kzalloc(sizeof(struct inode));
+    auto const new_inode = (struct inode *)kzalloc(sizeof(struct inode));
     if (!new_inode) {
         return nullptr;
     }
@@ -52,34 +52,19 @@ struct inode *memfs_create_inode(enum inode_type type)
     new_inode->size         = 0;
 
     switch (type) {
+    case INODE_DEVICE:
     case INODE_FILE:
-        new_inode->ops  = &file_inode_ops;
         new_inode->data = nullptr;
         break;
     case INODE_DIRECTORY:
-        new_inode->ops  = &directory_inode_ops;
         new_inode->data = create_directory_entries();
         break;
     default:
         kfree(new_inode);
         return nullptr;
     }
-
-    return new_inode;
-}
-
-struct inode *memfs_create_device_inode(struct inode_operations *ops)
-{
-    auto new_inode = (struct inode *)kzalloc(sizeof(struct inode));
-    if (!new_inode) {
-        return nullptr;
-    }
-
-    new_inode->inode_number = next_inode_number++;
-    new_inode->type         = INODE_DEVICE;
-    new_inode->size         = 0;
-    new_inode->ops          = ops;
-    new_inode->data         = nullptr;
+    new_inode->fs_type = FS_TYPE_RAMFS;
+    new_inode->ops     = ops;
 
     return new_inode;
 }
@@ -90,7 +75,7 @@ int memfs_add_entry_to_directory(struct inode *dir_inode, struct inode *entry, c
         return -ENOTDIR;
     }
 
-    auto new_entry = (struct dir_entry *)kzalloc(sizeof(struct dir_entry));
+    auto const new_entry = (struct dir_entry *)kzalloc(sizeof(struct dir_entry));
     if (!new_entry) {
         return -ENOMEM;
     }
@@ -98,7 +83,7 @@ int memfs_add_entry_to_directory(struct inode *dir_inode, struct inode *entry, c
     strncpy(new_entry->name, name, MAX_NAME_LEN);
     new_entry->inode = entry;
 
-    auto entries = (struct dir_entries *)dir_inode->data;
+    auto const entries = (struct dir_entries *)dir_inode->data;
     if (entries->count >= entries->capacity) {
         const size_t new_capacity    = entries->capacity * 2;
         struct dir_entry **new_array = krealloc(entries->entries, new_capacity * sizeof(struct dir_entry *));
@@ -116,43 +101,47 @@ int memfs_add_entry_to_directory(struct inode *dir_inode, struct inode *entry, c
     return 0;
 }
 
-int memfs_read(struct dir_entry *file, char *buffer, size_t size, off_t offset)
+int memfs_stat(void *descriptor, struct file_stat *stat)
 {
-    // Implement reading from file->inode->data
+    auto const desc = (struct file_descriptor *)descriptor;
+    return desc->inode->ops->stat(descriptor, stat);
+}
 
-
+int memfs_read(const void *descriptor, size_t size, off_t offset, char *out)
+{
+    panic("Not implemented");
     return 0;
 }
 
-int memfs_write(struct dir_entry *file, const char *buffer, size_t size, off_t offset)
+int memfs_write(void *descriptor, const char *buffer, size_t size, off_t offset)
 {
-    // Implement writing to file->inode->data
-
+    panic("Not implemented");
     return 0;
 }
 
-int memfs_open(struct inode *inode, struct dir_entry *file)
+void *memfs_open(const struct path_root *path_root, const FILE_MODE mode)
 {
-    // Implement any setup needed when a file is opened
+    const struct inode *dir = root_inode_lookup(path_root->first->part);
+    struct inode *file;
+    memfs_lookup(dir, path_root->first->next->part, &file);
+    return file->ops->open(path_root, mode);
+}
 
+int memfs_close(void *descriptor)
+{
+    panic("Not implemented");
     return 0;
 }
 
-int memfs_release(struct inode *inode, struct dir_entry *file)
+int memfs_create_file(struct inode *dir, const char *name, struct inode_operations *ops)
 {
-    // Clean up resources when a file is closed
-    return 0;
-}
-
-int memfs_create_file(struct inode *dir, const char *name)
-{
-    struct inode *file = memfs_create_inode(INODE_FILE);
+    struct inode *file = memfs_create_inode(INODE_FILE, ops);
     return memfs_add_entry_to_directory(dir, file, name);
 }
 
 int memfs_create_device(struct inode *dir, const char *name, struct inode_operations *ops)
 {
-    struct inode *device = memfs_create_device_inode(ops);
+    struct inode *device = memfs_create_inode(INODE_DEVICE, ops);
     return memfs_add_entry_to_directory(dir, device, name);
 }
 
@@ -174,15 +163,8 @@ int memfs_lookup(const struct inode *dir, const char *name, struct inode **resul
     return -ENOENT;
 }
 
-int memfs_mkdir(struct inode *dir, const char *name)
+int memfs_mkdir(struct inode *dir, const char *name, struct inode_operations *ops)
 {
-    struct inode *subdir = memfs_create_inode(INODE_DIRECTORY);
+    struct inode *subdir = memfs_create_inode(INODE_DIRECTORY, ops);
     return memfs_add_entry_to_directory(dir, subdir, name);
-
-    return 0;
 }
-
-// struct dir_entry *memfs_mount(struct file_system_type *fs_type, int flags, const char *dev_name, void *data)
-// {
-//     return nullptr;
-// }

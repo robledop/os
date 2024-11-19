@@ -223,7 +223,7 @@ int my_fat16_init()
     // uint8_t *buffer = kmalloc(file.file_size);
 
     // fat_read_file(file, buffer);
-    // kprintf("%s\n", buffer);
+    // printf("%s\n", buffer);
     // dbgprintf("%s\n", buffer);
 
     // FAT16_DirEntry *root_entries = fat_get_root_entries();
@@ -231,7 +231,7 @@ int my_fat16_init()
     // {
     //     if ((unsigned char)root_entries[i].name[0] != 0x00 && (unsigned char)root_entries[i].name[0] != 0xE5)
     //     {
-    //         kprintf("File: %s\n", root_entries[i].name);
+    //         printf("File: %s\n", root_entries[i].name);
     //     }
     // }
 
@@ -244,7 +244,7 @@ int my_fat16_init()
     // {
     //     if ((unsigned char)entries[i].name[0] != 0x00 && (unsigned char)entries[i].name[0] != 0xE5)
     //     {
-    //         kprintf("File: %s\n", entries[i].name);
+    //         printf("File: %s\n", entries[i].name);
     //     }
     // }
 
@@ -253,10 +253,10 @@ int my_fat16_init()
 
     // FAT16_DirEntry* hello = fat_find_item("HELLO   TXT");
     // fat_read_file(*hello, buffer);
-    // kprintf("File contents: %s\n", buffer);
+    // printf("File contents: %s\n", buffer);
     // uint8_t *buffer2 = kmalloc(grub->file_size);
     // fat_read_file(*grub, buffer2);
-    // kprintf("File contents: %s\n", buffer2);
+    // printf("File contents: %s\n", buffer2);
 
     return 0;
 }

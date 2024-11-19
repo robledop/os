@@ -41,7 +41,7 @@ void schedule()
 
     // If there is no next thread, restart the shell
     if (!next) {
-        kprintf("\nRestarting the shell");
+        printf("\nRestarting the shell");
         start_shell(0);
         next = scheduler_get_next_thread();
     }

@@ -8,6 +8,7 @@
 #include <net/network.h>
 #include <serial.h>
 #include <vga_buffer.h>
+#include <printf.h>
 
 #define IRQ0 0x20
 
@@ -193,7 +194,7 @@ void e1000_init(struct pci_device *pci)
     if (e1000_start()) {
         arp_init();
     } else {
-        kprintf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
+        printf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
     }
 }
 
@@ -235,8 +236,8 @@ void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 
 void e1000_print_mac_address()
 {
-    kprintf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
-    kprintf("Intel e1000 MAC Address: %s\n", get_mac_address_string(mac));
+    printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+    printf("Intel e1000 MAC Address: %s\n", get_mac_address_string(mac));
 }
 
 void e1000_linkup()

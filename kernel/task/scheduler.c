@@ -168,7 +168,7 @@ void scheduler_save_current_thread(const struct interrupt_frame *interrupt_frame
     if (interrupt_frame->cs == USER_CODE_SELECTOR) {
         struct thread *thread = scheduler_get_current_thread();
         if (!thread) {
-            kprintf(KMAG "." KWHT);
+            printf(KMAG "." KWHT);
             return;
         }
         thread_save_state(thread, interrupt_frame);
@@ -362,7 +362,7 @@ void schedule()
     auto next = scheduler_get_next_thread();
 
     if (!next) {
-        kprintf("\nRestarting the shell");
+        printf("\nRestarting the shell");
         start_shell(0);
         next = scheduler_get_next_thread();
     }

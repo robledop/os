@@ -106,7 +106,7 @@ static void heap_mark_blocks_taken(const struct heap *heap, const uint32_t start
 
     // Mark the rest of the blocks as taken
     for (uint32_t i = start_block; i <= end_block; i++) {
-        // kprintf(KBOLD KYEL "." KRESET);
+        // printf(KBOLD KYEL "." KRESET);
         heap->table->entries[i] = entry;
         entry                   = HEAP_BLOCK_TAKEN;
         // If this is not the last block, mark it as having a next block
@@ -209,7 +209,7 @@ void heap_mark_blocks_free(const struct heap *heap, const uint32_t start_block)
     for (size_t i = start_block; i < table->total; i++) {
         const HEAP_BLOCK_TABLE_ENTRY entry = table->entries[i];
         table->entries[i]                  = HEAP_BLOCK_FREE;
-        // kprintf(KBOLD KBLU "." KRESET);
+        // printf(KBOLD KBLU "." KRESET);
 
         // If the block has no next block, stop
         if ((entry & HEAP_BLOCK_HAS_NEXT) != HEAP_BLOCK_HAS_NEXT) {

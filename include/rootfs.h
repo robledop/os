@@ -2,7 +2,7 @@
 
 #include <inode.h>
 
-void rootfs_init(void);
-struct inode *rootfs_lookup(const char *name);
-int rootfs_mkdir(const char *name);
-struct dir_entries *rootfs_get_root_directory(void);
+void root_inode_init(void);
+struct inode *root_inode_lookup(const char *name);
+int root_inode_mkdir(const char *name, struct inode_operations* ops);
+struct dir_entries *root_inode_get_root_directory(void);
