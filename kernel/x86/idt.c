@@ -114,7 +114,7 @@ void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
     // Page fault exception
     if (interrupt == 14) {
         const uint32_t faulting_address = read_cr2();
-        printf(KYEL "\nFaulting address:" KWHT " %lu\n", faulting_address);
+        printf(KYEL "\nFaulting address:" KWHT " %#010lx\n", faulting_address);
 
         // If the faulting address is not in the user space, try to find the closest function symbol
         if (!(frame->eax & PAGE_FAULT_USER_MASK)) {
@@ -124,7 +124,7 @@ void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
             }
         }
 
-        printf(KYEL "Error code:" KWHT " %lu\n", frame->eax);
+        printf(KYEL "Error code:" KWHT " %#010lx\n", frame->eax);
         printf(KYEL "P:" KWHT " %s ", frame->eax & PAGE_FAULT_PRESENT_MASK ? "true" : "false");
         printf(KYEL "W:" KWHT " %s ", frame->eax & PAGE_FAULT_WRITE_MASK ? "true" : "false");
         printf(KYEL "U:" KWHT " %s ", frame->eax & PAGE_FAULT_USER_MASK ? "true" : "false");
@@ -133,10 +133,10 @@ void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
         printf(KYEL "PK:" KWHT " %s ", frame->eax & PAGE_FAULT_PK_MASK ? "true" : "false");
         printf(KYEL "SS:" KWHT " %s\n", frame->eax & PAGE_FAULT_SS_MASK ? "true" : "false");
     } else if (EXCEPTION_HAS_ERROR_CODE(interrupt)) {
-        printf(KYEL "Error code:" KWHT " %lu\n", frame->eax);
+        printf(KYEL "Error code:" KWHT " %#010lx\n", frame->eax);
     }
 
-    printf(KRED "Exception:" KWHT " %x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
+    printf(KRED "Exception:" KWHT " %#04x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
 
     if (frame->cs == KERNEL_CODE_SELECTOR) {
         printf(KBOLD KWHT "The exception occurred in kernel mode.\n" KRESET);

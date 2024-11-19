@@ -234,6 +234,12 @@ int fopen(const char path[static 1], const char mode[static 1])
     if (inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
         memfs_lookup(inode, root_path->first->next->part, &inode);
     }
+    if (inode == nullptr) {
+        warningf("Failed to lookup inode\n");
+        res = -EBADPATH;
+        goto out;
+    }
+
     struct file_descriptor *desc = nullptr;
 
     void *descriptor_private_data = inode->ops->open(root_path, file_mode);

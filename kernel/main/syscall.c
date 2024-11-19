@@ -35,13 +35,12 @@ void register_syscalls()
     spinlock_init(&wait_lock);
 
     register_syscall(SYSCALL_EXIT, sys_exit);
-    // register_syscall(SYSCALL_PRINT, sys_print);
     register_syscall(SYSCALL_GETKEY, sys_getkey);
     register_syscall(SYSCALL_PUTCHAR, sys_putchar);
+    register_syscall(SYSCALL_PRINT, sys_print);
     register_syscall(SYSCALL_MALLOC, sys_malloc);
     register_syscall(SYSCALL_CALLOC, sys_calloc);
     register_syscall(SYSCALL_FREE, sys_free);
-    // register_syscall(SYSCALL_PUTCHAR_COLOR, sys_putchar_color);
     register_syscall(SYSCALL_CREATE_PROCESS, sys_create_process);
     register_syscall(SYSCALL_FORK, sys_fork);
     register_syscall(SYSCALL_EXEC, sys_exec);
@@ -64,14 +63,6 @@ void register_syscalls()
     register_syscall(SYSCALL_MEMSTAT, sys_memstat);
 }
 
-static void insert_spaces(char *str, const int start, const int len)
-{
-    for (int i = start; i < len; i++) {
-        str[i] = ' ';
-    }
-    str[len] = '\0';
-}
-
 void *sys_memstat(struct interrupt_frame *frame)
 {
     kernel_heap_print_stats();
@@ -79,6 +70,23 @@ void *sys_memstat(struct interrupt_frame *frame)
     return nullptr;
 }
 
+void *sys_print(struct interrupt_frame *frame)
+{
+    uint32_t size       = get_integer_argument(0);
+    const void *message = get_pointer_argument(1);
+    if (!message) {
+        warningf("message is null\n");
+        return nullptr;
+    }
+
+    char buffer[size];
+
+    copy_string_from_thread(scheduler_get_current_thread(), message, buffer, sizeof(buffer));
+
+    printf(buffer);
+
+    return nullptr;
+}
 void *sys_ps(struct interrupt_frame *frame)
 {
     struct process_info *proc_info = nullptr;
@@ -88,17 +96,6 @@ void *sys_ps(struct interrupt_frame *frame)
     for (int i = 0; i < count; i++) {
         constexpr int col               = 15;
         const struct process_info *info = &proc_info[i];
-        // char pid[col + 1];
-        // itoa(info->pid, pid);
-        // insert_spaces(pid, strlen(pid), 5);
-        //
-        // char name[col + 1];
-        // strncpy(name, info->file_name, col);
-        // insert_spaces(name, strlen(name), col);
-        //
-        // char priority[col + 1];
-        // itoa(info->priority, priority);
-        // insert_spaces(priority, strlen(priority), 9);
 
         char state[col + 1];
         switch (info->state) {
@@ -118,14 +115,8 @@ void *sys_ps(struct interrupt_frame *frame)
             strncpy(state, "UNKNOWN", col);
             break;
         }
-        // insert_spaces(state, strlen(state), 9);
 
-        // char exit_code[col + 1];
-        // itoa(info->exit_code, exit_code);
-        // insert_spaces(exit_code, strlen(exit_code), col);
-
-
-        printf(" %-5u%-15s%-12u%-12s%-12u\n", info->pid, info->file_name, info->priority, state, info->exit_code );
+        printf(" %-5u%-15s%-12u%-12s%-12u\n", info->pid, info->file_name, info->priority, state, info->exit_code);
     }
 
     return nullptr;
@@ -419,24 +410,6 @@ void *sys_open(struct interrupt_frame *frame)
     __builtin_unreachable();
 }
 
-// void *sys_print(struct interrupt_frame *frame)
-// {
-//     uint32_t size       = get_integer_argument(0);
-//     const void *message = get_pointer_argument(1);
-//     if (!message) {
-//         warningf("message is null\n");
-//         return NULL;
-//     }
-//
-//     char buffer[size];
-//
-//     copy_string_from_thread(scheduler_get_current_thread(), message, buffer, sizeof(buffer));
-//
-//     printf(buffer);
-//
-//     return NULL;
-// }
-
 void *sys_getkey(struct interrupt_frame *frame)
 {
     const uint8_t c = keyboard_pop();
@@ -451,18 +424,8 @@ void *sys_putchar(struct interrupt_frame *frame)
 {
     const char c = (char)get_integer_argument(0);
     putchar_(c);
-    // terminal_putchar(c, DEFAULT_ATTRIBUTE, -1, -1);
     return NULL;
 }
-
-// void *sys_putchar_color(struct interrupt_frame *frame)
-// {
-//     const uint8_t attribute = (unsigned char)get_integer_argument(0);
-//     const char c            = (char)get_integer_argument(1);
-//
-//     terminal_putchar(c, attribute, -1, -1);
-//     return nullptr;
-// }
 
 void *sys_calloc(struct interrupt_frame *frame)
 {

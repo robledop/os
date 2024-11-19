@@ -17,12 +17,10 @@ void stack_trace(void)
     printf(KBOLD KWHT "Stack trace:\n" KRESET);
 
     const stack_frame_t *stack = __builtin_frame_address(0);
-    // struct stack_frame *stack;
-    // asm volatile("movl %%ebp, %0" : "=r"(stack));
-    int max = 10;
+    int max                    = 10;
     while (stack && stack->eip != 0 && max-- > 0) {
         auto const symbol = debug_function_symbol_lookup(stack->eip);
-        printf("\t%lx [" KCYN "%s" KWHT " + %lx]\n",
+        printf("\t%#lx " KBOLD KWHT "[" KRESET KCYN "%s" KWHT " + %#lx" KBOLD KWHT "]\n" KRESET,
                stack->eip,
                (symbol.name == NULL) ? "[unknown]" : symbol.name,
                stack->eip - symbol.address);
@@ -140,7 +138,7 @@ void print_registers()
     printf("\tEIP: %#010lx", eip);
     auto eflags = read_eflags();
 
-    printf("\tEFLAGS: %#08lx ", eflags);
+    printf("\tEFLAGS: %#010lx ", eflags);
 
     if (eflags & EFLAGS_ALL) {
         printf("( ");

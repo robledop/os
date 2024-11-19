@@ -63,7 +63,7 @@ void kfree(void *ptr)
 
 void kernel_heap_print_stats()
 {
-    printf("\nmalloc: %lu\n", allocations);
-    printf("free: %lu\n", frees);
-    printf("Free blocks: %lu\n", heap_count_free_blocks(&kernel_heap));
+    printf("\n %-12s %lu\n", "malloc:", allocations);
+    printf(" %-12s %lu\n", "free:", frees);
+    printf(" %-12s %lu\n", "Free blocks:", heap_count_free_blocks(&kernel_heap));
 }

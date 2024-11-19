@@ -152,9 +152,6 @@ void e1000_tx_init()
         tx_descs[i]->status = TSTA_DD;
     }
 
-    // e1000_write_command(REG_TXDESCLO, (uint32_t)((uint64_t)ptr >> 32));
-    // e1000_write_command(REG_TXDESCHI, (uint32_t)((uint64_t)ptr & 0xFFFFFFFF));
-
     e1000_write_command(REG_TXDESCLO, (uint32_t)ptr);
     e1000_write_command(REG_TXDESCHI, 0);
 
@@ -197,7 +194,6 @@ void e1000_init(struct pci_device *pci)
         printf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
     }
 }
-
 
 void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 {

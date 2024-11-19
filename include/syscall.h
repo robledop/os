@@ -2,13 +2,12 @@
 
 enum SysCalls {
     SYSCALL_EXIT,
-    // SYSCALL_PRINT,
     SYSCALL_GETKEY,
     SYSCALL_PUTCHAR,
+    SYSCALL_PRINT,
     SYSCALL_MALLOC,
     SYSCALL_CALLOC,
     SYSCALL_FREE,
-    // SYSCALL_PUTCHAR_COLOR,
     SYSCALL_CREATE_PROCESS,
     SYSCALL_FORK,
     SYSCALL_EXEC,
@@ -18,7 +17,7 @@ enum SysCalls {
     SYSCALL_CLOSE,
     SYSCALL_STAT,
     SYSCALL_READ,
-    SYSCALL_CLEAR_SCREEN,
+    SYSCALL_CLEAR_SCREEN, // TODO: There seems to be an ANSI escape for this. I should use that instead.
     SYSCALL_OPEN_DIR,
     SYSCALL_SET_CURRENT_DIRECTORY,
     SYSCALL_GET_CURRENT_DIRECTORY,
@@ -27,8 +26,8 @@ enum SysCalls {
     SYSCALL_SHUTDOWN,
     SYSCALL_SLEEP,
     SYSCALL_YIELD,
-    SYSCALL_PS,
-    SYSCALL_MEMSTAT,
+    SYSCALL_PS,      // TODO: I should use a device file for this instead
+    SYSCALL_MEMSTAT, // TODO: I should use a device file for this instead
 };
 
 #ifdef __KERNEL__
@@ -37,12 +36,11 @@ void register_syscalls();
 struct interrupt_frame;
 
 [[noreturn]] void *sys_exit(struct interrupt_frame *frame);
-// void *sys_print(struct interrupt_frame *frame);
 void *sys_getkey(struct interrupt_frame *frame);
 void *sys_putchar(struct interrupt_frame *frame);
+void *sys_print(struct interrupt_frame *frame);
 void *sys_malloc(struct interrupt_frame *frame);
 void *sys_free(struct interrupt_frame *frame);
-// void *sys_putchar_color(struct interrupt_frame *frame);
 void *sys_create_process(struct interrupt_frame *frame);
 void *sys_get_program_arguments(struct interrupt_frame *frame);
 void *sys_open(struct interrupt_frame *frame);

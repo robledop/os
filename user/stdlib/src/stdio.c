@@ -1,9 +1,5 @@
 #include <inode.h>
-#include <memory.h>
-#include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <syscall.h>
 
 // FAT Directory entry attributes
@@ -36,11 +32,6 @@ void clear_screen()
     syscall0(SYSCALL_CLEAR_SCREEN);
 }
 
-// void putchar_color(const char c, const uint8_t attribute)
-// {
-//     syscall2(SYSCALL_PUTCHAR_COLOR, (int)c, (int)attribute);
-// }
-
 int fstat(int fd, struct file_stat *stat)
 {
     return syscall2(SYSCALL_STAT, fd, stat);
@@ -66,11 +57,6 @@ void putchar(const unsigned char c)
     syscall1(SYSCALL_PUTCHAR, c);
 }
 
-// int print(const char str[static 1], uint32_t size)
-// {
-//     return syscall2(SYSCALL_PRINT, str, size + 1);
-// }
-
 uint8_t attribute = 0x07;
 
 int ansi_to_vga_foreground[] = {
@@ -94,137 +80,6 @@ int ansi_to_vga_background[] = {
     0x30, // Cyan
     0x70  // White (Light Grey in VGA)
 };
-
-// int printf(const char fmt[static 1], ...)
-// {
-//     va_list args;
-//
-//     int x_offset = 0;
-//     int num      = 0;
-//
-//     va_start(args, fmt);
-//
-//     while (*fmt != '\0') {
-//         char str[MAX_FMT_STR];
-//         switch (*fmt) {
-//         case '%':
-//             memset(str, 0, MAX_FMT_STR);
-//             switch (*(fmt + 1)) {
-//             case 'i':
-//             case 'd':
-//                 num = va_arg(args, int);
-//                 char num_str[12];
-//                 itoa(num, num_str);
-//                 strncpy(str, num_str, MAX_FMT_STR);
-//                 print(str, strlen(str));
-//                 x_offset += strlen(str);
-//                 break;
-//
-//             case 'p':
-//             case 'x':
-//                 num = va_arg(args, int);
-//                 itohex(num, str);
-//                 print("0x", 2);
-//                 print(str, strlen(str));
-//                 x_offset += strlen(str);
-//                 break;
-//
-//             case 's':
-//                 const char *str_arg = va_arg(args, char *);
-//                 print(str_arg, strlen(str_arg));
-//                 x_offset += strlen(str_arg);
-//                 break;
-//
-//             case 'c':
-//                 const char char_arg = (char)va_arg(args, int);
-//                 putchar_color(char_arg, attribute);
-//                 x_offset++;
-//                 break;
-//
-//             default:
-//                 break;
-//             }
-//             fmt++;
-//             break;
-//         case '\033': // Handle ANSI escape sequences
-//             {
-//                 fmt++;
-//                 if (*fmt != '[') {
-//                     break;
-//                 }
-//                 fmt++;
-//                 static int blinking = 0;
-//                 static bool bold    = false;
-//                 int params[10]      = {0};
-//                 int param_count     = 0;
-//                 while (true) {
-//                     int param = 0;
-//                     while (*fmt >= '0' && *fmt <= '9') {
-//                         param = param * 10 + (*fmt - '0');
-//                         fmt++;
-//                     }
-//                     params[param_count++] = param;
-//                     if (*fmt == ';') {
-//                         fmt++;
-//                     } else {
-//                         break;
-//                     }
-//                 }
-//
-//                 if (*fmt == 'm') {
-//                     for (int i = 0; i < param_count; i++) {
-//                         switch (params[i]) {
-//                         case 0:
-//                             attribute = 0x07;
-//                             blinking  = 0;
-//                             bold      = false;
-//                             break;
-//                         case 1:
-//                             bold = 1;
-//                             break;
-//                         case 5:
-//                             blinking = 1;
-//                             break;
-//                         case 22:
-//                             bold = true;
-//                             break;
-//                         case 25:
-//                             blinking = 0;
-//                             break;
-//
-//                         default:
-//                             {
-//                                 int forecolor = 0x07;
-//                                 int backcolor = 0x00;
-//                                 if (params[i] >= 30 && params[i] <= 37) {
-//                                     const int color_index = params[i] - 30;
-//                                     forecolor             = ansi_to_vga_foreground[color_index];
-//                                     forecolor             = bold ? forecolor | 0x08 : forecolor;
-//                                 } else if (params[i] >= 40 && params[i] <= 47) {
-//                                     const int color_index = params[i] - 40;
-//                                     backcolor             = ansi_to_vga_foreground[color_index]; // Use the same mapping
-//                                 }
-//
-//                                 attribute = ((blinking & 1) << 7) | ((backcolor & 0x07) << 4) | (forecolor & 0x0F);
-//                                 // attribute = (backcolor << 4) | (forecolor & 0x0F);
-//                             }
-//                             break;
-//                         }
-//                     }
-//                 }
-//             }
-//             break;
-//
-//         default:
-//             putchar_color(*fmt, attribute);
-//         }
-//         fmt++;
-//     }
-//
-//     va_end(args);
-//
-//     return 0;
-// }
 
 /// @brief Opens a directory for reading
 /// @param directory the directory to open
