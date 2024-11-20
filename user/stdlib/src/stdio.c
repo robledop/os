@@ -29,7 +29,7 @@ struct fat_directory_entry {
 
 void clear_screen()
 {
-    syscall0(SYSCALL_CLEAR_SCREEN);
+    printf("\033[2J\033[H");
 }
 
 int fstat(int fd, struct file_stat *stat)
@@ -52,34 +52,10 @@ int fread(void *ptr, unsigned int size, unsigned int nmemb, int fd)
     return syscall4(SYSCALL_READ, ptr, size, nmemb, fd);
 }
 
-void putchar(const unsigned char c)
+void putchar(char c)
 {
     syscall1(SYSCALL_PUTCHAR, c);
 }
-
-uint8_t attribute = 0x07;
-
-int ansi_to_vga_foreground[] = {
-    0x00, // Black
-    0x04, // Red
-    0x02, // Green
-    0x0E, // Yellow (Brown in VGA)
-    0x01, // Blue
-    0x05, // Magenta
-    0x03, // Cyan
-    0x07  // White (Light Grey in VGA)
-};
-
-int ansi_to_vga_background[] = {
-    0x00, // Black
-    0x40, // Red
-    0x20, // Green
-    0xE0, // Yellow (Brown in VGA)
-    0x10, // Blue
-    0x50, // Magenta
-    0x30, // Cyan
-    0x70  // White (Light Grey in VGA)
-};
 
 /// @brief Opens a directory for reading
 /// @param directory the directory to open
@@ -147,9 +123,4 @@ int getkey_blocking()
     __sync_synchronize();
 
     return key;
-}
-
-void putchar_(char c)
-{
-    putchar(c);
 }

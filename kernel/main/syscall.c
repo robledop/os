@@ -50,7 +50,6 @@ void register_syscalls()
     register_syscall(SYSCALL_CLOSE, sys_close);
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
-    register_syscall(SYSCALL_CLEAR_SCREEN, sys_clear_screen);
     register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
     register_syscall(SYSCALL_GET_CURRENT_DIRECTORY, sys_get_current_directory);
     register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
@@ -322,13 +321,6 @@ void *sys_get_program_arguments(struct interrupt_frame *frame)
     return nullptr;
 }
 
-void *sys_clear_screen(struct interrupt_frame *frame)
-{
-    terminal_clear();
-
-    return NULL;
-}
-
 void *sys_stat(struct interrupt_frame *frame)
 {
     const int fd          = get_integer_argument(1);
@@ -423,7 +415,7 @@ void *sys_getkey(struct interrupt_frame *frame)
 void *sys_putchar(struct interrupt_frame *frame)
 {
     const char c = (char)get_integer_argument(0);
-    putchar_(c);
+    putchar(c);
     return NULL;
 }
 

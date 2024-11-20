@@ -15,6 +15,4 @@ void vga_buffer_init();
 void print(const char str[static 1]);
 void terminal_clear();
 void terminal_putchar(char c, uint8_t attr, int x, int y);
-// void printf(const char fmt[static 1], ...);
 void update_cursor(int row, int col);
-void putchar_(char c);

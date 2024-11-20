@@ -101,7 +101,7 @@ extern "C" {
  * @param c the single character to print
  */
 PRINTF_VISIBILITY
-void putchar_(char c);
+void putchar(char c);
 
 
 /**

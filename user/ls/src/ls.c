@@ -37,8 +37,7 @@ int main(int argc, char **argv)
 void print_results(const struct dir_entries *directory)
 {
     printf(KRESET "\n Entries in directory: %lu\n", directory->count);
-    printf(KBOLD KBLU " %-14s%-14s%-14s\n", "Name", "Size", "inode" KRESET KWHT);
-
+    printf(KBOLD KBLU " %-14s%-9s%-21s%-8s%s\n", "Name", "Size", "Created", "inode", "Attributes" KRESET KWHT);
 
     for (int i = 0; i < directory->count; i++) {
         struct dir_entry *dir_entry;
@@ -47,90 +46,56 @@ void print_results(const struct dir_entries *directory)
             printf("Failed to read entry %d\n", i);
         }
 
+        struct tm create_time;
+        unix_timestamp_to_tm(dir_entry->inode->ctime, &create_time);
+
+        const char *date_time_format = "%Y-%m-%d %H:%M:%S";
+
+        char create_time_str[25];
+        strftime(date_time_format, &create_time, create_time_str, sizeof(create_time_str));
+
+        char attributes[5] = {0};
+
+        attributes[0] = dir_entry->inode->is_read_only ? 'r' : '-';
+        attributes[1] = dir_entry->inode->is_hidden ? 'h' : '-';
+        attributes[2] = dir_entry->inode->is_system ? 's' : '-';
+        attributes[3] = dir_entry->inode->is_archive ? 'a' : '-';
+
         switch (dir_entry->inode->type) {
         case INODE_FILE:
-            printf(" %-14s%-14lu%-14lu\n", dir_entry->name, dir_entry->inode->size, dir_entry->inode->inode_number);
+
+            printf(" %-14s%-9lu%-21s%-8lu%s\n",
+                   dir_entry->name,
+                   dir_entry->inode->size,
+                   create_time_str,
+                   dir_entry->inode->inode_number,
+                   attributes);
             break;
         case INODE_DIRECTORY:
-            printf(KCYN " %-14s" KBOLD KWHT "%-14s" KRESET "%-14lu\n",
-                   dir_entry->name,
-                   "[DIR]",
-                   dir_entry->inode->inode_number);
+            if (dir_entry->inode->fs_type == FS_TYPE_RAMFS) {
+                printf(KBOLD KYEL " %-14s" KBOLD KWHT "%-9s" KRESET "%-21s%-8lu%s\n",
+                       dir_entry->name,
+                       "[DIR]",
+                       create_time_str,
+                       dir_entry->inode->inode_number,
+                       attributes);
+            } else {
+                printf(KCYN " %-14s" KBOLD KWHT "%-9s" KRESET "%-21s%-8lu%s\n",
+                       dir_entry->name,
+                       "[DIR]",
+                       create_time_str,
+                       dir_entry->inode->inode_number,
+                       attributes);
+            }
             break;
         case INODE_DEVICE:
-            printf(KBOLD KRED " %-14s" KWHT "%-14s" KRESET "%-14lu\n",
+            printf(KBOLD KRED " %-14s" KWHT "%-9s" KRESET "%-21s%-8lu%s\n",
                    dir_entry->name,
                    "[DEV]",
-                   dir_entry->inode->inode_number);
+                   create_time_str,
+                   dir_entry->inode->inode_number,
+                   attributes);
             break;
         }
-
-        // if (entry.is_long_name) {
-        //     continue;
-        // }
-        //
-        // int len = strlen(entry.name);
-        // if (strlen(entry.ext) > 0) {
-        //     len += strlen(entry.ext) + 1;
-        // }
-        // const int spaces = 14 - len;
-        //
-        // const uint16_t created_day   = entry.creation_date & 0b00011111;
-        // const uint16_t created_month = (entry.creation_date & 0b111100000) >> 5;
-        // const uint16_t created_year  = ((entry.creation_date & 0b1111111100000000) >> 9) + 1980;
-        //
-        // const uint16_t created_hour   = (entry.creation_time & 0b1111100000000000) >> 11;
-        // const uint16_t created_minute = (entry.creation_time & 0b0000011111100000) >> 5;
-        // const uint16_t created_second = (entry.creation_time & 0b0000000000011111) * 2;
-        //
-        // if (entry.is_directory) {
-        //     printf(KCYN " %s" KWHT, entry.name);
-        // } else {
-        //     printf(KWHT " %s", entry.name);
-        // }
-        //
-        // if (strlen(entry.ext) > 0) {
-        //     printf(KWHT ".%s", entry.ext);
-        // }
-        //
-        // for (int x = 0; x < spaces; x++) {
-        //     printf(KWHT " ");
-        // }
-        //
-        // printf("%d-%d-%d %d:%d:%d ",
-        //        created_year,
-        //        created_month,
-        //        created_day,
-        //        created_hour,
-        //        created_minute,
-        //        created_second);
-        //
-        // if (!entry.is_directory) {
-        //     printf(KYEL " %d bytes" KWHT, entry.size);
-        // }
-        //
-        // if (entry.is_directory) {
-        //     printf(KCYN " [DIR]" KWHT);
-        // }
-        //
-        // for (size_t x = 0; x < 13; x++) {
-        //     printf(" ");
-        // }
-        //
-        // if (entry.is_read_only) {
-        //     printf(" [RO]");
-        // }
-        //
-        // if (entry.is_hidden) {
-        //     printf(" [H]");
-        // }
-        //
-        // if (entry.is_system) {
-        //     printf(" [S]");
-        // }
-        //
-        // if (entry.is_volume_label) {
-        //     printf(" [V]");
-        // }
     }
 }

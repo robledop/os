@@ -5,6 +5,7 @@
 #include <memory.h>
 #include <paging.h>
 #include <process.h>
+#include <rand.h>
 #include <scheduler.h>
 #include <serial.h>
 #include <spinlock.h>
@@ -307,7 +308,7 @@ void *process_malloc(struct process *process, const size_t size)
                                   ptr,
                                   paging_align_address((char *)ptr + size),
                                   PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
-                                      PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+                                      PAGING_DIRECTORY_ENTRY_SUPERVISOR); // TODO: Get rid of supervisor flag
     if (res < 0) {
         ASSERT(false, "Failed to map memory for process");
         goto out_error;
@@ -432,7 +433,7 @@ static int process_unmap_binary(const struct process *process)
                          PAGING_DIRECTORY_ENTRY_UNMAPPED);
 }
 
-static int process_map_elf(const struct process *process)
+static int process_map_elf(struct process *process)
 {
     int res                         = 0;
     const struct elf_file *elf_file = process->elf_file;
@@ -441,8 +442,19 @@ static int process_map_elf(const struct process *process)
 
     for (int i = 0; i < header->e_phnum; i++) {
         const struct elf32_phdr *phdr = &phdrs[i];
-        void *phdr_phys_address       = elf_phdr_phys_address(elf_file, phdr);
-        int flags                     = PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR;
+
+        if (phdr->p_type != PT_LOAD) {
+            continue; // Skip non-loadable segments
+        }
+
+        // Allocate new physical memory for the segment
+        void *phys_addr = process_malloc(process, phdr->p_memsz);
+        if (phys_addr == NULL) {
+            return -ENOMEM;
+        }
+
+        int flags =
+            PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR; // TODO: Get rid of supervisor
 
         if (phdr->p_flags & PF_W) {
             flags |= PAGING_DIRECTORY_ENTRY_IS_WRITABLE;
@@ -450,12 +462,18 @@ static int process_map_elf(const struct process *process)
 
         res = paging_map_to(process->page_directory,
                             paging_align_to_lower_page((void *)phdr->p_vaddr),
-                            paging_align_to_lower_page(phdr_phys_address),
-                            paging_align_address((char *)phdr_phys_address + phdr->p_memsz),
+                            paging_align_to_lower_page(phys_addr),
+                            paging_align_address((char *)phys_addr + phdr->p_memsz),
                             flags);
         if (ISERR(res)) {
-            ASSERT(false, "Failed to map ELF file");
+            ASSERT(false, "Failed to map ELF segment");
+            kfree(phys_addr);
             break;
+        }
+
+        // Copy segment data from the ELF file to the allocated memory
+        if (phdr->p_filesz > 0) {
+            memcpy(phys_addr, (char *)elf_memory(elf_file) + phdr->p_offset, phdr->p_filesz);
         }
     }
 
@@ -487,7 +505,7 @@ static int process_unmap_elf(const struct process *process)
     return res;
 }
 
-int process_map_memory(const struct process *process)
+int process_map_memory(struct process *process)
 {
     int res = 0;
     switch (process->file_type) {
@@ -631,7 +649,8 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
         goto out;
     }
 
-    proc->thread = thread;
+    proc->thread  = thread;
+    proc->rand_id = rand();
 
     res = process_map_memory(proc);
     if (res < 0) {
@@ -798,10 +817,12 @@ void process_copy_thread(struct process *dest, const struct process *src)
 struct process *process_clone(struct process *process)
 {
     struct process *clone = kzalloc(sizeof(struct process));
+
     if (!clone) {
         panic("Failed to allocate memory for process clone");
         return nullptr;
     }
+
 
     const int pid = scheduler_get_free_pid();
     if (pid < 0) {
@@ -826,6 +847,8 @@ struct process *process_clone(struct process *process)
     scheduler_set_process(clone->pid, clone);
     scheduler_queue_thread(clone->thread);
     clone->state = RUNNING;
+
+    clone->rand_id = rand();
 
     return clone;
 }

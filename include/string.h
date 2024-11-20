@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pci.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -23,10 +24,13 @@ int itohex(uint32_t n, char s[static 1]);
 void reverse(char s[static 1]);
 /* Duplicate S, returning an identical malloc'd string.  */
 char *strdup(const char s[static 1]);
-char *strtok(char *str, const char delim[static 1]);
+// char *strtok(char *str, const char delim[static 1]);
+char *strtok(char *s, const char delim[static 1]);
 
 char *strcat(char dest[static 1], const char src[static 1]);
+char *strncat(char *dest, const char *src, size_t n);
 int count_words(const char input[static 1]);
+char *strchr(const char *s, int c);
 
 
 uint32_t atoi(const char str[static 1]);

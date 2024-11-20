@@ -4,6 +4,7 @@
 #include <posix.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 
 #define MAX_NAME_LEN 256
 
@@ -31,6 +32,13 @@ struct inode {
     enum inode_type type;
     enum FS_TYPE fs_type;
     uint32_t size;
+    time_t atime; // Last access time
+    time_t mtime; // Last modification time
+    time_t ctime; // Creation time
+    bool is_read_only : 1;
+    bool is_hidden    : 1;
+    bool is_system    : 1;
+    bool is_archive   : 1;
     struct inode_operations *ops;
     void *data;
 };

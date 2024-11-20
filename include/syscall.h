@@ -17,7 +17,6 @@ enum SysCalls {
     SYSCALL_CLOSE,
     SYSCALL_STAT,
     SYSCALL_READ,
-    SYSCALL_CLEAR_SCREEN, // TODO: There seems to be an ANSI escape for this. I should use that instead.
     SYSCALL_OPEN_DIR,
     SYSCALL_SET_CURRENT_DIRECTORY,
     SYSCALL_GET_CURRENT_DIRECTORY,
@@ -47,7 +46,6 @@ void *sys_open(struct interrupt_frame *frame);
 void *sys_close(struct interrupt_frame *frame);
 void *sys_stat(struct interrupt_frame *frame);
 void *sys_read(struct interrupt_frame *frame);
-void *sys_clear_screen(struct interrupt_frame *frame);
 void *sys_open_dir(struct interrupt_frame *frame);
 void *sys_set_current_directory(struct interrupt_frame *frame);
 void *sys_get_current_directory(struct interrupt_frame *frame);

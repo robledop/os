@@ -1,6 +1,8 @@
+#include <memory.h>
 #include <string.h>
 #ifdef __KERNEL__
-#include "kernel_heap.h"
+#include <kernel.h>
+#include <kernel_heap.h>
 #else
 #include <stdlib.h>
 #endif
@@ -230,58 +232,59 @@ inline int itohex(uint32_t n, char s[static 1])
     return i;
 }
 
+char *strchr(const char *s, int c)
+{
+    while (*s != '\0') {
+        if (*s == (char)c) {
+            return (char *)s;
+        }
+        s++;
+    }
+    return NULL;
+}
+
 char *strtok(char *str, const char delim[static 1])
 {
-    static char *static_str = nullptr; // Stores the string between calls
-    int i = 0, j = 0;
-
-    // If initial string is provided, reset static_str
+    static char *next = NULL;
+    // If str is provided, start from the beginning
     if (str != NULL) {
-        static_str = str;
+        next = str;
     } else {
         // If no more tokens, return NULL
-        if (static_str == NULL) {
-            return nullptr;
+        if (next == NULL) {
+            return NULL;
         }
     }
 
     // Skip leading delimiters
-    while (static_str[i] != '\0') {
-        for (j = 0; delim[j] != '\0'; j++) {
-            if (static_str[i] == delim[j]) {
-                break;
-            }
-        }
-        if (delim[j] == '\0') {
-            break;
-        }
-        i++;
+    while (*next != '\0' && strchr(delim, *next) != NULL) {
+        next++;
     }
 
-    // If end of string is reached, return NULL
-    if (static_str[i] == '\0') {
-        static_str = nullptr;
-        return nullptr;
+    // If end of string reached after skipping delimiters
+    if (*next == '\0') {
+        next = NULL;
+        return NULL;
     }
 
-    char *token = &static_str[i];
+    // Mark the start of the token
+    char *start = next;
 
     // Find the end of the token
-    while (static_str[i] != '\0') {
-        for (j = 0; delim[j] != '\0'; j++) {
-            if (static_str[i] == delim[j]) {
-                static_str[i] = '\0'; // Terminate token
-                i++;
-                static_str += i; // Update static_str for next call
-                return token;
-            }
-        }
-        i++;
+    while (*next != '\0' && strchr(delim, *next) == NULL) {
+        next++;
     }
 
-    // No more delimiters; return the last token
-    static_str = nullptr;
-    return token;
+    // If end of token is not the end of the string, terminate it
+    if (*next != '\0') {
+        *next = '\0';
+        next++; // Move past the null terminator
+    } else {
+        // No more tokens
+        next = NULL;
+    }
+
+    return start;
 }
 
 /// @brief Duplicate s, returning an identical malloc'd string.
@@ -318,6 +321,24 @@ char *strcat(char dest[static 1], const char src[static 1])
         src++;
     }
     *d = '\0';
+    return dest;
+}
+
+char *strncat(char *dest, const char *src, size_t n)
+{
+    char *d = dest;
+
+    while (*d != '\0') {
+        d++;
+    }
+
+    // Append up to 'n' characters from 'src' to 'dest'
+    while (n-- > 0 && *src != '\0') {
+        *d++ = *src++;
+    }
+
+    *d = '\0';
+
     return dest;
 }
 

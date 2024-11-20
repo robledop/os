@@ -61,7 +61,7 @@ int getpid()
 
 int create_process(const char path[static 1], const char *current_directory)
 {
-    char buffer[1024];
+    char buffer[512];
     strncpy(buffer, path, sizeof(buffer));
     struct command_argument *root_command_argument = os_parse_command(buffer, sizeof(buffer));
     if (root_command_argument == NULL) {

@@ -64,7 +64,7 @@ struct process_arguments {
 //     unsigned int size;
 // };
 
-void putchar(unsigned char c);
+// void putchar(unsigned char c);
 // int printf(const char fmt[static 1], ...);
 int print(const char str[static 1], uint32_t size);
 int fopen(const char name[static 1], const char mode[static 1]);

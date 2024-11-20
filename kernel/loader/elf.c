@@ -1,6 +1,8 @@
 #include <elf.h>
 #include <kernel.h>
 #include <kernel_heap.h>
+#include <memory.h>
+#include <paging.h>
 #include <serial.h>
 #include <status.h>
 #include <string.h>
@@ -134,6 +136,7 @@ int elf_process_phdr_pt_load(struct elf_file *elf_file, const struct elf32_phdr 
     return 0;
 }
 
+
 int elf_process_pheader(struct elf_file *elf_file, const struct elf32_phdr *phdr)
 {
     int res = 0;
@@ -246,5 +249,6 @@ out:
 void elf_close(struct elf_file *file)
 {
     kfree(file->elf_memory);
+    // kfree(file->segment_memory);
     kfree(file);
 }

@@ -12,6 +12,7 @@
 #include <status.h>
 #include <stream.h>
 #include <string.h>
+#include <time.h>
 
 #define FAT16_SIGNATURE 0x29
 #define FAT16_FAT_ENTRY_SIZE 0x02
@@ -105,7 +106,6 @@ struct fat_file_descriptor {
 struct fat_private {
     struct fat_h header;
     struct fat_directory root_directory;
-
     struct disk_stream *cluster_read_stream;
     struct disk_stream *fat_read_stream;
     struct disk_stream *directory_stream;
@@ -118,6 +118,7 @@ int fat16_read(const void *descriptor, size_t size, off_t nmemb, char *out);
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
 int fat16_stat(void *descriptor, struct file_stat *stat);
 int fat16_close(void *descriptor);
+time_t fat_date_time_to_unix_time(uint16_t fat_date, uint16_t fat_time);
 
 struct inode_operations fat16_inode_ops = {
     .open  = fat16_open,
@@ -786,6 +787,13 @@ struct dir_entry get_directory_entry(void *fat_directory_entries, int index)
     inode->size    = entry->size;
     inode->data    = &entry;
     inode->fs_type = FS_TYPE_FAT16;
+    inode->atime   = fat_date_time_to_unix_time(entry->access_date, 0);
+    inode->mtime   = fat_date_time_to_unix_time(entry->modification_date, entry->modification_time);
+    inode->ctime   = fat_date_time_to_unix_time(entry->creation_date, entry->creation_time);
+    inode->is_read_only = entry->attributes & FAT_FILE_READ_ONLY;
+    inode->is_hidden    = entry->attributes & FAT_FILE_HIDDEN;
+    inode->is_system    = entry->attributes & FAT_FILE_SYSTEM;
+    inode->is_archive   = entry->attributes & FAT_FILE_ARCHIVE;
 
     struct dir_entry dir_entry = {
         .inode = inode,
@@ -878,6 +886,30 @@ int fat16_get_subdirectory(const char path[static 1], struct dir_entries *direct
     fat16_convert_fat_to_vfs(current_item->directory, directory);
 
     return 0;
+}
+
+time_t fat_date_time_to_unix_time(const uint16_t fat_date, const uint16_t fat_time)
+{
+    const int day   = fat_date & 0x1F;
+    const int month = (fat_date >> 5) & 0x0F;
+    const int year  = ((fat_date >> 9) & 0x7F) + 1980;
+
+    const int second = (fat_time & 0x1F) * 2;
+    const int minute = (fat_time >> 5) & 0x3F;
+    const int hour   = (fat_time >> 11) & 0x1F;
+
+    struct tm t = {0};
+    t.tm_year   = year - 1900; // tm_year is years since 1900
+    t.tm_mon    = month - 1;   // tm_mon is months since January (0-11)
+    t.tm_mday   = day;
+    t.tm_hour   = hour;
+    t.tm_min    = minute;
+    t.tm_sec    = second;
+    t.tm_isdst  = -1; // Let mktime determine whether DST is in effect
+
+    const time_t unix_time = mktime(&t);
+
+    return unix_time;
 }
 
 #if 0

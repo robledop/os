@@ -245,6 +245,18 @@ bool param_process(int c)
     }
 
     switch (c) {
+    case 'H':
+        update_cursor(0, 0);
+        break;
+    case 'J':
+        switch (params[0]) {
+        case 2:
+            terminal_clear();
+            break;
+        default:
+            break;
+        }
+        break;
     case 'm':
         static bool bold    = false;
         static int blinking = 0;
@@ -322,7 +334,7 @@ bool handle_ansi(int c)
     return false;
 }
 
-void putchar_(char c)
+void putchar(char c)
 {
     if (handle_ansi(c)) {
         return;

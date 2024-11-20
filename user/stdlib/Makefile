@@ -33,8 +33,8 @@ FLAGS = -g \
 
 FLAGS += -D__USER__
 
-all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o
-	ar rcs libstdlib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o
+all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
+	ar rcs libstdlib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -43,13 +43,19 @@ all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 # Files shared with the kernel
-./build/memory.o: ../../kernel/memory/memory.c
+./build/memory.o: ../../kernel/lib/memory.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
-./build/string.o: ../../kernel/string/string.c
+./build/string.o: ../../kernel/lib/string.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 ./build/printf.o: ../../kernel/lib/printf.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+
+./build/math.o: ../../kernel/lib/math.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+
+./build/time.o: ../../kernel/lib/time.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 clean:

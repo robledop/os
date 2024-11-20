@@ -65,14 +65,14 @@ typedef int32_t elf32_off;
 
 /// @brief Program header
 struct elf32_phdr {
-    elf32_word p_type;
-    elf32_off p_offset;
-    elf32_addr p_vaddr;
-    elf32_addr p_paddr;
-    elf32_word p_filesz;
-    elf32_word p_memsz;
-    elf32_word p_flags;
-    elf32_word p_align;
+    elf32_word p_type;   // Type of segment
+    elf32_off p_offset;  // Offset in file
+    elf32_addr p_vaddr;  // Virtual address in memory
+    elf32_addr p_paddr;  // Reserved
+    elf32_word p_filesz; // Size of segment in file
+    elf32_word p_memsz;  // Size of segment in memory
+    elf32_word p_flags;  // Segment flags
+    elf32_word p_align;  // Alignment of segment
 } __attribute__((packed));
 
 /// @brief Section header
@@ -133,6 +133,7 @@ struct elf_file {
 
     uint32_t in_memory_size;
 
+    void *segment_memory;
     // The physical memory address that this elf file is loaded at
     void *elf_memory;
     void *virtual_base_address;

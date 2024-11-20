@@ -36,9 +36,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#define PRINTF_SUPPORT_DECIMAL_SPECIFIERS 0
-#define PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS 0
-#define PRINTF_SUPPORT_LONG_LONG 0
 
 // Define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H=1 ...) to include the
 // printf_config.h header file
@@ -58,6 +55,9 @@
 #endif // __cplusplus
 
 
+// #define PRINTF_SUPPORT_DECIMAL_SPECIFIERS 0
+// #define PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS 0
+// #define PRINTF_SUPPORT_LONG_LONG 0
 
 // 'ntoa' conversion buffer size, this must be big enough to hold one converted
 // numeric number including padded zeros (dynamically created on stack)
@@ -381,7 +381,7 @@ static inline void append_termination_with_gadget(output_gadget_t* gadget)
 static inline void putchar_wrapper(char c, void* unused)
 {
   (void) unused;
-  putchar_(c);
+  putchar(c);
 }
 
 static inline output_gadget_t discarding_gadget(void)
@@ -1461,7 +1461,7 @@ int sprintf(char* s, const char* format, ...)
   return ret;
 }
 
-int snprintf_(char* s, size_t n, const char* format, ...)
+int snprintf(char* s, size_t n, const char* format, ...)
 {
   va_list args;
   va_start(args, format);

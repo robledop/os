@@ -39,6 +39,7 @@ struct process_arguments {
 
 struct process {
     uint16_t pid;
+    int rand_id; // For debugging purposes
     int priority;
     char file_name[MAX_PATH_LENGTH];
     struct page_directory *page_directory;
@@ -99,7 +100,7 @@ __attribute__((nonnull)) struct process *process_clone(struct process *process);
 // 1]);
 // __attribute__((nonnull)) struct process *process_create(const char file_name[static 1]);
 __attribute__((nonnull)) int process_load_data(const char file_name[static 1], struct process *process);
-__attribute__((nonnull)) int process_map_memory(const struct process *process);
+__attribute__((nonnull)) int process_map_memory(struct process *process);
 __attribute__((nonnull)) int process_unmap_memory(const struct process *process);
 __attribute__((nonnull)) int process_free_allocations(struct process *process);
 __attribute__((nonnull)) int process_free_program_data(const struct process *process);

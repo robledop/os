@@ -5,7 +5,7 @@
 struct command_argument *os_parse_command(const char command[static 1], const int max)
 {
     struct command_argument *head = nullptr;
-    char scommand[1025];
+    char scommand[513];
     if (max >= (int)sizeof(scommand)) {
         return nullptr;
     }

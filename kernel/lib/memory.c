@@ -1,6 +1,4 @@
-#include "memory.h"
-
-// This file is also included in the stdlib
+#include <memory.h>
 
 void *memset(void *ptr, const int value, const size_t size)
 {
