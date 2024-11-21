@@ -125,6 +125,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps FORCE
 ./build/%.o: ./kernel/%.c FORCE
 	$(CC) $(INCLUDES) $(FLAGS) $(DEBUG_FLAGS) -c $< -o $@
 
+
 .PHONY: grub
 grub: ./bin/kernel-grub.bin apps FORCE
 	grub-file --is-x86-multiboot ./rootfs/boot/myos.bin
@@ -162,7 +163,7 @@ qemu_grub_debug_no_net: grub FORCE
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE
-	qemu-system-i386 -boot d -drive file=/disk.img,format=raw -m 64 -serial stdio -display gtk,zoom-to-fit=on
+	qemu-system-i386 -boot d -drive file=./disk.img,format=raw -m 64 -serial stdio -display gtk,zoom-to-fit=on
 
 .PHONY: qemu_iso
 qemu_iso: iso FORCE

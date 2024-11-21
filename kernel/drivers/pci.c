@@ -216,7 +216,7 @@ void load_driver(const struct pci_header pci, const uint8_t bus, const uint8_t d
         if (pci_drivers[i].class == pci.class && pci_drivers[i].subclass == pci.subclass &&
             pci_drivers[i].vendor_id == pci.vendor_id && pci_drivers[i].device_id == pci.device_id) {
 
-            printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+            printf("[ " KBGRN "OK" KRESET KWHT " ] ");
             printf("Loading driver for %s\n", pci_find_name(pci.class, pci.subclass));
 
             struct pci_device *pci_device = kzalloc(sizeof(struct pci_device));
@@ -243,7 +243,7 @@ struct pci_header get_pci_data(const uint8_t bus, const uint8_t num, const uint8
 
 void pci_scan()
 {
-    printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+    printf("[ " KBGRN "OK" KWHT " ] ");
     printf("Scanning PCI devices...\n");
 
     struct pci_header pci_data;

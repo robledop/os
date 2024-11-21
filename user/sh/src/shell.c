@@ -14,6 +14,7 @@ void shell_terminal_readline(uint8_t *out, int max, bool output_while_typing);
 void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
+void test();
 
 char *command_history[256];
 uint8_t history_index = 0;
@@ -28,7 +29,8 @@ const cmd commands[] = {
     {"so",       stack_overflow },
     {"ps",       ps             },
     {"reg",      print_registers},
-    {"memstat",  memstat        },
+    {"ms",       memstat        },
+    {"test",     test           },
 };
 
 int number_of_commands = sizeof(commands) / sizeof(struct cmd);
@@ -53,6 +55,20 @@ void stack_overflow() // NOLINT(*-no-recursion)
     stack_overflow();
 }
 #pragma GCC diagnostic pop
+
+void test()
+{
+    int fd = fopen("/dev/tty", "r");
+    if (fd < 0) {
+        printf("Failed to open tty\n");
+        return;
+    }
+
+    char *text = "\nHello, world!\n\n";
+
+    write(fd, text, strlen(text));
+    fclose(fd);
+}
 
 
 int main(int argc, char **argv)
@@ -136,7 +152,7 @@ int main(int argc, char **argv)
             waitpid(pid, nullptr);
         }
 
-        putchar('\n');
+        printf("\n");
     }
 
     return 0;
@@ -160,7 +176,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             }
 
             for (int j = 0; j < i - 1; j++) {
-                putchar('\b');
+                printf("\b");
             }
             current_history_index--;
             strncpy((char *)out, command_history[current_history_index], max);
@@ -177,7 +193,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             }
 
             for (int j = 0; j < i - 1; j++) {
-                putchar('\b');
+                printf("\b");
             }
             current_history_index++;
             strncpy((char *)out, command_history[current_history_index], max);
@@ -230,6 +246,7 @@ void print_help()
     printf(KCYN "  help                " KWHT " Display this help message\n");
     printf(KCYN "  cd " KYEL "[directory]      " KWHT " Change the current directory\n");
     printf(KCYN "  ps                  " KWHT " Shows the list of the processes currently executing\n");
+    printf(KCYN "  ms                  " KWHT " Memory utilization stats\n");
     printf(KCYN "  so                  " KWHT " Causes a stack overflow for testing purposes\n");
     printf(KCYN "  reg                 " KWHT " Display current registers\n");
     printf(KCYN "  [command]           " KWHT " Run a command\n");

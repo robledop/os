@@ -17,10 +17,3 @@ void system_shutdown(void);
 #define ERROR(x) ((void *)(x))
 #define ERROR_I(x) ((int)(x))
 #define ISERR(x) ((int)(x) < 0)
-
-// Keep track of how many times we entered a critical section
-extern int __cli_count;
-
-void enter_critical(void);
-// Only leave critical section if we are the last one
-void leave_critical(void);

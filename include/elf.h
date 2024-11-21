@@ -126,14 +126,10 @@ struct elf32_sym {
     elf32_half st_shndx;
 } __attribute__((packed));
 
-__attribute__((nonnull)) void *elf_get_entry_ptr(const struct elf_header *elf_header);
-__attribute__((nonnull)) uint32_t elf_get_entry(const struct elf_header *elf_header);
 struct elf_file {
     char filename[MAX_PATH_LENGTH];
-
     uint32_t in_memory_size;
 
-    void *segment_memory;
     // The physical memory address that this elf file is loaded at
     void *elf_memory;
     void *virtual_base_address;
@@ -143,6 +139,8 @@ struct elf_file {
     void *physical_end_address;
 };
 
+__attribute__((nonnull)) void *elf_get_entry_ptr(const struct elf_header *elf_header);
+__attribute__((nonnull)) uint32_t elf_get_entry(const struct elf_header *elf_header);
 __attribute__((nonnull)) int elf_load(const char *filename, struct elf_file **file_out);
 __attribute__((nonnull)) void elf_close(struct elf_file *file);
 __attribute__((nonnull)) void *elf_virtual_base(const struct elf_file *file);

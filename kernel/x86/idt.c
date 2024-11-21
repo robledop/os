@@ -139,9 +139,9 @@ void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
     printf(KRED "Exception:" KWHT " %#04x " KRED "%s\n" KWHT, interrupt, exception_messages[interrupt]);
 
     if (frame->cs == KERNEL_CODE_SELECTOR) {
-        printf(KBOLD KWHT "The exception occurred in kernel mode.\n" KRESET);
+        printf(KBWHT "The exception occurred in kernel mode.\n" KRESET);
     } else {
-        printf(KBOLD KWHT "The exception occurred in user mode.\n" KRESET);
+        printf(KBWHT "The exception occurred in user mode.\n" KRESET);
     }
 
     debug_stats();

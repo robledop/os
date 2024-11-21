@@ -175,7 +175,7 @@ void dhcp_receive(uint8_t *packet)
         uint8_t dhcp_server_ip[4];
         memcpy(dhcp_server_ip, &dhcp_server_ip_p, 4);
 
-        printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+        printf("[ " KBGRN "OK" KRESET KWHT " ] ");
         printf("%-13s %d.%d.%d.%d. Server: %d.%d.%d.%d\n",
                 "DHCP offer:",
                 dhcp_packet->yiaddr[0],
@@ -194,7 +194,7 @@ void dhcp_receive(uint8_t *packet)
     else if (dhcp_packet->op == DHCP_OP_OFFER && dhcp_message_type == DHCP_MESSAGE_TYPE_ACK &&
              network_get_my_mac_address() &&
              network_compare_mac_addresses(dhcp_packet->chaddr, network_get_my_mac_address())) {
-        printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+        printf("[ " KBGRN "OK" KRESET KWHT " ] ");
         printf("%-13s %d.%d.%d.%d\n",
                 "IP address:",
                 dhcp_packet->yiaddr[0],
@@ -206,14 +206,14 @@ void dhcp_receive(uint8_t *packet)
         subnet_mask_p          = htonl(subnet_mask_p);
         uint8_t subnet_mask[4];
         memcpy(subnet_mask, &subnet_mask_p, 4);
-        printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+        printf("[ " KBGRN "OK" KRESET KWHT " ] ");
         printf("%-13s %d.%d.%d.%d\n", "Subnet mask:", subnet_mask[0], subnet_mask[1], subnet_mask[2], subnet_mask[3]);
 
         uint32_t gateway_p = dhcp_options_get_ip_option(dhcp_packet->options, DHCP_OPT_ROUTER);
         gateway_p          = htonl(gateway_p);
         uint8_t gateway[4];
         memcpy(gateway, &gateway_p, 4);
-        printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+        printf("[ " KBGRN "OK" KRESET KWHT " ] ");
         printf("%-13s %d.%d.%d.%d\n", "Gateway:", gateway[0], gateway[1], gateway[2], gateway[3]);
 
         uint32_t dns_servers[5];
@@ -224,7 +224,7 @@ void dhcp_receive(uint8_t *packet)
             uint32_t dns_p = dns_servers[i];
             uint8_t dns[4];
             memcpy(dns, &dns_p, 4);
-            printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+            printf("[ " KBGRN "OK" KRESET KWHT " ] ");
             printf("%-13s %d.%d.%d.%d\n","DNS server:", dns[0], dns[1], dns[2], dns[3]);
         }
 
@@ -241,7 +241,7 @@ void dhcp_receive(uint8_t *packet)
 /// This is in response to a DHCP Offer packet from the server.
 void dhcp_send_request(uint8_t mac[6], uint8_t ip[4], uint8_t server_ip[4])
 {
-    printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+    printf("[ " KBGRN "OK" KRESET KWHT " ] ");
     printf("Sending DHCP Request...\n");
     struct ether_header ether_header = {
         .dest_host  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
@@ -336,7 +336,7 @@ void dhcp_send_request(uint8_t mac[6], uint8_t ip[4], uint8_t server_ip[4])
 /// This is the first step in the DHCP process.
 void dhcp_send_discover(uint8_t mac[6])
 {
-    printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+    printf("[ " KBGRN "OK" KRESET KWHT " ] ");
     printf("Sending DHCP Discover...\n");
     struct ether_header ether_header = {
         .dest_host  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},

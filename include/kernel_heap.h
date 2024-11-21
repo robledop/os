@@ -8,7 +8,6 @@
 
 void kernel_heap_init(void);
 void *kmalloc(size_t size);
-
 __attribute__((nonnull)) void kfree(void *ptr);
 void *kzalloc(size_t size);
 __attribute__((nonnull)) void *krealloc(void *ptr, const size_t size);

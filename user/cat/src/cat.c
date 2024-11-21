@@ -53,7 +53,7 @@ int main(const int argc, char **argv)
     }
     buffer[stat.size] = 0x00;
 
-    printf(KRESET KCYN "\n%s", buffer);
+    printf(KCYN "\n%s", buffer);
 
 
     fclose(fd);

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 rm -rf ./disk.img
 dd if=/dev/zero of=./disk.img bs=512 count=65536
 mkfs.vfat -c -F 16 ./disk.img

@@ -36,8 +36,8 @@ int main(int argc, char **argv)
 
 void print_results(const struct dir_entries *directory)
 {
-    printf(KRESET "\n Entries in directory: %lu\n", directory->count);
-    printf(KBOLD KBLU " %-14s%-9s%-21s%-8s%s\n", "Name", "Size", "Created", "inode", "Attributes" KRESET KWHT);
+    printf(KWHT "\n Entries in directory: %lu\n", directory->count);
+    printf(KBBLU " %-14s%-9s%-21s%-8s%s\n", "Name", "Size", "Created", "inode", "Attributes" KWHT);
 
     for (int i = 0; i < directory->count; i++) {
         struct dir_entry *dir_entry;
@@ -73,14 +73,14 @@ void print_results(const struct dir_entries *directory)
             break;
         case INODE_DIRECTORY:
             if (dir_entry->inode->fs_type == FS_TYPE_RAMFS) {
-                printf(KBOLD KYEL " %-14s" KBOLD KWHT "%-9s" KRESET "%-21s%-8lu%s\n",
+                printf(KBYEL " %-14s" KBWHT "%-9s" KWHT "%-21s%-8lu%s\n",
                        dir_entry->name,
                        "[DIR]",
                        create_time_str,
                        dir_entry->inode->inode_number,
                        attributes);
             } else {
-                printf(KCYN " %-14s" KBOLD KWHT "%-9s" KRESET "%-21s%-8lu%s\n",
+                printf(KCYN " %-14s" KBWHT "%-9s" KWHT "%-21s%-8lu%s\n",
                        dir_entry->name,
                        "[DIR]",
                        create_time_str,
@@ -89,7 +89,7 @@ void print_results(const struct dir_entries *directory)
             }
             break;
         case INODE_DEVICE:
-            printf(KBOLD KRED " %-14s" KWHT "%-9s" KRESET "%-21s%-8lu%s\n",
+            printf(KBRED " %-14s" KBWHT "%-9s" KWHT "%-21s%-8lu%s\n",
                    dir_entry->name,
                    "[DEV]",
                    create_time_str,

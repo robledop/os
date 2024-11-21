@@ -9,7 +9,7 @@ C_OBJS := $(C_FILES:./src/%.c=./build/%.o)
 FILES := $(ASM_OBJS) $(C_OBJS)
 INCLUDES = -I../../include
 FLAGS = -g \
-	-Og \
+	-O0 \
 	-ffreestanding \
 	-nostdlib \
 	-falign-jumps \

@@ -191,7 +191,7 @@ void e1000_init(struct pci_device *pci)
     if (e1000_start()) {
         arp_init();
     } else {
-        printf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
+        printf("[ " KBRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
     }
 }
 
@@ -232,7 +232,7 @@ void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 
 void e1000_print_mac_address()
 {
-    printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+    printf("[ " KBGRN "OK" KRESET KWHT " ] ");
     printf("Intel e1000 MAC Address: %s\n", get_mac_address_string(mac));
 }
 

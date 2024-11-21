@@ -4,7 +4,7 @@
 
 int main(const int argc, char **argv)
 {
-    printf(KRESET KBOLD KBLU "\nTests with waitpid()");
+    printf(KRESET KBBLU "\nTests with waitpid()");
     printf(KRESET KYEL "\nBefore forking, (pid:%d)\n", getpid());
 
     const int rc = fork();
@@ -45,7 +45,7 @@ int main(const int argc, char **argv)
         }
     }
 
-    printf(KBOLD KBLU "Tests without waitpid()\t" KRESET);
+    printf(KBBLU "Tests without waitpid()\t" KRESET);
 
     const int nowait = fork();
 
@@ -86,7 +86,7 @@ int main(const int argc, char **argv)
     }
 
 
-    printf(KBOLD KBLU "\tTests with wait()\t" KRESET);
+    printf(KBBLU "\tTests with wait()\t" KRESET);
 
     const int waitp = fork();
 

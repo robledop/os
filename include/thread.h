@@ -11,15 +11,6 @@
 
 #define THREAD_MAGIC 0x1eaadf71
 
-typedef struct cpu_state {
-    // General-purpose registers
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-    // Instruction pointer and flags
-    uint32_t eip, eflags;
-    // Segment registers (optional for kernel mode if flat segmentation is used)
-    uint32_t cs;
-} cpu_state_t;
-
 struct registers {
     uint32_t edi;
     uint32_t esi;
@@ -43,10 +34,7 @@ struct thread {
     struct process *process;
     // struct list_elem allelem;           /**< List element for all threads list. */
     struct list_elem elem;
-    // struct thread *next;
-    // struct thread *prev;
-    int tty;
-    unsigned magic; // Detects stack overflow.
+    unsigned magic;
 };
 
 __attribute__((nonnull)) struct thread *thread_create(struct process *process);
@@ -59,7 +47,5 @@ __attribute__((nonnull)) void *thread_virtual_to_physical_address(const struct t
 __attribute__((nonnull)) int thread_page_thread(const struct thread *thread);
 __attribute__((nonnull)) void thread_save_state(struct thread *thread, const struct interrupt_frame *frame);
 __attribute__((nonnull)) void thread_copy_registers(struct thread *dest, const struct thread *src);
-__attribute__((nonnull)) struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame);
-__attribute__((nonnull)) struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers);
 __attribute__((nonnull)) void thread_switch(struct registers *registers);
 __attribute__((nonnull)) bool thread_is_valid(const struct thread *thread);

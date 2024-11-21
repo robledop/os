@@ -19,7 +19,6 @@ if ! ip link show | grep -q "$BRIDGE"; then
     sudo ip link set dev "$BRIDGE" up
 fi
 
-
     
 sudo ip tuntap add dev "$TAP" mode tap user "$USER"
 sudo ip addr add "$IP" dev "$TAP"

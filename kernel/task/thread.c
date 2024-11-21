@@ -13,7 +13,7 @@
 
 int thread_init(struct thread *thread, struct process *process);
 
-__attribute__((nonnull)) int thread_free(struct thread *thread)
+int thread_free(struct thread *thread)
 {
     scheduler_unqueue_thread(thread);
     scheduler_remove_current_thread(thread);
@@ -25,8 +25,6 @@ __attribute__((nonnull)) int thread_free(struct thread *thread)
 
 struct thread *thread_create(struct process *process)
 {
-    dbgprintf("Creating thread for process %x\n", process);
-
     int res = 0;
 
     auto const thread = (struct thread *)kzalloc(sizeof(struct thread));
@@ -166,7 +164,7 @@ void thread_save_state(struct thread *thread, const struct interrupt_frame *fram
     thread->registers.cs     = frame->cs;
     thread->registers.eflags = frame->eflags;
     thread->registers.esp    = frame->esp;
-    // thread->registers.ss    = frame->ss;
+    thread->registers.ss     = frame->ss;
 }
 
 void thread_copy_registers(struct thread *dest, const struct thread *src)
@@ -184,43 +182,6 @@ void thread_copy_registers(struct thread *dest, const struct thread *src)
     dest->registers.eflags = src->registers.eflags;
     dest->registers.esp    = src->registers.esp;
     dest->registers.ss     = src->registers.ss;
-}
-struct registers interrupt_frame_to_registers(const struct interrupt_frame *frame)
-{
-    const struct registers registers = {
-        .edi    = frame->edi,
-        .esi    = frame->esi,
-        .ebp    = frame->ebp,
-        .ebx    = frame->ebx,
-        .edx    = frame->edx,
-        .ecx    = frame->ecx,
-        .eax    = frame->eax,
-        .eip    = frame->eip,
-        .cs     = frame->cs,
-        .eflags = frame->eflags,
-        .esp    = frame->esp,
-        .ss     = frame->ss,
-    };
-
-    return registers;
-}
-
-struct interrupt_frame registers_to_interrupt_frame(const struct registers *registers)
-{
-    return (const struct interrupt_frame){
-        .edi    = registers->edi,
-        .esi    = registers->esi,
-        .ebp    = registers->ebp,
-        .ebx    = registers->ebx,
-        .edx    = registers->edx,
-        .ecx    = registers->ecx,
-        .eax    = registers->eax,
-        .eip    = registers->eip,
-        .cs     = registers->cs,
-        .eflags = registers->eflags,
-        .esp    = registers->esp,
-        .ss     = registers->ss,
-    };
 }
 
 struct registers thread_load_current_registers()

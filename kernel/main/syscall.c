@@ -23,9 +23,9 @@ spinlock_t exec_lock;
 spinlock_t wait_lock;
 
 struct command_argument *parse_command(char **args);
-static void *get_pointer_argument(const int index);
-static int get_integer_argument(const int index);
-static char *get_string_argument(const int index, const int max_len);
+static void *get_pointer_argument(int index);
+static int get_integer_argument(int index);
+static char *get_string_argument(int index, size_t max_len);
 
 void register_syscalls()
 {
@@ -50,6 +50,7 @@ void register_syscalls()
     register_syscall(SYSCALL_CLOSE, sys_close);
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
+    register_syscall(SYSCALL_WRITE, sys_write);
     register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
     register_syscall(SYSCALL_GET_CURRENT_DIRECTORY, sys_get_current_directory);
     register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
@@ -91,7 +92,7 @@ void *sys_ps(struct interrupt_frame *frame)
     struct process_info *proc_info = nullptr;
     int count                      = 0;
     scheduler_get_processes(&proc_info, &count);
-    printf(KBOLD KBLU "\n %-5s%-15s%-12s%-12s%-12s\n" KRESET, "PID", "Name", "Priority", "State", "Exit code");
+    printf(KBBLU "\n %-5s%-15s%-12s%-12s%-12s\n" KRESET, "PID", "Name", "Priority", "State", "Exit code");
     for (int i = 0; i < count; i++) {
         constexpr int col               = 15;
         const struct process_info *info = &proc_info[i];
@@ -345,6 +346,26 @@ void *sys_read(struct interrupt_frame *frame)
     return (void *)res;
 }
 
+void *sys_putchar(struct interrupt_frame *frame)
+{
+    const char c = (char)get_integer_argument(0);
+    putchar(c);
+    return NULL;
+}
+
+void *sys_write(struct interrupt_frame *frame)
+{
+    const int fd      = get_integer_argument(2);
+    const size_t size = get_integer_argument(0);
+    char *buffer      = get_string_argument(1, size + 1);
+
+    const int res = write(fd, buffer, size);
+
+    kfree(buffer);
+
+    return (void *)res;
+}
+
 void *sys_close(struct interrupt_frame *frame)
 {
     const int fd = get_integer_argument(0);
@@ -412,12 +433,6 @@ void *sys_getkey(struct interrupt_frame *frame)
     return (void *)(int)c;
 }
 
-void *sys_putchar(struct interrupt_frame *frame)
-{
-    const char c = (char)get_integer_argument(0);
-    putchar(c);
-    return NULL;
-}
 
 void *sys_calloc(struct interrupt_frame *frame)
 {
@@ -455,7 +470,6 @@ void *sys_wait_pid(struct interrupt_frame *frame)
     return nullptr;
 }
 
-extern int __cli_count;
 void *sys_create_process(struct interrupt_frame *frame)
 {
     spin_lock(&create_process_lock);
@@ -560,11 +574,11 @@ static int get_integer_argument(const int index)
 /// @warning BEWARE: The string is allocated on the kernel heap and must be freed by the caller
 /// @param index position of the argument in the stack
 /// @param max_len maximum length of the string
-static char *get_string_argument(const int index, const int max_len)
+static char *get_string_argument(const int index, const size_t max_len)
 {
     const void *ptr = get_pointer_argument(index);
-    char *str       = kzalloc(max_len);
+    char *str       = kzalloc(max_len + 1);
 
-    copy_string_from_thread(scheduler_get_current_thread(), ptr, str, (int)sizeof(str));
+    copy_string_from_thread(scheduler_get_current_thread(), ptr, str, max_len);
     return (char *)str;
 }

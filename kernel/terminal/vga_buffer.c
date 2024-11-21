@@ -15,11 +15,10 @@ uint8_t attribute = DEFAULT_ATTRIBUTE;
 static int cursor_y;
 static int cursor_x;
 
-bool param_escaping   = false;
-bool param_inside     = false;
-bool param_first_done = false;
-int params[10]        = {0};
-int param_count       = 1;
+bool param_escaping = false;
+bool param_inside   = false;
+int params[10]      = {0};
+int param_count     = 1;
 
 int ansi_to_vga_foreground[] = {
     0x00, // Black
@@ -137,7 +136,7 @@ void scroll_screen()
     update_cursor(cursor_y, cursor_x);
 }
 
-void terminal_putchar(const char c, const uint8_t attr, const int x, const int y)
+void vga_putchar(const char c, const uint8_t attr)
 {
     attribute = attr == 0 ? DEFAULT_ATTRIBUTE : attr;
 
@@ -186,7 +185,7 @@ void print(const char str[static 1])
 {
     const size_t len = strlen(str);
     for (size_t i = 0; i < len; i++) {
-        terminal_putchar(str[i], attribute, -1, -1);
+        vga_putchar(str[i], attribute);
     }
 }
 
@@ -213,9 +212,8 @@ void vga_buffer_init()
 
 void ansi_reset()
 {
-    param_escaping   = false;
-    param_inside     = false;
-    param_first_done = false;
+    param_escaping = false;
+    param_inside   = false;
 
     param_inside = 0;
     memset(params, 0, sizeof(params));
@@ -225,22 +223,14 @@ void ansi_reset()
 bool param_process(int c)
 {
     if (c >= '0' && c <= '9') {
-        if (!param_first_done) {
-            params[0] = params[0] * 10 + (c - '0');
-        } else {
-            params[1] = params[1] * 10 + (c - '0');
-        }
+        params[param_count - 1] = params[param_count - 1] * 10 + (c - '0');
 
         return false;
     }
 
     if (c == ';') {
         param_count++;
-        if (param_first_done) {
-            return true;
-        }
 
-        param_first_done = true;
         return false;
     }
 
@@ -309,7 +299,7 @@ bool param_process(int c)
     return true;
 }
 
-bool handle_ansi(int c)
+bool handle_ansi_escape(int c)
 {
     if (c == 0x1B) {
         ansi_reset();
@@ -336,8 +326,8 @@ bool handle_ansi(int c)
 
 void putchar(char c)
 {
-    if (handle_ansi(c)) {
+    if (handle_ansi_escape(c)) {
         return;
     }
-    terminal_putchar(c, attribute, -1, -1);
+    vga_putchar(c, attribute);
 }

@@ -163,6 +163,7 @@ int process_zombify(struct process *process)
     spin_lock(&process_lock);
 
     process->state = ZOMBIE;
+    // fclose(process->tty_fd);
 
     int res = process_free_allocations(process);
     ASSERT(res == 0, "Failed to free allocations for process");
@@ -660,6 +661,7 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
     }
 
     proc->state = RUNNING;
+    // proc->tty_fd = fopen("/dev/tty", "w");
 
     *process = proc;
 
@@ -811,7 +813,6 @@ void process_copy_thread(struct process *dest, const struct process *src)
     thread_copy_registers(thread, src->thread);
     dest->thread          = thread;
     dest->thread->process = dest;
-    dest->thread->tty     = src->thread->tty;
 }
 
 struct process *process_clone(struct process *process)

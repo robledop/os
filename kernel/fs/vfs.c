@@ -326,6 +326,17 @@ int fclose(const int fd)
     return res;
 }
 
+int write(int fd, char *buffer, size_t size)
+{
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc) {
+        warningf("Invalid file descriptor\n");
+        return -EINVARG;
+    }
+
+    return desc->inode->ops->write(desc, buffer, size, 0);
+}
+
 int fs_get_non_root_mount_point_count()
 {
     int count = 0;

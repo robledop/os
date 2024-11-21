@@ -1,8 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="qemu_grub LLDB" type="CLion_Remote" version="1" remoteCommand="connect://127.0.0.1:1234" symbolFile="$ContentRoot$/rootfs/boot/myos.bin" sysroot="">
     <debugger kind="LLDB" isBundled="true" />
-    <method v="2">
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="clean" run_configuration_type="MAKEFILE_TARGET_RUN_CONFIGURATION" />
-    </method>
+    <method v="2" />
   </configuration>
 </component>

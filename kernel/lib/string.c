@@ -74,7 +74,7 @@ int memcmp(const void *v1, const void *v2, unsigned int n)
 }
 
 // Compare two strings
-int strncmp(const char p[static 1], const char q[static 1], unsigned int n)
+int strncmp(const char *p, const char *q, unsigned int n)
 {
     while (n > 0 && *p && *p == *q) {
         n--, p++, q++;
@@ -112,7 +112,7 @@ int istrncmp(const char s1[static 1], const char s2[static 1], int n)
 }
 
 // Copy string t to s
-char *strncpy(char dest[static 1], const char src[static 1], const size_t n)
+char *strncpy(char *dest, const char *src, const size_t n)
 {
     size_t i = 0;
     for (i = 0; i < n - 1; i++) {
@@ -294,7 +294,7 @@ char *strdup(const char s[static 1])
 #ifdef __KERNEL__
     char *new = kmalloc(len + 1);
 #else
-    char *new         = malloc(len + 1);
+    char *new = malloc(len + 1);
 #endif
 
 

@@ -4,6 +4,7 @@
 #include <null.h>
 #include <rootfs.h>
 #include <string.h>
+#include <tty.h>
 #include <vfs.h>
 
 extern struct inode_operations memfs_directory_inode_ops;
@@ -35,6 +36,7 @@ void root_inode_init(void)
     }
 
     null_init();
+    tty_init();
 }
 
 struct inode *root_inode_lookup(const char *name)

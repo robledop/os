@@ -29,7 +29,6 @@ uint32_t wait_for_network_start;
 uint32_t wait_for_network_timeout = 15'000;
 
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
-int __cli_count             = 0;
 
 [[noreturn]] void panic(const char *msg)
 {
@@ -52,8 +51,8 @@ void wait_for_network()
     }
     cli();
     if (!network_is_ready()) {
-        printf("[ " KBOLD KRED "FAIL" KRESET KWHT " ] ");
-        printf(KBOLD KYEL "Network failed to start\n" KRESET KWHT);
+        printf("[ " KBRED "FAIL" KRESET KWHT " ] ");
+        printf(KBYEL "Network failed to start\n" KRESET KWHT);
     }
 }
 
@@ -85,6 +84,10 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     scheduler_start();
 
     printf("\nStarting the shell");
+
+    // stdout
+    fopen("/dev/tty", "w");
+
     start_shell(0);
 
     schedule();
@@ -106,8 +109,7 @@ void start_shell(const int console)
         panic("Failed to set current directory");
     }
 
-    process->thread->tty = console;
-    process->priority    = 1;
+    process->priority = 1;
 }
 
 void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
@@ -130,7 +132,7 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
 
         if (type == MULTIBOOT_MEMORY_AVAILABLE) {
             if (mmmt->len > 0x100000) {
-                printf("[ " KBOLD KGRN "OK" KRESET KWHT " ] ");
+                printf("[ " KBGRN "OK" KRESET KWHT " ] ");
                 printf("Available memory: %u MiB\n", (uint16_t)(mmmt->len / 1024 / 1024));
             }
         }
@@ -151,25 +153,4 @@ void system_shutdown()
     outw(0x604, 0x2000);
 
     hlt();
-}
-
-void enter_critical()
-{
-    __cli_count++;
-    cli();
-}
-
-// Only leave critical section if we are the last one
-void leave_critical()
-{
-    __cli_count--;
-    if (__cli_count <= 0) {
-        __cli_count = 0;
-        sti();
-    }
-}
-
-void reset_critical_count()
-{
-    __cli_count = 0;
 }

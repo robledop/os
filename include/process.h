@@ -40,6 +40,7 @@ struct process_arguments {
 struct process {
     uint16_t pid;
     int rand_id; // For debugging purposes
+    int tty_fd;
     int priority;
     char file_name[MAX_PATH_LENGTH];
     struct page_directory *page_directory;
@@ -96,9 +97,6 @@ __attribute__((nonnull)) struct process *find_child_process_by_state(const struc
 __attribute__((nonnull)) int process_add_child(struct process *parent, struct process *child);
 __attribute__((nonnull)) int process_remove_child(struct process *parent, const struct process *child);
 __attribute__((nonnull)) struct process *process_clone(struct process *process);
-// __attribute__((nonnull)) struct process *process_replace(const struct process *parent, const char file_name[static
-// 1]);
-// __attribute__((nonnull)) struct process *process_create(const char file_name[static 1]);
 __attribute__((nonnull)) int process_load_data(const char file_name[static 1], struct process *process);
 __attribute__((nonnull)) int process_map_memory(struct process *process);
 __attribute__((nonnull)) int process_unmap_memory(const struct process *process);

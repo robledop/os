@@ -9,10 +9,6 @@
 #define ETH_FRAME_LEN 1514 /* Max. octets in frame sans FCS */
 #define ETH_FCS_LEN 4      /* Octets in the FCS */
 
-struct ether_addr {
-    uint8_t ether_addr_octet[ETH_ADDRESS_LEN];
-} __attribute__((__packed__));
-
 struct ether_header {
     uint8_t dest_host[ETH_ADDRESS_LEN]; /* destination eth addr*/
     uint8_t src_host[ETH_ADDRESS_LEN];  /* source ether addr*/

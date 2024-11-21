@@ -1,4 +1,3 @@
-#include <kernel_heap.h>
 #include <memfs.h>
 #include <memory.h>
 #include <null.h>
@@ -56,9 +55,9 @@ int null_init(void)
     struct inode *dev_dir = root_inode_lookup("dev");
     if (!dev_dir) {
         root_inode_mkdir("dev", &memfs_directory_inode_ops);
-        dev_dir = root_inode_lookup("dev");
+        dev_dir          = root_inode_lookup("dev");
+        dev_dir->fs_type = FS_TYPE_RAMFS;
     }
-    dev_dir->fs_type = FS_TYPE_RAMFS;
 
     fs_add_mount_point("/dev", -1, dev_dir);
 

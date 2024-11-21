@@ -4,7 +4,6 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-
 #include <stdint.h>
 
 uint8_t inb(uint16_t p);

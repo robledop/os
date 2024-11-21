@@ -8,7 +8,6 @@
 #define ARP_CACHE_SIZE 256
 #define ARP_CACHE_TIMEOUT 60'000 // jiffies
 
-
 struct arp_header {
     uint16_t hw_type;
     uint16_t protocol_type;

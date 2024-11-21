@@ -50,6 +50,7 @@ void fs_init(void);
 void fs_add_mount_point(const char *prefix, uint32_t disk_number, struct inode *inode);
 int fopen(const char path[static 1], const char mode[static 1]);
 __attribute__((nonnull)) int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
+__attribute__((nonnull)) int write(int fd, char *buffer, size_t size);
 int fseek(int fd, int offset, FILE_SEEK_MODE whence);
 __attribute__((nonnull)) int fstat(int fd, struct file_stat *stat);
 int fclose(int fd);
