@@ -6,7 +6,7 @@
 #include <kernel_heap.h>
 #include <memfs.h>
 #include <memory.h>
-#include <rootfs.h>
+#include <root_inode.h>
 #include <serial.h>
 #include <status.h>
 #include <string.h>
@@ -30,7 +30,7 @@ static struct file_system **fs_get_free_file_system()
     return nullptr;
 }
 
-void fs_insert_file_system(struct file_system *filesystem)
+void vfs_insert_file_system(struct file_system *filesystem)
 {
     struct file_system **fs = fs_get_free_file_system();
     if (!fs) {
@@ -44,10 +44,10 @@ void fs_insert_file_system(struct file_system *filesystem)
 void fs_load()
 {
     memset(file_systems, 0, sizeof(file_systems));
-    fs_insert_file_system(fat16_init());
+    vfs_insert_file_system(fat16_init());
 }
 
-void fs_init()
+void vfs_init()
 {
     memset(mount_points, 0, sizeof(mount_points));
     memset(file_descriptors, 0, sizeof(file_descriptors));
@@ -55,7 +55,7 @@ void fs_init()
     fs_load();
 }
 
-int fs_find_mount_point(const char *prefix)
+int vfs_find_mount_point(const char *prefix)
 {
     if (prefix == nullptr) {
         return -1;
@@ -74,7 +74,7 @@ int fs_find_mount_point(const char *prefix)
     return -1;
 }
 
-struct mount_point *fs_get_mount_point(const int index)
+struct mount_point *vfs_get_mount_point(const int index)
 {
     return mount_points[index];
 }
@@ -90,7 +90,7 @@ int fs_find_free_mount_point()
     return -1;
 }
 
-void fs_add_mount_point(const char *prefix, const uint32_t disk_number, struct inode *inode)
+void vfs_add_mount_point(const char *prefix, const uint32_t disk_number, struct inode *inode)
 {
     const int index = fs_find_free_mount_point();
     if (index == -1) {
@@ -157,7 +157,7 @@ static struct file_descriptor *file_get_descriptor(const int index)
     return file_descriptors[index - 1];
 }
 
-struct file_system *fs_resolve(struct disk *disk)
+struct file_system *vfs_resolve(struct disk *disk)
 {
     for (int i = 0; i < MAX_FILE_SYSTEMS; i++) {
         if (file_systems[i] != nullptr) {
@@ -188,7 +188,7 @@ FILE_MODE file_get_mode(const char *mode)
     return FILE_MODE_INVALID;
 }
 
-int fopen(const char path[static 1], const char mode[static 1])
+int vfs_open(const char path[static 1], const char mode[static 1])
 {
     int res                     = 0;
     struct disk *disk           = nullptr;
@@ -227,12 +227,17 @@ int fopen(const char path[static 1], const char mode[static 1])
         goto out;
     }
 
-    struct inode *inode = root_inode_lookup(root_path->first->part);
+    struct inode *inode = nullptr;
+    res                 = root_inode_lookup(root_path->first->name, &inode);
+    if (ISERR(res)) {
+        warningf("Failed to lookup inode\n");
+        goto out;
+    }
 
     // ! This means we can only have memfs directories mounted at the root,
     // ! and the device files cannot be in a sub sub directory.
     if (inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
-        memfs_lookup(inode, root_path->first->next->part, &inode);
+        memfs_lookup(inode, root_path->first->next->name, &inode);
     }
     if (inode == nullptr) {
         warningf("Failed to lookup inode\n");
@@ -276,7 +281,7 @@ out:
     return res;
 }
 
-int fstat(const int fd, struct file_stat *stat)
+int vfs_stat(const int fd, struct file_stat *stat)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -287,7 +292,7 @@ int fstat(const int fd, struct file_stat *stat)
     return desc->inode->ops->stat(desc, stat);
 }
 
-int fseek(const int fd, const int offset, const FILE_SEEK_MODE whence)
+int vfs_seek(const int fd, const int offset, const FILE_SEEK_MODE whence)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -298,7 +303,7 @@ int fseek(const int fd, const int offset, const FILE_SEEK_MODE whence)
     return desc->inode->ops->seek(desc, offset, whence);
 }
 
-int fread(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
+int vfs_read(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -309,7 +314,7 @@ int fread(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
     return desc->inode->ops->read(desc, size, nmemb, (char *)ptr);
 }
 
-int fclose(const int fd)
+int vfs_close(const int fd)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -326,7 +331,7 @@ int fclose(const int fd)
     return res;
 }
 
-int write(int fd, char *buffer, size_t size)
+int vfs_write(const int fd, const char *buffer, const size_t size)
 {
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc) {
@@ -337,7 +342,7 @@ int write(int fd, char *buffer, size_t size)
     return desc->inode->ops->write(desc, buffer, size, 0);
 }
 
-int fs_get_non_root_mount_point_count()
+int vfs_get_non_root_mount_point_count()
 {
     int count = 0;
     for (int i = 0; i < MAX_MOUNT_POINTS; i++) {
@@ -351,8 +356,26 @@ int fs_get_non_root_mount_point_count()
     return count;
 }
 
-int fs_open_dir(const char path[static 1], struct dir_entries **directory)
+static int memfs_load_directory(struct inode *dir, const struct path_root *root_path)
 {
+    ASSERT(dir->ops->get_sub_directory);
+
+    struct dir_entries *sub_dir_entries = kzalloc(sizeof(struct dir_entries));
+    const int res                       = dir->ops->get_sub_directory(root_path, sub_dir_entries);
+    if (res < 0) {
+        return -EBADPATH;
+    }
+
+    for (size_t i = 0; i < sub_dir_entries->count; i++) {
+        memfs_add_entry_to_directory(dir, sub_dir_entries->entries[i]->inode, sub_dir_entries->entries[i]->name);
+    }
+
+    return res;
+}
+
+int vfs_open_dir(const char path[static 1], struct dir_entries **directory)
+{
+    int res                     = ALL_OK;
     struct path_root *root_path = path_parser_parse(path, nullptr);
 
     if (root_path == nullptr) {
@@ -360,22 +383,42 @@ int fs_open_dir(const char path[static 1], struct dir_entries **directory)
         return -EBADPATH;
     }
 
+    struct dir_entries *root_dir = root_inode_get_root_directory();
+
     if (root_path->first == nullptr) {
-        *directory = root_inode_get_root_directory();
+        *directory = root_dir;
         path_parser_free(root_path);
         return ALL_OK;
     }
 
-    if (root_path->drive_number >= 0) {
-        const struct disk *disk = disk_get(root_path->drive_number);
-        path_parser_free(root_path);
-        return disk->fs->get_subdirectory(path, *directory);
+    const struct path_part *part = root_path->first;
+    struct inode *dir            = nullptr;
+    root_inode_lookup(part->name, &dir);
+
+    while (part->next != nullptr) {
+        struct inode *next_dir;
+        // Try to find it in memory first
+        ASSERT(dir->ops->lookup);
+        res = dir->ops->lookup(dir, part->next->name, &next_dir);
+        if (res < 0) {
+            // If it's not in memory, try to load it
+            res = memfs_load_directory(dir, root_path);
+        }
+        part = part->next;
+        dir  = next_dir;
     }
 
-    // This means we can only have memfs directories mounted at the root,
-    const struct inode *inode = root_inode_lookup(root_path->first->part);
-    *directory                = (struct dir_entries *)inode->data;
+    if (dir == nullptr) {
+        return -EIO;
+    }
+
+    // If the directory has not been initialized, load it
+    if (dir->dir_magic != DIR_MAGIC) {
+        res = memfs_load_directory(dir, root_path);
+    }
+
+    *directory = (struct dir_entries *)dir->data;
     path_parser_free(root_path);
 
-    return ALL_OK;
+    return res;
 }

@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_COMMAND_LENGTH 256
+
 // @brief Generate a stack overflow to test the stack guard page
 void stack_overflow();
 void print_registers();
@@ -58,7 +60,7 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 void test()
 {
-    int fd = fopen("/dev/tty", "r");
+    int fd = vfs_open("/dev/tty", "r");
     if (fd < 0) {
         printf("Failed to open tty\n");
         return;
@@ -67,7 +69,7 @@ void test()
     char *text = "\nHello, world!\n\n";
 
     write(fd, text, strlen(text));
-    fclose(fd);
+    vfs_close(fd);
 }
 
 
@@ -162,7 +164,7 @@ int main(int argc, char **argv)
 void shell_terminal_readline(uint8_t *out, const int max, const bool output_while_typing)
 {
     uint8_t current_history_index = history_index;
-    int i                         = 0;
+    size_t i                      = 0;
     for (; i < max - 1; i++) {
         const unsigned char key = getkey_blocking();
         if (key == 0) {
@@ -180,7 +182,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             }
             current_history_index--;
             strncpy((char *)out, command_history[current_history_index], max);
-            i = strlen((char *)out);
+            i = strnlen((char *)out, max);
             printf((char *)out);
             continue;
         }
@@ -222,7 +224,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
         }
 
         if (output_while_typing) {
-            putchar(key);
+            putchar((char)key);
         }
 
         if (key == '\b' && i > 0) {
@@ -255,8 +257,8 @@ void print_help()
 int cmd_lookup(const char *name)
 {
     for (int index = 0; index < number_of_commands; index++) {
-        const int cmd_len   = strlen(commands[index].name);
-        const int input_len = strlen(name);
+        const size_t cmd_len   = strnlen(commands[index].name, MAX_COMMAND_LENGTH);
+        const size_t input_len = strnlen(name, MAX_COMMAND_LENGTH);
         if (strncmp(name, commands[index].name, cmd_len) == 0 && cmd_len == input_len) {
             return index;
         }
@@ -301,12 +303,12 @@ void change_directory(char *args, char *current_directory)
 
         set_current_directory(strcat(root, new_dir));
     } else if (strncmp(new_dir, "..", 2) == 0) {
-        const int len = strlen(current_directory);
+        const size_t len = strnlen(current_directory, MAX_PATH_LENGTH);
         if (len == 3) {
             printf("\n");
             return;
         }
-        int i = len - 2;
+        size_t i = len - 2;
 
         while (current_directory[i] != '/') {
             i--;

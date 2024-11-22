@@ -17,14 +17,11 @@ struct disk;
 
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct dir_entries *directory);
-typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(const char *path, struct dir_entries *directory);
 
 struct file_system {
     // file_system should return zero from resolve if the disk is using its file system
     FS_RESOLVE_FUNCTION resolve;
-
     FS_GET_ROOT_DIRECTORY_FUNCTION get_root_directory;
-    FS_GET_SUB_DIRECTORY_FUNCTION get_subdirectory;
 
     char name[20];
     enum FS_TYPE type;
@@ -46,17 +43,17 @@ struct mount_point {
     struct inode *inode;
 };
 
-void fs_init(void);
-void fs_add_mount_point(const char *prefix, uint32_t disk_number, struct inode *inode);
-int fopen(const char path[static 1], const char mode[static 1]);
-__attribute__((nonnull)) int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd);
-__attribute__((nonnull)) int write(int fd, char *buffer, size_t size);
-int fseek(int fd, int offset, FILE_SEEK_MODE whence);
-__attribute__((nonnull)) int fstat(int fd, struct file_stat *stat);
-int fclose(int fd);
-__attribute__((nonnull)) void fs_insert_file_system(struct file_system *filesystem);
-__attribute__((nonnull)) struct file_system *fs_resolve(struct disk *disk);
-int fs_open_dir(const char path[static 1], struct dir_entries **directory);
-int fs_get_non_root_mount_point_count();
-int fs_find_mount_point(const char *prefix);
-struct mount_point *fs_get_mount_point(int index);
+void vfs_init(void);
+void vfs_add_mount_point(const char *prefix, uint32_t disk_number, struct inode *inode);
+int vfs_open(const char path[static 1], const char mode[static 1]);
+__attribute__((nonnull)) int vfs_read(void *ptr, uint32_t size, uint32_t nmemb, int fd);
+__attribute__((nonnull)) int vfs_write(int fd, const char *buffer, size_t size);
+int vfs_seek(int fd, int offset, FILE_SEEK_MODE whence);
+__attribute__((nonnull)) int vfs_stat(int fd, struct file_stat *stat);
+int vfs_close(int fd);
+__attribute__((nonnull)) void vfs_insert_file_system(struct file_system *filesystem);
+__attribute__((nonnull)) struct file_system *vfs_resolve(struct disk *disk);
+int vfs_open_dir(const char path[static 1], struct dir_entries **directory);
+int vfs_get_non_root_mount_point_count();
+int vfs_find_mount_point(const char *prefix);
+struct mount_point *vfs_get_mount_point(int index);

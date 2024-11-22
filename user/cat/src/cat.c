@@ -23,11 +23,11 @@ int main(const int argc, char **argv)
     int fd = 0;
 
     if (starts_with("/", file)) {
-        fd = fopen(file, "r");
+        fd = vfs_open(file, "r");
     } else {
         strncpy(full_path, current_directory, MAX_PATH_LENGTH);
         strcat(full_path, file);
-        fd = fopen(full_path, "r");
+        fd = vfs_open(full_path, "r");
     }
 
     if (fd <= 0) {
@@ -37,7 +37,7 @@ int main(const int argc, char **argv)
     }
 
     struct file_stat stat;
-    int res = fstat(fd, &stat);
+    int res = vfs_stat(fd, &stat);
     if (res < 0) {
         printf("\nFailed to get file stat. File: %s", full_path);
         printf("\nError: %s", get_error_message(res));
@@ -45,7 +45,7 @@ int main(const int argc, char **argv)
     }
 
     char *buffer = malloc(stat.size + 1);
-    res          = fread((void *)buffer, stat.size, 1, fd);
+    res          = vfs_read((void *)buffer, stat.size, 1, fd);
     if (res < 0) {
         printf("\nFailed to read file: %s", full_path);
         printf("\nError: %s", get_error_message(res));
@@ -56,7 +56,7 @@ int main(const int argc, char **argv)
     printf(KCYN "\n%s", buffer);
 
 
-    fclose(fd);
+    vfs_close(fd);
 
     return 0;
 }

@@ -61,7 +61,7 @@ int thread_page_thread(const struct thread *thread)
     return ALL_OK;
 }
 
-int copy_string_from_thread(const struct thread *thread, const void *virtual, void *physical, const int max)
+int copy_string_from_thread(const struct thread *thread, const void *virtual, void *physical, const size_t max)
 {
     int res   = 0;
     char *tmp = kzalloc(max);

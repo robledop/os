@@ -56,7 +56,7 @@ static const char *get_path_part(const char **path)
 #ifdef __KERNEL__
     char *path_part = kzalloc(MAX_PATH_LENGTH);
 #else
-    char *path_part        = calloc(MAX_PATH_LENGTH, 1);
+    char *path_part = calloc(MAX_PATH_LENGTH, 1);
 #endif
     int i = 0;
     while (**path != '/' && **path != 0x00) {
@@ -104,7 +104,7 @@ struct path_part *parse_path_part(struct path_part *last_part, const char **path
         warningf("Failed to allocate path part\n");
         return nullptr;
     }
-    path_part->part = path_part_str;
+    path_part->name = path_part_str;
     path_part->next = nullptr;
 
     if (last_part) {
@@ -120,7 +120,7 @@ void path_parser_free(struct path_root *root)
     while (part) {
         struct path_part *next = part->next;
 #ifdef __KERNEL__
-        kfree((void *)part->part);
+        kfree((void *)part->name);
         kfree(part);
 #else
         free((void *)part->part);
@@ -146,17 +146,17 @@ static struct mount_point *determine_mount_point(const char *path)
     int mount_point_index;
     char *beginning = strtok(path_dup, "/");
     if (!beginning) {
-        mount_point_index = fs_find_mount_point("/");
+        mount_point_index = vfs_find_mount_point("/");
     } else {
         char s[strlen(beginning) + 1] = {};
         strcat(s, "/");
         strcat(s, beginning);
-        mount_point_index = fs_find_mount_point(s);
+        mount_point_index = vfs_find_mount_point(s);
         if (mount_point_index < 0) {
-            mount_point_index = fs_find_mount_point("/");
+            mount_point_index = vfs_find_mount_point("/");
         }
     }
-    struct mount_point *mount_point = fs_get_mount_point(mount_point_index);
+    struct mount_point *mount_point = vfs_get_mount_point(mount_point_index);
 
     kfree(path_dup);
     return mount_point;
@@ -175,7 +175,7 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
     struct mount_point *mount_point = determine_mount_point(path);
 
     if (mount_point->inode == nullptr) {
-        root = create_root(mount_point->disk, -1);
+        root = create_root((int)mount_point->disk, -1);
     } else {
         root = create_root(-1, mount_point->inode->inode_number);
     }
@@ -193,7 +193,8 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
         goto out;
     }
 
-    root->first            = first_part;
+    root->first = first_part;
+
     struct path_part *part = parse_path_part(first_part, &path);
 
     while (part) {

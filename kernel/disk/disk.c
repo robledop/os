@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <memory.h>
 
-__attribute__((nonnull)) struct file_system *fs_resolve(struct disk *disk);
+__attribute__((nonnull)) struct file_system *vfs_resolve(struct disk *disk);
 struct disk disk;
 
 void disk_init()
@@ -21,7 +21,7 @@ void disk_init()
         return;
     }
 
-    disk.fs = fs_resolve(&disk);
+    disk.fs = vfs_resolve(&disk);
 }
 
 struct disk *disk_get(const int index)

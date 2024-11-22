@@ -297,7 +297,7 @@ void *sys_open_dir(struct interrupt_frame *frame)
     ASSERT(directory, "Invalid directory");
 
     struct dir_entries *dir_tmp;
-    int res = fs_open_dir((const char *)path, &dir_tmp);
+    int res = vfs_open_dir((const char *)path, &dir_tmp);
     if (res < 0) {
         return (void *)res;
     }
@@ -329,7 +329,7 @@ void *sys_stat(struct interrupt_frame *frame)
 
     struct file_stat *stat = thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
 
-    return (void *)fstat(fd, stat);
+    return (void *)vfs_stat(fd, stat);
 }
 
 void *sys_read(struct interrupt_frame *frame)
@@ -341,7 +341,7 @@ void *sys_read(struct interrupt_frame *frame)
     const unsigned int nmemb = (unsigned int)thread_peek_stack_item(scheduler_get_current_thread(), 1);
     const int fd             = (int)thread_peek_stack_item(scheduler_get_current_thread(), 0);
 
-    const int res = fread((void *)task_file_contents, size, nmemb, fd);
+    const int res = vfs_read((void *)task_file_contents, size, nmemb, fd);
 
     return (void *)res;
 }
@@ -359,7 +359,7 @@ void *sys_write(struct interrupt_frame *frame)
     const size_t size = get_integer_argument(0);
     char *buffer      = get_string_argument(1, size + 1);
 
-    const int res = write(fd, buffer, size);
+    const int res = vfs_write(fd, buffer, size);
 
     kfree(buffer);
 
@@ -370,7 +370,7 @@ void *sys_close(struct interrupt_frame *frame)
 {
     const int fd = get_integer_argument(0);
 
-    const int res = fclose(fd);
+    const int res = vfs_close(fd);
     return (void *)res;
 }
 
@@ -386,7 +386,7 @@ void *sys_open(struct interrupt_frame *frame)
 
     copy_string_from_thread(scheduler_get_current_thread(), mode, mode_str, sizeof(mode_str));
 
-    const int fd = fopen((const char *)name, mode_str);
+    const int fd = vfs_open((const char *)name, mode_str);
     return (void *)(int)fd;
 }
 

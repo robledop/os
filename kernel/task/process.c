@@ -335,7 +335,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     void *program = nullptr;
 
     int res      = 0;
-    const int fd = fopen(file_name, "r");
+    const int fd = vfs_open(file_name, "r");
     if (!fd) {
         warningf("Failed to open file %s\n", file_name);
         res = -EIO;
@@ -343,7 +343,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     }
 
     struct file_stat stat;
-    res = fstat(fd, &stat);
+    res = vfs_stat(fd, &stat);
     if (res != ALL_OK) {
         warningf("Failed to get file stat\n");
         res = -EIO;
@@ -357,7 +357,7 @@ static int process_load_binary(const char *file_name, struct process *process)
         goto out;
     }
 
-    if (fread(program, stat.size, 1, fd) != 1) {
+    if (vfs_read(program, stat.size, 1, fd) != 1) {
         warningf("Failed to read file\n");
         res = -EIO;
         goto out;
@@ -376,7 +376,7 @@ out:
             kfree(program);
         }
     }
-    fclose(fd);
+    vfs_close(fd);
     return res;
 }
 

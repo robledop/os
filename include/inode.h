@@ -7,6 +7,7 @@
 #include <time.h>
 
 #define MAX_NAME_LEN 256
+#define DIR_MAGIC 0x1eaadf71
 
 typedef unsigned int FILE_STAT_FLAGS;
 enum { FILE_STAT_IS_READ_ONLY = 0b00000001 };
@@ -40,6 +41,7 @@ struct inode {
     bool is_system    : 1;
     bool is_archive   : 1;
     struct inode_operations *ops;
+    uint32_t dir_magic; // Used to check if the directory has been initialized
     void *data;
 };
 
@@ -60,14 +62,6 @@ enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
 typedef unsigned int FILE_MODE;
 enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
-// typedef void *(*FS_OPEN_FUNCTION)(const struct path_root *path, FILE_MODE mode);
-// typedef int (*FS_READ_FUNCTION)(const void *descriptor, uint32_t size, uint32_t nmemb, char *out);
-// typedef int (*FS_SEEK_FUNCTION)(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode);
-// typedef int (*FS_CLOSE_FUNCTION)(void *descriptor);
-// typedef int (*FS_STAT_FUNCTION)(void *descriptor, struct file_stat *stat);
-// typedef int (*FS_IOCTL_FUNCTION)(int fd, uint64_t request, void *arg);
-// typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
-
 struct inode_operations {
     void *(*open)(const struct path_root *path_root, FILE_MODE mode);
     int (*read)(const void *descriptor, size_t size, off_t nmemb, char *out);
@@ -82,4 +76,7 @@ struct inode_operations {
 
     int (*lookup)(const struct inode *dir, const char *name, struct inode **result);
     int (*mkdir)(struct inode *dir, const char *name, struct inode_operations *ops);
+
+    // typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(const char *path, struct dir_entries *directory);
+    int (*get_sub_directory)(const struct path_root *path_root, struct dir_entries *result);
 };

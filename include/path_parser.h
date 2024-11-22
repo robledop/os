@@ -8,7 +8,7 @@ struct path_root {
 };
 
 struct path_part {
-    const char *part;
+    const char *name;
     struct path_part *next;
 };
 

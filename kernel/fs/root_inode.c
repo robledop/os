@@ -2,7 +2,7 @@
 #include <kernel_heap.h>
 #include <memfs.h>
 #include <null.h>
-#include <rootfs.h>
+#include <root_inode.h>
 #include <string.h>
 #include <tty.h>
 #include <vfs.h>
@@ -39,11 +39,9 @@ void root_inode_init(void)
     tty_init();
 }
 
-struct inode *root_inode_lookup(const char *name)
+int root_inode_lookup(const char *name, struct inode **inode)
 {
-    struct inode *inode = nullptr;
-    memfs_lookup(root_inode, name, &inode);
-    return inode;
+    return memfs_lookup(root_inode, name, inode);
 }
 
 int root_inode_mkdir(const char *name, struct inode_operations *ops)

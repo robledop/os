@@ -151,7 +151,7 @@ void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
         char name[MAX_PATH_LENGTH];
         strncpy(name, scheduler_get_current_process()->file_name, sizeof(name));
         process_zombify(scheduler_get_current_process());
-        printf("The process %s (%d) has been terminated.\n", name, pid);
+        printf("The process" KBBLU " %s " KWHT "(%d) has been terminated.\n", name, pid);
     }
 
     sti();

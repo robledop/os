@@ -201,7 +201,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
         goto out;
     }
 
-    res = fopen(filename, "r");
+    res = vfs_open(filename, "r");
     if (res <= 0) {
         warningf("Failed to open file %s\n", filename);
         res = -EIO;
@@ -210,14 +210,14 @@ int elf_load(const char *filename, struct elf_file **file_out)
 
     fd = res;
     struct file_stat stat;
-    res = fstat(fd, &stat);
+    res = vfs_stat(fd, &stat);
     if (res < 0) {
         warningf("Failed to get file stat for %s\n", filename);
         goto out;
     }
 
     elf_file->elf_memory = kzalloc(stat.size);
-    res                  = fread(elf_file->elf_memory, stat.size, 1, fd);
+    res                  = vfs_read(elf_file->elf_memory, stat.size, 1, fd);
     if (res < 0) {
         warningf("Failed to read file %s\n", filename);
         goto out;
@@ -242,7 +242,7 @@ out:
             kfree(elf_file);
         }
     }
-    fclose(fd);
+    vfs_close(fd);
     return res;
 }
 

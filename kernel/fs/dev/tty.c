@@ -1,5 +1,6 @@
 #include <inode.h>
-#include <rootfs.h>
+#include <kernel.h>
+#include <root_inode.h>
 #include <tty.h>
 #include <vfs.h>
 #include <vga_buffer.h>
@@ -57,14 +58,18 @@ struct inode_operations tty_device_fops = {
 
 int tty_init(void)
 {
-    struct inode *dev_dir = root_inode_lookup("dev");
-    if (!dev_dir) {
+    struct inode *dev_dir = nullptr;
+    int res               = root_inode_lookup("dev", &dev_dir);
+    if (!dev_dir || res != 0) {
         root_inode_mkdir("dev", &memfs_directory_inode_ops);
-        dev_dir          = root_inode_lookup("dev");
+        res = root_inode_lookup("dev", &dev_dir);
+        if (ISERR(res) || !dev_dir) {
+            return res;
+        }
         dev_dir->fs_type = FS_TYPE_RAMFS;
     }
 
-    fs_add_mount_point("/dev", -1, dev_dir);
+    vfs_add_mount_point("/dev", -1, dev_dir);
 
     return dev_dir->ops->create_device(dev_dir, "tty", &tty_device_fops);
 }

@@ -13,11 +13,10 @@
 #include <pit.h>
 #include <printf.h>
 #include <process.h>
-#include <rootfs.h>
+#include <root_inode.h>
 #include <scheduler.h>
 #include <serial.h>
 #include <syscall.h>
-#include <thread.h>
 #include <vfs.h>
 #include <vga_buffer.h>
 #include <x86.h>
@@ -73,7 +72,7 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     display_grub_info(mbd, magic);
     init_symbols(mbd);
     scheduler_init();
-    fs_init();
+    vfs_init();
     pci_scan();
     wait_for_network();
     disk_init();
@@ -86,7 +85,7 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     printf("\nStarting the shell");
 
     // stdout
-    fopen("/dev/tty", "w");
+    vfs_open("/dev/tty", "w");
 
     start_shell(0);
 

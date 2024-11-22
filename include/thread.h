@@ -41,7 +41,7 @@ __attribute__((nonnull)) struct thread *thread_create(struct process *process);
 __attribute__((nonnull)) int thread_free(struct thread *thread);
 __attribute__((nonnull)) void restore_general_purpose_registers(struct registers *registers);
 __attribute__((nonnull)) int copy_string_from_thread(const struct thread *thread, const void *virtual, void *physical,
-                                                     int max);
+                                                     size_t max);
 __attribute__((nonnull)) void *thread_peek_stack_item(const struct thread *task, int index);
 __attribute__((nonnull)) void *thread_virtual_to_physical_address(const struct thread *task, void *virtual_address);
 __attribute__((nonnull)) int thread_page_thread(const struct thread *thread);
