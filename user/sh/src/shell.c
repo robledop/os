@@ -43,10 +43,10 @@ static uint32_t pass = 0;
 // Generate a stack overflow to test the stack guard page
 void stack_overflow() // NOLINT(*-no-recursion)
 {
-    char a = 0;
-    if (a) {
-    }
-    putchar('.');
+    // char a = 0;
+    // if (a) {
+    // }
+    // putchar('.');
     // printf(KWHT "%d | Stack address: %p | Stack usage: %d KiB | Max: %d KiB\n",
     //        ++pass,
     //        &a,
@@ -60,7 +60,7 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 void test()
 {
-    int fd = vfs_open("/dev/tty", "r");
+    int fd = open("/dev/tty", "r");
     if (fd < 0) {
         printf("Failed to open tty\n");
         return;
@@ -69,7 +69,7 @@ void test()
     char *text = "\nHello, world!\n\n";
 
     write(fd, text, strlen(text));
-    vfs_close(fd);
+    close(fd);
 }
 
 
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 void shell_terminal_readline(uint8_t *out, const int max, const bool output_while_typing)
 {
     uint8_t current_history_index = history_index;
-    size_t i                      = 0;
+    int i                         = 0;
     for (; i < max - 1; i++) {
         const unsigned char key = getkey_blocking();
         if (key == 0) {
@@ -182,7 +182,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             }
             current_history_index--;
             strncpy((char *)out, command_history[current_history_index], max);
-            i = strnlen((char *)out, max);
+            i = (int)strnlen((char *)out, max);
             printf((char *)out);
             continue;
         }
@@ -199,7 +199,7 @@ void shell_terminal_readline(uint8_t *out, const int max, const bool output_whil
             }
             current_history_index++;
             strncpy((char *)out, command_history[current_history_index], max);
-            i = strlen((char *)out);
+            i = (int)strlen((char *)out);
             printf((char *)out);
             continue;
         }

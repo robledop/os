@@ -5,7 +5,9 @@
 USER=$(whoami)
 TAP=tap0
 IP=192.168.0.95/24
-BRIDGE=osdev
+BRIDGE=osdev  
+# This is for my specific network interface, you may need to change this
+MY_NETWORK_ADAPTER=enxf8e43bad9bb7
 
 echo "Setting TAP interface for user $USER"
 if ip link show | grep -q "$TAP"; then
@@ -22,7 +24,6 @@ if ! ip link show | grep -q "$BRIDGE"; then
     sudo ip link set dev "$BRIDGE" up
 fi
 
-# This is for my specific network interface, you may need to change this
-sudo ip link set dev enp9s0 master "$BRIDGE"
+sudo ip link set dev "$MY_NETWORK_ADAPTER" master "$BRIDGE"
 
 sudo ip link set dev "$TAP" master "$BRIDGE"

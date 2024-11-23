@@ -32,22 +32,22 @@ void clear_screen()
     printf("\033[2J\033[H");
 }
 
-int vfs_stat(int fd, struct file_stat *stat)
+int stat(int fd, struct file_stat *stat)
 {
     return syscall2(SYSCALL_STAT, fd, stat);
 }
 
-int vfs_open(const char name[static 1], const char mode[static 1])
+int open(const char name[static 1], const char mode[static 1])
 {
     return syscall2(SYSCALL_OPEN, name, mode);
 }
 
-int vfs_close(int fd)
+int close(int fd)
 {
     return syscall1(SYSCALL_CLOSE, fd);
 }
 
-int vfs_read(void *ptr, unsigned int size, unsigned int nmemb, int fd)
+int read(void *ptr, unsigned int size, unsigned int nmemb, int fd)
 {
     return syscall4(SYSCALL_READ, ptr, size, nmemb, fd);
 }

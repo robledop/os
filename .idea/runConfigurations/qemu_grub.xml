@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="qemu_grub" type="MAKEFILE_TARGET_RUN_CONFIGURATION" factoryName="Makefile">
+    <makefile filename="$PROJECT_DIR$/Makefile" target="qemu_grub" workingDirectory="" arguments="">
+      <envs>
+        <env name="PATH" value="$USER_HOME$/.cargo/bin:$USER_HOME$/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:$USER_HOME$/.dotnet/tools:$USER_HOME$/.local/share/JetBrains/Toolbox/scripts:$USER_HOME$/opt/cross/bin" />
+      </envs>
+    </makefile>
+    <method v="2" />
+  </configuration>
+</component>

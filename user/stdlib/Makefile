@@ -21,7 +21,6 @@ FLAGS = -g \
 	-finline-functions \
 	-Wno-unused-function \
 	-fno-builtin \
-	-Werror \
 	-Wno-unused-label \
 	-Wno-cpp \
 	-Wno-unused-parameter \
@@ -29,6 +28,8 @@ FLAGS = -g \
 	-nodefaultlibs \
 	-save-temps \
 	-Iinc \
+	-Werror \
+	-Wextra \
 	-Wall
 
 FLAGS += -D__USER__

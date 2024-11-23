@@ -31,11 +31,11 @@ struct process_arguments {
 };
 
 int print(const char str[static 1], uint32_t size);
-int vfs_open(const char name[static 1], const char mode[static 1]);
-int vfs_close(int fd);
-__attribute__((nonnull)) int vfs_read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
+int open(const char name[static 1], const char mode[static 1]);
+int close(int fd);
+__attribute__((nonnull)) int read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 int write(int fd, const char *buffer, size_t size);
-__attribute__((nonnull)) int vfs_stat(int fd, struct file_stat *stat);
+__attribute__((nonnull)) int stat(int fd, struct file_stat *stat);
 void clear_screen();
 __attribute__((nonnull)) int opendir(struct dir_entries *directory, const char path[static 1]);
 __attribute__((nonnull)) int readdir(const struct dir_entries *directory, struct dir_entry **entry_out, int index);
