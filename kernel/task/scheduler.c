@@ -39,7 +39,7 @@ __attribute__((noreturn, naked)) void scheduler_idle_thread()
     // Defined in assembly
     extern uint32_t kernel_stack_top;
 
-    // The kernel stack gets reset when the idle thread is run
+    // The kernel stack gets reset when the idle thread runs
     asm volatile("mov %0, %%esp" ::"r"(&kernel_stack_top));
 
     asm volatile("sti;"
@@ -222,12 +222,10 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
     }
 
     milliseconds += PIT_INTERVAL;
-    // asm volatile("mov %0, %%esp\n" : : "r"(frame->reserved));
     if (milliseconds >= TIME_SLICE) {
         milliseconds = 0;
         cli();
         pic_acknowledge(interrupt);
-        // asm volatile("mov %0, %%esp\n" : : "r"(frame->reserved));
         schedule();
     }
 }

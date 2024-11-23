@@ -1,7 +1,7 @@
 SUBDIRS := $(filter-out stdlib, $(wildcard */.))
 
 all: 
-	$(MAKE) -C stdlib
+	$(MAKE) -C libc
 	@for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir; \
 	done

@@ -6,9 +6,9 @@
 #include <net/dhcp.h>
 #include <net/helpers.h>
 #include <net/network.h>
+#include <printf.h>
 #include <serial.h>
 #include <vga_buffer.h>
-#include <printf.h>
 
 #define IRQ0 0x20
 
@@ -16,7 +16,6 @@
 void e1000_receive();
 bool e1000_start();
 void e1000_linkup();
-int e1000_send_packet(const void *data, uint16_t len);
 void e1000_receive_packets();
 
 static uint8_t bar_type;                                   // Type of BAR0
@@ -172,10 +171,7 @@ void e1000_tx_init()
 
 void e1000_enable_interrupt()
 {
-    // e1000_write_command(REG_IMASK, 0x1F6DC); // Enable RX and TX interrupts
     e1000_write_command(REG_IMS, E1000_IMS_ENABLE_MASK);
-
-    // Clear any pending interrupts by reading ICR (Interrupt Cause Read) register
     e1000_read_command(REG_ICR);
 }
 
@@ -191,7 +187,7 @@ void e1000_init(struct pci_device *pci)
     if (e1000_start()) {
         arp_init();
     } else {
-        printf("[ " KBRED "FAIL" KRESET KWHT " ] E1000 failed to start\n");
+        printf("[ " KBRED "FAIL" KWHT " ] E1000 failed to start\n");
     }
 }
 

@@ -1,6 +1,8 @@
 #include <inode.h>
 #include <kernel.h>
+#include <memory.h>
 #include <root_inode.h>
+#include <string.h>
 #include <tty.h>
 #include <vfs.h>
 #include <vga_buffer.h>
@@ -14,6 +16,7 @@ static void *tty_open(const struct path_root *path_root, FILE_MODE mode)
 
 static int tty_read(const void *descriptor, size_t size, off_t offset, char *out)
 {
+    memcpy(out, "Not implemented\n", strlen("Not implemented\n"));
     return 0;
 }
 
@@ -28,6 +31,7 @@ static int tty_write(void *descriptor, const char *buffer, size_t size, off_t of
 
 static int tty_stat(void *descriptor, struct file_stat *stat)
 {
+    stat->size = strlen("Not implemented\n");
     return 0;
 }
 

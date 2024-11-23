@@ -1,4 +1,5 @@
 $(shell mkdir -p build)
+$(shell mkdir -p ../../rootfs/lib)
 SRC_DIRS := $(shell find ./src -type d)
 BUILD_DIRS := $(patsubst ./src/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))
@@ -35,7 +36,8 @@ FLAGS = -g \
 FLAGS += -D__USER__
 
 all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
-	ar rcs libstdlib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
+	ar rcs libclib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
+	cp libclib.a ../../rootfs/lib
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -60,4 +62,4 @@ all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o 
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 clean:
-	rm -rf ./build  ./libstdlib.a
+	rm -rf ./build  ./libstdlib.a ./libclib.a ../../rootfs/lib

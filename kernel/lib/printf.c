@@ -55,6 +55,7 @@
 
 // #undef __KERNEL__
 #ifndef __KERNEL__
+#include <status.h>
 #include <stdio.h>
 #include <stdlib.h>
 #endif
@@ -1524,7 +1525,7 @@ int printf(const char *format, ...)
 
     auto buffer = (char *)malloc(len + 1);
     if (!buffer) {
-        return -1;
+        return -ENOMEM;
     }
 
     // Second pass: Write the string to the buffer

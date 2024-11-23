@@ -1,6 +1,8 @@
 $(shell mkdir -p ./bin)
 $(shell mkdir -p ./rootfs/bin)
 QEMU=qemu-system-i386
+QEMU_DISPLAY=-display gtk,zoom-to-fit=on,gl=on,window-close=on,grab-on-hover=off
+QEMU_NETWORK=-netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0
 CC=i686-elf-gcc
 AS=nasm
 LD=i686-elf-ld
@@ -159,14 +161,14 @@ qemu: all FORCE
 .PHONY: qemu_grub_debug
 qemu_grub_debug: grub FORCE
 	./scripts/create_tap.sh
-	$(QEMU) -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 64 -daemonize -display gtk,zoom-to-fit=on  -netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e1000,netdev=net0 -serial file:serial.log # -d int -D qemu.log
+	$(QEMU) -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 64 -daemonize $(QEMU_DISPLAY) $(QEMU_NETWORK)  -serial file:serial.log # -d int -D qemu.log
 
 qemu_grub_debug_no_net: grub FORCE
-	$(QEMU)  -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 64 -daemonize  -display gtk,zoom-to-fit=on  -serial file:serial.log 
+	$(QEMU)  -S -gdb tcp::1234 -boot d -drive file=disk.img,format=raw -m 64 -daemonize -serial file:serial.log $(QEMU_DISPLAY)
 
 .PHONY: qemu_grub
 qemu_grub: grub FORCE
-	$(QEMU)  -boot d -drive file=./disk.img,format=raw -m 64 -serial stdio -display gtk,zoom-to-fit=on
+	$(QEMU)  -boot d -drive file=./disk.img,format=raw -m 64 -serial stdio $(QEMU_DISPLAY)
 
 .PHONY: qemu_iso
 qemu_iso: iso FORCE

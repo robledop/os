@@ -48,7 +48,6 @@ Written in C23, so it requires a version of GCC that supports it.
 - ⬜ Semaphore
 - ✅ Multi-tasking
 - ⬜ User mode multi-threading
-- ⬜ A better scheduler
 - ✅ PS/2 Keyboard
 - ⬜ USB
 - ✅ ELF loader
@@ -58,14 +57,14 @@ Written in C23, so it requires a version of GCC that supports it.
 - ✅ Serial
 - ☑️ User standard library (still in progress)
 - ✅ Framebuffer text mode
-- ⬜ TTY
+- ☑️ TTY
 - ✅ PIT
 - ✅ Panic with stack trace
 - ⬜ DWARF debugging
 - ✅ Undefined behavior sanitizer
 - ✅ Stack smashing protector
 - ☑️ VFS
-- ⬜ Network stack
+- ☑️ Network stack
 - ⬜ Make the syscalls more POSIX-like
 - ⬜ GUI
 
@@ -86,7 +85,7 @@ Written in C23, so it requires a version of GCC that supports it.
 - ✅ open
 - ✅ close
 - ✅ read
-- ⬜ write
+- ✅ write
 - ⬜ lseek
 - ✅ fstat
 - ✅ getcwd (get_current_directory)
@@ -96,7 +95,7 @@ Written in C23, so it requires a version of GCC that supports it.
 - ✅ malloc
 - ✅ free
 - ✅ calloc
-- ⬜ realloc
+- ✅ realloc
 - ⬜ brk
 - ⬜ sbrk
 - ⬜ mmap
@@ -108,7 +107,7 @@ Written in C23, so it requires a version of GCC that supports it.
 - ⬜ dup2
 - ⬜ pipe
 - ⬜ ioctl
-- ⬜ readdir
+- ✅ readdir
 - ⬜ closedir
 - ⬜ signal
 - ⬜ sigaction

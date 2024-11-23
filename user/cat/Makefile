@@ -39,8 +39,8 @@ FLAGS = -g \
 
 FLAGS += -D__USER__
 
-all: $(FILES) ../stdlib/libstdlib.a
-	i686-elf-gcc -g -T ./linker.ld -o ../../rootfs/bin/$(OUTPUT) -ffreestanding -O0 -nostdlib -fpic -g $(FILES) ../stdlib/libstdlib.a
+all: $(FILES) ../libc
+	i686-elf-gcc -g -T ./linker.ld -o ../../rootfs/bin/$(OUTPUT) -ffreestanding -O0 -nostdlib -fpic -g $(FILES) ../libc/libclib.a
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@

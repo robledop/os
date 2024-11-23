@@ -1,8 +1,7 @@
-#include "stdlib.h"
-
 #include <config.h>
 #include <os.h>
 #include <status.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syscall.h>
 
