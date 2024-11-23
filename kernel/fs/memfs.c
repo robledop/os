@@ -50,22 +50,8 @@ struct inode *memfs_create_inode(const enum inode_type type, struct inode_operat
     new_inode->inode_number = next_inode_number++;
     new_inode->type         = type;
     new_inode->size         = 0;
-
-    // switch (type) {
-    // case INODE_DEVICE:
-    // case INODE_FILE:
-    //     new_inode->data = nullptr;
-    //     break;
-    // case INODE_DIRECTORY:
-    //     new_inode->data      = create_directory_entries();
-    //     new_inode->dir_magic = DIR_MAGIC;
-    //     break;
-    // default:
-    //     kfree(new_inode);
-    //     return nullptr;
-    // }
-    new_inode->fs_type = FS_TYPE_RAMFS;
-    new_inode->ops     = ops;
+    new_inode->fs_type      = FS_TYPE_RAMFS;
+    new_inode->ops          = ops;
 
     return new_inode;
 }
@@ -162,6 +148,7 @@ int memfs_lookup(const struct inode *dir, const char *name, struct inode **resul
     if (entries->entries[0] == nullptr) {
         return -ENOENT;
     }
+
     for (size_t i = 0; i < entries->count; ++i) {
         if (strncmp(entries->entries[i]->name, name, MAX_NAME_LEN) == 0) {
             *result = entries->entries[i]->inode;

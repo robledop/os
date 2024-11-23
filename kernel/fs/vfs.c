@@ -385,12 +385,14 @@ int vfs_open_dir(const char path[static 1], struct dir_entries **directory)
 
     struct dir_entries *root_dir = root_inode_get_root_directory();
 
+    // We want to load the root directory
     if (root_path->first == nullptr) {
         *directory = root_dir;
         path_parser_free(root_path);
         return ALL_OK;
     }
 
+    // We want to load a sub directory
     const struct path_part *part = root_path->first;
     struct inode *dir            = nullptr;
     root_inode_lookup(part->name, &dir);
