@@ -1,3 +1,4 @@
+#include <debug.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memfs.h>
@@ -105,7 +106,7 @@ int memfs_read(const void *descriptor, size_t size, off_t offset, char *out)
     return 0;
 }
 
-int memfs_write(void *descriptor, const char *buffer, size_t size, off_t offset)
+int memfs_write(void *descriptor, const char *buffer, size_t size)
 {
     panic("Not implemented");
     return 0;
@@ -145,6 +146,7 @@ int memfs_lookup(const struct inode *dir, const char *name, struct inode **resul
     }
 
     auto const entries = (struct dir_entries *)dir->data;
+    ASSERT(entries != nullptr);
     if (entries->entries[0] == nullptr) {
         return -ENOENT;
     }

@@ -33,13 +33,33 @@ struct disk *disk_get(const int index)
     return &disk;
 }
 
-int disk_read_block(const struct disk idisk[static 1], const unsigned int lba, const int total, void *buffer)
+int disk_read_block(const uint32_t lba, const int total, void *buffer)
 {
-    ASSERT(idisk == &disk);
     return ata_read_sector(lba, total, buffer);
 }
 
 int disk_read_sector(const uint32_t sector, uint8_t *buffer)
 {
-    return disk_read_block(&disk, sector, 1, buffer);
+    return disk_read_block(sector, 1, buffer);
+}
+
+int disk_write_block(const uint32_t lba, const int total, void *buffer)
+{
+    return ata_write_sector(lba, total, buffer);
+}
+
+int disk_write_sector(const uint32_t sector, uint8_t *buffer)
+{
+    return disk_write_block(sector, 1, buffer);
+}
+
+int disk_write_sector_offset(const void *data, const int size, const int offset, const int sector)
+{
+    ASSERT(size <= 512 - offset);
+
+    uint8_t buffer[512];
+    disk_read_sector(sector, buffer);
+
+    memcpy(&buffer[offset], data, size);
+    return disk_write_sector(sector, buffer);
 }

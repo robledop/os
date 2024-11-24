@@ -1,89 +1,134 @@
 #include "ata.h"
+
+#include <debug.h>
 #include <spinlock.h>
 #include "io.h"
 #include "kernel.h"
 #include "serial.h"
 #include "status.h"
 
+#define ATA_PRIMARY_IO 0x1F0
+#define ATA_REG_DEVSEL 0x1F6                    // Device/Head register
+#define ATA_REG_STATUS 0x1F7                    // Status register
+#define ATA_REG_CMD 0x1F7                       // Status register
+#define ATA_REG_SEC_COUNT 0x1F2                 // Sector count register
+#define ATA_REG_LBA0 0x1F3                      // LBA low register
+#define ATA_REG_LBA1 0x1F4                      // LBA mid register
+#define ATA_REG_LBA2 0x1F5                      // LBA high register
+#define ATA_REG_FEATURES 0x1F1                  // Features register
+#define ATA_REG_CONTROL (ATA_PRIMARY_IO + 0x0C) // Control register
+#define ATA_REG_DATA ATA_PRIMARY_IO             // Data register
+
+
+#define ATA_CMD_IDENTIFY 0xEC    // Identify drive
+#define ATA_CMD_CACHE_FLUSH 0xE7 // Flush cache
+#define ATA_CMD_READ_PIO 0x20    // Read PIO
+#define ATA_CMD_WRITE_PIO 0x30   // Write PIO
+
+#define ATA_STATUS_ERR 0x01
+#define ATA_STATUS_DRQ 0x08
+#define ATA_STATUS_BUSY 0x80
+#define ATA_STATUS_FAULT 0x20
+
+#define ATA_MASTER 0xE0
+#define ATA_SLAVE 0xF0
+
 spinlock_t disk_lock = 0;
 
 int ata_get_sector_size()
 {
     return 512;
-    // // Identify the drive and get the sector size
-    // outb(0x1F6, 0xA0); // Select drive
-    // outb(0x1F7, 0xEC); // Send IDENTIFY command
-
-    // // Wait for the drive to signal that it is ready
-    // while ((inb(0x1F7) & 0x08) == 0)
-    // {
-    // }
-
-    // unsigned short identify_data[256];
-    // for (int i = 0; i < 256; i++)
-    // {
-    //     identify_data[i] = inw(0x1F0);
-    // }
-
-    // // Extract bits from word 106
-    // unsigned short word_106 = identify_data[106];
-    // int multiple_logical_sectors = (word_106 & (1 << 13)) >> 13;
-    // uint32_t exponent_N = (word_106 >> 4) & 0xFF;
-    // printf("Multiple logical sectors: %d, N: %d\n", multiple_logical_sectors, exponent_N);
-
-    // if (multiple_logical_sectors)
-    // {
-    //     uint32_t logical_sectors_per_physical = 1 << exponent_N;
-    //     return logical_sectors_per_physical * 512; // Assuming 512-byte logical sectors
-    // }
-    // else
-    // {
-    //     return 512; // Logical and physical sector sizes are the same
-    // }
 }
 
-// https://wiki.osdev.org/ATA_read/write_sectors
+int ata_wait_for_ready()
+{
+    inb(ATA_REG_STATUS);
+    inb(ATA_REG_STATUS);
+    inb(ATA_REG_STATUS);
+    inb(ATA_REG_STATUS);
+
+    uint8_t status = inb(ATA_REG_STATUS);
+
+    while ((status & ATA_STATUS_BUSY) && !(status & ATA_STATUS_DRQ)) {
+        if (status & ATA_STATUS_ERR || status & ATA_STATUS_FAULT) {
+            panic("Error: Drive fault\n");
+            spin_unlock(&disk_lock);
+            return -EIO;
+        }
+
+        status = inb(ATA_REG_STATUS);
+    }
+    return ALL_OK;
+}
+
 int ata_read_sector(const uint32_t lba, const int total, void *buffer)
 {
     spin_lock(&disk_lock);
+    outb(ATA_REG_CONTROL, 0x02); // Disable interrupts
 
-    dbgprintf("Reading sector %d\n", lba);
+    outb(ATA_REG_DEVSEL, (lba >> 24 & 0x0F) | ATA_MASTER);
+    outb(ATA_REG_SEC_COUNT, total);
+    outb(ATA_REG_LBA0, lba & 0xFF);
+    outb(ATA_REG_LBA1, lba >> 8);
+    outb(ATA_REG_LBA2, lba >> 16);
+    outb(ATA_REG_CMD, ATA_CMD_READ_PIO);
 
-    outb(0x1F6, (lba >> 24) | 0xE0);
-    outb(0x1F2, total);
-    outb(0x1F3, lba & 0xFF);
-    outb(0x1F4, lba >> 8);
-    outb(0x1F5, lba >> 16);
-    outb(0x1F7, 0x20);
-
-    auto ptr = (unsigned short *)buffer;
+    auto ptr = (uint16_t *)buffer;
     for (int b = 0; b < total; b++) {
-        dbgprintf("Waiting for drive to be ready\n");
-        uint8_t status = inb(0x1F7);
-
-        dbgprintf("Status: %x\n", status);
-
-        while ((status & 0x08) == 0) {
-            if (status & 0x01) {
-                warningf("Error: Drive fault\n");
-                panic("Error: Drive fault\n");
-                spin_unlock(&disk_lock);
-                return -EIO;
-            }
-
-            dbgprintf("Status: %x\n", status);
-            status = inb(0x1F7);
+        const int result = ata_wait_for_ready();
+        if (result != ALL_OK) {
+            return result;
         }
-
         // Read data
         for (int i = 0; i < 256; i++) {
-            *ptr = inw(0x1F0);
-            ptr++;
+            ptr[i] = inw(ATA_PRIMARY_IO);
         }
     }
 
-    // Check if anything was read
-    dbgprintf("Read: %x\n", *(unsigned short *)buffer);
+    spin_unlock(&disk_lock);
+
+    return ALL_OK;
+}
+
+int ata_write_sector(const uint32_t lba, const int total, void *buffer)
+{
+    spin_lock(&disk_lock);
+
+    outb(ATA_REG_CONTROL, 0x02); // Disable interrupts
+
+    int result = ata_wait_for_ready();
+    if (result != ALL_OK) {
+        return result;
+    }
+
+    outb(ATA_REG_DEVSEL, (lba >> 24 & 0x0F) | ATA_MASTER);
+    ata_wait_for_ready();
+    outb(ATA_REG_FEATURES, 0);
+    outb(ATA_REG_SEC_COUNT, total);
+    outb(ATA_REG_LBA0, lba & 0xFF);
+    outb(ATA_REG_LBA1, lba >> 8);
+    outb(ATA_REG_LBA2, lba >> 16);
+    outb(ATA_REG_CMD, ATA_CMD_WRITE_PIO);
+
+    result = ata_wait_for_ready();
+    if (result != ALL_OK) {
+        return result;
+    }
+
+    auto ptr = (unsigned short *)buffer;
+    for (int b = 0; b < total; b++) {
+
+        // Write data
+        for (int i = 0; i < 256; i++) {
+            outw(ATA_PRIMARY_IO, ptr[i]);
+            // Tiny delay between writes
+            asm volatile("nop;");
+            asm volatile("nop;");
+            asm volatile("nop;");
+        }
+        outb(ATA_REG_CMD, ATA_CMD_CACHE_FLUSH);
+        ata_wait_for_ready();
+    }
 
     spin_unlock(&disk_lock);
 

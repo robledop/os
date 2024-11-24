@@ -1,8 +1,8 @@
-#include <stream.h>
 #include <debug.h>
 #include <disk.h>
 #include <kernel_heap.h>
 #include <serial.h>
+#include <stream.h>
 
 struct disk_stream *disk_stream_create(const int disk_index)
 {
@@ -37,7 +37,7 @@ int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size)
         to_read -= (offset + to_read) - stream->disk->sector_size;
     }
 
-    int res = disk_read_block(stream->disk, sector, 1, buffer);
+    int res = disk_read_block(sector, 1, buffer);
     if (res < 0) {
         warningf("Failed to read block\n");
         return res;
@@ -54,6 +54,44 @@ int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size)
     }
 
     ASSERT((uint16_t *)out != nullptr, "Invalid out pointer");
+
+    return res;
+}
+
+int disk_stream_write(struct disk_stream *stream, const void *in, const uint32_t size)
+{
+    ASSERT(stream->disk->sector_size > 0, "Invalid sector size");
+    const uint32_t sector = stream->position / stream->disk->sector_size;
+    const uint32_t offset = stream->position % stream->disk->sector_size;
+    uint32_t to_write     = size;
+    const bool overflow   = (offset + to_write) >= stream->disk->sector_size;
+    char buffer[stream->disk->sector_size];
+
+    if (overflow) {
+        to_write -= (offset + to_write) - stream->disk->sector_size;
+    }
+
+    int res = disk_read_block(sector, 1, buffer);
+    if (res < 0) {
+        warningf("Failed to read block\n");
+        return res;
+    }
+
+    for (uint32_t i = 0; i < to_write; i++) {
+        buffer[offset + i] = *(char *)in;
+        in                 = (char *)in + 1;
+    }
+
+    res = disk_write_block(sector, 1, buffer);
+    if (res < 0) {
+        warningf("Failed to write block\n");
+        return res;
+    }
+
+    stream->position += to_write;
+    if (overflow) {
+        res = disk_stream_write(stream, in, size - to_write);
+    }
 
     return res;
 }

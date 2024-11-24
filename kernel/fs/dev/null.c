@@ -16,7 +16,7 @@ static int null_read(const void *descriptor, size_t size, off_t offset, char *ou
     return 0;
 }
 
-static int null_write(void *descriptor, const char *buffer, size_t size, off_t offset)
+static int null_write(void *descriptor, const char *buffer, size_t size)
 {
     return size;
 }

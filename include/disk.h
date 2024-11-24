@@ -19,6 +19,8 @@ struct disk {
 
 void disk_init(void);
 struct disk *disk_get(int index);
-__attribute__((nonnull)) int disk_read_block(const struct disk idisk[static 1], unsigned int lba, int total,
-                                             void *buffer);
+int disk_read_block(uint32_t lba, int total, void *buffer);
 int disk_read_sector(uint32_t sector, uint8_t *buffer);
+__attribute__((nonnull)) int disk_write_block(uint32_t lba, int total, void *buffer);
+__attribute__((nonnull)) int disk_write_sector(uint32_t sector, uint8_t *buffer);
+__attribute__((nonnull)) int disk_write_sector_offset(const void *data, int size, int offset, int sector);

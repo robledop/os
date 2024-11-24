@@ -65,7 +65,7 @@ enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 struct inode_operations {
     void *(*open)(const struct path_root *path_root, FILE_MODE mode);
     int (*read)(const void *descriptor, size_t size, off_t nmemb, char *out);
-    int (*write)(void *descriptor, const char *buffer, size_t size, off_t offset);
+    int (*write)(void *descriptor, const char *buffer, size_t size);
     int (*seek)(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode);
     int (*stat)(void *descriptor, struct file_stat *stat);
     int (*close)(void *descriptor);

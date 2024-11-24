@@ -339,7 +339,7 @@ int vfs_write(const int fd, const char *buffer, const size_t size)
         return -EINVARG;
     }
 
-    return desc->inode->ops->write(desc, buffer, size, 0);
+    return desc->inode->ops->write(desc, buffer, size);
 }
 
 int vfs_get_non_root_mount_point_count()

@@ -20,7 +20,7 @@ static int tty_read(const void *descriptor, size_t size, off_t offset, char *out
     return 0;
 }
 
-static int tty_write(void *descriptor, const char *buffer, size_t size, off_t offset)
+static int tty_write(void *descriptor, const char *buffer, size_t size)
 {
     for (size_t i = 0; i < size; i++) {
         putchar(buffer[i]);
