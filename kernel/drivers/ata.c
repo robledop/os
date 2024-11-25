@@ -61,13 +61,13 @@ int ata_wait_for_ready()
     return ALL_OK;
 }
 
-int ata_read_sector(const uint32_t lba, const int total, void *buffer)
+int ata_read_sectors(const uint32_t lba, const int total, void *buffer)
 {
     spin_lock(&disk_lock);
     outb(ATA_REG_CONTROL, 0x02); // Disable interrupts
 
     outb(ATA_REG_DEVSEL, (lba >> 24 & 0x0F) | ATA_MASTER);
-    outb(ATA_REG_SEC_COUNT, total);
+    outb(ATA_REG_SEC_COUNT, total); // Number of sectors to read
     outb(ATA_REG_LBA0, lba & 0xFF);
     outb(ATA_REG_LBA1, lba >> 8);
     outb(ATA_REG_LBA2, lba >> 16);
@@ -79,10 +79,11 @@ int ata_read_sector(const uint32_t lba, const int total, void *buffer)
         if (result != ALL_OK) {
             return result;
         }
-        // Read data
+        // Read sector
         for (int i = 0; i < 256; i++) {
             ptr[i] = inw(ATA_PRIMARY_IO);
         }
+        ptr += 256; // Advance the buffer 256 words (512 bytes)
     }
 
     spin_unlock(&disk_lock);
@@ -90,7 +91,7 @@ int ata_read_sector(const uint32_t lba, const int total, void *buffer)
     return ALL_OK;
 }
 
-int ata_write_sector(const uint32_t lba, const int total, void *buffer)
+int ata_write_sectors(const uint32_t lba, const int total, void *buffer)
 {
     spin_lock(&disk_lock);
 
@@ -104,7 +105,7 @@ int ata_write_sector(const uint32_t lba, const int total, void *buffer)
     outb(ATA_REG_DEVSEL, (lba >> 24 & 0x0F) | ATA_MASTER);
     ata_wait_for_ready();
     outb(ATA_REG_FEATURES, 0);
-    outb(ATA_REG_SEC_COUNT, total);
+    outb(ATA_REG_SEC_COUNT, total); // Number of sectors to write
     outb(ATA_REG_LBA0, lba & 0xFF);
     outb(ATA_REG_LBA1, lba >> 8);
     outb(ATA_REG_LBA2, lba >> 16);
@@ -115,19 +116,22 @@ int ata_write_sector(const uint32_t lba, const int total, void *buffer)
         return result;
     }
 
-    auto ptr = (unsigned short *)buffer;
+    auto ptr = (char *)buffer;
     for (int b = 0; b < total; b++) {
-
-        // Write data
-        for (int i = 0; i < 256; i++) {
-            outw(ATA_PRIMARY_IO, ptr[i]);
+        // Write the sector
+        for (int i = 0; i < 512; i += 2) {
+            // Handle potential unaligned access
+            uint16_t word = (uint8_t)ptr[i];
+            if (i + 1 < 512) {
+                word |= (uint16_t)(ptr[i + 1]) << 8;
+            }
+            outw(ATA_PRIMARY_IO, word);
             // Tiny delay between writes
-            asm volatile("nop;");
-            asm volatile("nop;");
-            asm volatile("nop;");
+            asm volatile("nop; nop; nop;");
         }
         outb(ATA_REG_CMD, ATA_CMD_CACHE_FLUSH);
         ata_wait_for_ready();
+        ptr += 512; // Advance the buffer 512 bytes
     }
 
     spin_unlock(&disk_lock);

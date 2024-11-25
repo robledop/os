@@ -71,6 +71,7 @@ int vfs_find_mount_point(const char *prefix)
         }
     }
 
+    panic("Mount point not found\n");
     return -1;
 }
 

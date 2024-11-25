@@ -245,33 +245,33 @@ char *strchr(const char *s, int c)
 
 char *strtok(char *str, const char delim[static 1])
 {
-    static char *next = NULL;
+    static char *next = nullptr;
     // If str is provided, start from the beginning
-    if (str != NULL) {
+    if (str != nullptr) {
         next = str;
     } else {
-        // If no more tokens, return NULL
-        if (next == NULL) {
-            return NULL;
+        // If no more tokens, return nullptr
+        if (next == nullptr) {
+            return nullptr;
         }
     }
 
     // Skip leading delimiters
-    while (*next != '\0' && strchr(delim, *next) != NULL) {
+    while (*next != '\0' && strchr(delim, *next) != nullptr) {
         next++;
     }
 
     // If end of string reached after skipping delimiters
     if (*next == '\0') {
-        next = NULL;
-        return NULL;
+        next = nullptr;
+        return nullptr;
     }
 
     // Mark the start of the token
     char *start = next;
 
     // Find the end of the token
-    while (*next != '\0' && strchr(delim, *next) == NULL) {
+    while (*next != '\0' && strchr(delim, *next) == nullptr) {
         next++;
     }
 
@@ -281,7 +281,7 @@ char *strtok(char *str, const char delim[static 1])
         next++; // Move past the null terminator
     } else {
         // No more tokens
-        next = NULL;
+        next = nullptr;
     }
 
     return start;

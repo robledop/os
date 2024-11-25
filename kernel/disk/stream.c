@@ -31,21 +31,21 @@ int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size)
     const uint32_t offset = stream->position % stream->disk->sector_size;
     uint32_t to_read      = size;
     const bool overflow   = (offset + to_read) >= stream->disk->sector_size;
-    char buffer[stream->disk->sector_size];
+    uint8_t buffer[stream->disk->sector_size];
 
     if (overflow) {
         to_read -= (offset + to_read) - stream->disk->sector_size;
     }
 
-    int res = disk_read_block(sector, 1, buffer);
+    int res = disk_read_sector(sector, buffer);
     if (res < 0) {
         warningf("Failed to read block\n");
         return res;
     }
 
     for (uint32_t i = 0; i < to_read; i++) {
-        *(char *)out = buffer[offset + i];
-        out          = (char *)out + 1;
+        *(uint8_t *)out = buffer[offset + i];
+        out             = (uint8_t *)out + 1;
     }
 
     stream->position += to_read;
@@ -65,24 +65,24 @@ int disk_stream_write(struct disk_stream *stream, const void *in, const uint32_t
     const uint32_t offset = stream->position % stream->disk->sector_size;
     uint32_t to_write     = size;
     const bool overflow   = (offset + to_write) >= stream->disk->sector_size;
-    char buffer[stream->disk->sector_size];
+    uint8_t buffer[stream->disk->sector_size];
 
     if (overflow) {
         to_write -= (offset + to_write) - stream->disk->sector_size;
     }
 
-    int res = disk_read_block(sector, 1, buffer);
+    int res = disk_read_sector(sector, buffer);
     if (res < 0) {
         warningf("Failed to read block\n");
         return res;
     }
 
     for (uint32_t i = 0; i < to_write; i++) {
-        buffer[offset + i] = *(char *)in;
-        in                 = (char *)in + 1;
+        buffer[offset + i] = *(uint8_t *)in;
+        in                 = (uint8_t *)in + 1;
     }
 
-    res = disk_write_block(sector, 1, buffer);
+    res = disk_write_sector(sector, buffer);
     if (res < 0) {
         warningf("Failed to write block\n");
         return res;

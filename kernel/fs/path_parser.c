@@ -1,5 +1,6 @@
 #include <config.h>
 #include <kernel_heap.h>
+#include <memory.h>
 #include <path_parser.h>
 #include <serial.h>
 #include <status.h>
@@ -10,28 +11,6 @@
 #include <stdlib.h>
 #endif
 
-static int path_valid_format(const char *path)
-{
-    const size_t len = strnlen(path, MAX_PATH_LENGTH);
-    return len >= 3 && isdigit(path[0]) && memcmp((void *)&path[1], ":/", 2) == 0;
-}
-
-static int get_drive_by_path(char **path)
-{
-    dbgprintf("Getting drive by path %s\n", *path);
-    if (!path_valid_format(*path)) {
-        warningf("Invalid path format\n");
-        return -EBADPATH;
-    }
-
-    const int drive_number = tonumericdigit(*path[0]);
-
-    // Skip drive number and colon and slash
-    *path += 3;
-
-    return drive_number;
-}
-
 static struct path_root *create_root(const int drive_number, const uint32_t inode_number)
 {
 #ifdef __KERNEL__
@@ -41,8 +20,8 @@ static struct path_root *create_root(const int drive_number, const uint32_t inod
 #endif
 
     root->drive_number = drive_number;
-    root->inode_number = inode_number;
-    root->first        = nullptr;
+    // root->inode_number = inode_number;
+    root->first = nullptr;
 
     return root;
 }
@@ -172,13 +151,15 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
         goto out;
     }
 
-    struct mount_point *mount_point = determine_mount_point(path);
+    // struct mount_point *mount_point = determine_mount_point(path);
 
-    if (mount_point->inode == nullptr) {
-        root = create_root((int)mount_point->disk, -1);
-    } else {
-        root = create_root(-1, mount_point->inode->inode_number);
-    }
+    // if (mount_point->inode == nullptr) {
+    //     root = create_root((int)mount_point->disk, -1);
+    // } else {
+    //     root = create_root(-1, mount_point->inode->inode_number);
+    // }
+
+    root = create_root(0, 0);
 
     if (!root) {
         warningf("Failed to create root\n");
@@ -204,4 +185,14 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
 out:
     dbgprintf("Returning path %s\n", root ? "root" : "NULL");
     return root;
+}
+
+struct path_part *path_parser_get_last_part(const struct path_root *root)
+{
+    const struct path_part *part = root->first;
+    while (part->next) {
+        part = part->next;
+    }
+
+    return (struct path_part *)part;
 }
