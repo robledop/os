@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <memory.h>
 #include <root_inode.h>
+#include <status.h>
 #include <string.h>
 #include <tty.h>
 #include <vfs.h>
@@ -20,13 +21,13 @@ static int tty_read(const void *descriptor, size_t size, off_t offset, char *out
     return 0;
 }
 
-static int tty_write(void *descriptor, const char *buffer, size_t size)
+static int tty_write(const void *descriptor, const char *buffer, const size_t size)
 {
     for (size_t i = 0; i < size; i++) {
         putchar(buffer[i]);
     }
 
-    return size;
+    return (int)size;
 }
 
 static int tty_stat(void *descriptor, struct file_stat *stat)
@@ -71,9 +72,13 @@ int tty_init(void)
             return res;
         }
         dev_dir->fs_type = FS_TYPE_RAMFS;
+        vfs_add_mount_point("/dev", -1, dev_dir);
     }
 
-    vfs_add_mount_point("/dev", -1, dev_dir);
+    struct inode *tty_device = {};
+    if (dev_dir->ops->lookup(dev_dir, "random", &tty_device) == ALL_OK) {
+        return ALL_OK;
+    }
 
     return dev_dir->ops->create_device(dev_dir, "tty", &tty_device_fops);
 }

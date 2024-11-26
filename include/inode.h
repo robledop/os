@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <path_parser.h>
 #include <posix.h>
 #include <stddef.h>
@@ -17,7 +18,7 @@ struct file_stat {
     uint32_t size;
 };
 
-enum inode_type {
+enum INODE_TYPE {
     INODE_FILE,
     INODE_DIRECTORY,
     INODE_DEVICE,
@@ -30,7 +31,8 @@ enum FS_TYPE {
 
 struct inode {
     uint32_t inode_number;
-    enum inode_type type;
+    char path[MAX_PATH_LENGTH];
+    enum INODE_TYPE type;
     enum FS_TYPE fs_type;
     uint32_t size;
     time_t atime; // Last access time
@@ -65,7 +67,7 @@ enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 struct inode_operations {
     void *(*open)(const struct path_root *path_root, FILE_MODE mode);
     int (*read)(const void *descriptor, size_t size, off_t nmemb, char *out);
-    int (*write)(void *descriptor, const char *buffer, size_t size);
+    int (*write)(const void *descriptor, const char *buffer, size_t size);
     int (*seek)(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode);
     int (*stat)(void *descriptor, struct file_stat *stat);
     int (*close)(void *descriptor);
@@ -75,7 +77,7 @@ struct inode_operations {
     int (*create_device)(struct inode *dir, const char *name, struct inode_operations *ops);
 
     int (*lookup)(const struct inode *dir, const char *name, struct inode **result);
-    int (*mkdir)(struct inode *dir, const char *name, struct inode_operations *ops);
+    int (*mkdir)(const char *name);
 
     // typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(const char *path, struct dir_entries *directory);
     int (*get_sub_directory)(const struct path_root *path_root, struct dir_entries *result);

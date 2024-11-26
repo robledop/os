@@ -20,10 +20,10 @@ struct inode_operations memfs_directory_inode_ops = {
     .create_file   = memfs_create_file,
     .create_device = memfs_create_device,
     .lookup        = memfs_lookup,
-    .mkdir         = memfs_mkdir,
+    // .mkdir         = memfs_mkdir,
 };
 
-static void *create_directory_entries()
+void *create_directory_entries()
 {
     auto const entries = (struct dir_entries *)kzalloc(sizeof(struct dir_entries));
     if (!entries) {
@@ -41,7 +41,7 @@ static void *create_directory_entries()
     return entries;
 }
 
-struct inode *memfs_create_inode(const enum inode_type type, struct inode_operations *ops)
+struct inode *memfs_create_inode(const enum INODE_TYPE type, struct inode_operations *ops)
 {
     auto const new_inode = (struct inode *)kzalloc(sizeof(struct inode));
     if (!new_inode) {
@@ -106,7 +106,7 @@ int memfs_read(const void *descriptor, size_t size, off_t offset, char *out)
     return 0;
 }
 
-int memfs_write(void *descriptor, const char *buffer, size_t size)
+int memfs_write(const void *descriptor, const char *buffer, size_t size)
 {
     panic("Not implemented");
     return 0;
@@ -146,19 +146,26 @@ int memfs_lookup(const struct inode *dir, const char *name, struct inode **resul
     }
 
     auto const entries = (struct dir_entries *)dir->data;
-    ASSERT(entries != nullptr);
+    if (entries == nullptr) {
+        return -ENOENT;
+    }
     if (entries->entries[0] == nullptr) {
         return -ENOENT;
     }
 
     for (size_t i = 0; i < entries->count; ++i) {
         if (strncmp(entries->entries[i]->name, name, MAX_NAME_LEN) == 0) {
-            *result = entries->entries[i]->inode;
+            if (result != nullptr) {
+                *result = entries->entries[i]->inode;
+            }
             return ALL_OK;
         }
     }
 
-    *result = nullptr;
+    if (result != nullptr) {
+        *result = nullptr;
+    }
+
     return -ENOENT;
 }
 
@@ -166,4 +173,27 @@ int memfs_mkdir(struct inode *dir, const char *name, struct inode_operations *op
 {
     struct inode *subdir = memfs_create_inode(INODE_DIRECTORY, ops);
     return memfs_add_entry_to_directory(dir, subdir, name);
+}
+
+int memfs_load_directory(struct inode *dir, const struct path_root *root_path)
+{
+    ASSERT(dir->ops->get_sub_directory);
+
+    struct dir_entries *sub_dir_entries = kzalloc(sizeof(struct dir_entries));
+    const int res                       = dir->ops->get_sub_directory(root_path, sub_dir_entries);
+    if (res < 0) {
+        return -EBADPATH;
+    }
+
+    for (size_t i = 0; i < sub_dir_entries->count; i++) {
+        memfs_add_entry_to_directory(dir, sub_dir_entries->entries[i]->inode, sub_dir_entries->entries[i]->name);
+    }
+
+    if (dir->dir_magic != DIR_MAGIC) {
+        dir->data      = create_directory_entries();
+        dir->dir_magic = DIR_MAGIC;
+    }
+
+
+    return res;
 }

@@ -51,6 +51,7 @@ void register_syscalls()
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_WRITE, sys_write);
+    register_syscall(SYSCALL_MKDIR, sys_mkdir);
     register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
     register_syscall(SYSCALL_GET_CURRENT_DIRECTORY, sys_get_current_directory);
     register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
@@ -61,6 +62,14 @@ void register_syscalls()
     register_syscall(SYSCALL_YIELD, sys_yield);
     register_syscall(SYSCALL_PS, sys_ps);
     register_syscall(SYSCALL_MEMSTAT, sys_memstat);
+}
+
+void *sys_mkdir(struct interrupt_frame *frame)
+{
+    char *path    = get_string_argument(0, MAX_PATH_LENGTH);
+    const int res = vfs_mkdir(path);
+    kfree(path);
+    return (void *)res;
 }
 
 void *sys_memstat(struct interrupt_frame *frame)
@@ -87,12 +96,13 @@ void *sys_print(struct interrupt_frame *frame)
 
     return nullptr;
 }
+
 void *sys_ps(struct interrupt_frame *frame)
 {
     struct process_info *proc_info = nullptr;
     int count                      = 0;
     scheduler_get_processes(&proc_info, &count);
-    printf(KBBLU "\n %-5s%-15s%-12s%-12s%-12s\n" KRESET, "PID", "Name", "Priority", "State", "Exit code");
+    printf(KBBLU "\n %-5s%-15s%-12s%-12s%-12s\n" KWHT, "PID", "Name", "Priority", "State", "Exit code");
     for (int i = 0; i < count; i++) {
         constexpr int col               = 15;
         const struct process_info *info = &proc_info[i];
@@ -296,8 +306,8 @@ void *sys_open_dir(struct interrupt_frame *frame)
 
     ASSERT(directory, "Invalid directory");
 
-    struct dir_entries *dir_tmp;
-    int res = vfs_open_dir((const char *)path, &dir_tmp);
+    struct dir_entries *dir_tmp = {};
+    int res                     = vfs_open_dir((const char *)path, &dir_tmp);
     if (res < 0) {
         return (void *)res;
     }

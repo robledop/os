@@ -37,6 +37,7 @@ __attribute__((nonnull)) int read(void *ptr, unsigned int size, unsigned int nme
 int write(int fd, const char *buffer, size_t size);
 __attribute__((nonnull)) int stat(int fd, struct file_stat *stat);
 void clear_screen();
+int mkdir(const char *path);
 __attribute__((nonnull)) int opendir(struct dir_entries *directory, const char path[static 1]);
 __attribute__((nonnull)) int readdir(const struct dir_entries *directory, struct dir_entry **entry_out, int index);
 int getkey(void);

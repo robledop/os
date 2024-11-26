@@ -22,13 +22,10 @@ int main(int argc, char **argv)
         res = opendir(directory, argv[1]);
     }
 
-    switch (res) {
-    case ALL_OK:
+    if (res == ALL_OK) {
         print_results(directory);
-        break;
-    default:
+    } else {
         printf("\nError: %s", get_error_message(res));
-        return 0;
     }
 
     return 0;
@@ -36,22 +33,25 @@ int main(int argc, char **argv)
 
 void print_results(const struct dir_entries *directory)
 {
+    if (directory->count == 0) {
+        return;
+    }
     printf(KWHT "\n Entries in directory: %lu\n", directory->count);
     printf(KBBLU " %-14s%-9s%-21s%-8s%s\n", "Name", "Size", "Created", "inode", "Attributes" KWHT);
 
     for (int i = 0; i < directory->count; i++) {
-        struct dir_entry *dir_entry;
-        const int res = readdir(directory, &dir_entry, i);
+        struct dir_entry *dir_entry = {};
+        const int res               = readdir(directory, &dir_entry, i);
         if (res < 0) {
             printf("Failed to read entry %d\n", i);
         }
 
-        struct tm create_time;
+        struct tm create_time = {0};
         unix_timestamp_to_tm(dir_entry->inode->ctime, &create_time);
 
         const char *date_time_format = "%Y-%m-%d %H:%M:%S";
 
-        char create_time_str[25];
+        char create_time_str[25] = {0};
         strftime(date_time_format, &create_time, create_time_str, sizeof(create_time_str));
 
         char attributes[5] = {0};

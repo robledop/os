@@ -228,7 +228,7 @@ void e1000_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
 
 void e1000_print_mac_address()
 {
-    printf("[ " KBGRN "OK" KRESET KWHT " ] ");
+    printf("[ " KBGRN "OK" KWHT " ] ");
     printf("Intel e1000 MAC Address: %s\n", get_mac_address_string(mac));
 }
 

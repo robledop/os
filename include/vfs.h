@@ -4,6 +4,7 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
+#include <config.h>
 #include <inode.h>
 #include <stdint.h>
 
@@ -17,17 +18,20 @@ struct disk;
 
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct dir_entries *directory);
+typedef int (*FS_MKDIR_FUNCTION)(const char *path);
 
 struct file_system {
     // file_system should return zero from resolve if the disk is using its file system
     FS_RESOLVE_FUNCTION resolve;
     FS_GET_ROOT_DIRECTORY_FUNCTION get_root_directory;
+    struct inode_operations *ops;
 
     char name[20];
     enum FS_TYPE type;
 };
 
 struct file_descriptor {
+    char path[MAX_PATH_LENGTH];
     enum FS_TYPE fs_type;
     int index;
     struct file_system *fs;
@@ -53,7 +57,8 @@ __attribute__((nonnull)) int vfs_stat(int fd, struct file_stat *stat);
 int vfs_close(int fd);
 __attribute__((nonnull)) void vfs_insert_file_system(struct file_system *filesystem);
 __attribute__((nonnull)) struct file_system *vfs_resolve(struct disk *disk);
-int vfs_open_dir(const char path[static 1], struct dir_entries **directory);
+int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries);
 int vfs_get_non_root_mount_point_count();
 int vfs_find_mount_point(const char *prefix);
 struct mount_point *vfs_get_mount_point(int index);
+int vfs_mkdir(const char *path);

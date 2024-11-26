@@ -122,6 +122,12 @@ void vfs_add_mount_point(const char *prefix, const uint32_t disk_number, struct 
 static void file_free_descriptor(struct file_descriptor *desc)
 {
     file_descriptors[desc->index - 1] = nullptr;
+    if (desc->inode) {
+        if (desc->inode->data) {
+            kfree(desc->inode->data);
+        }
+        kfree(desc->inode);
+    }
     kfree(desc);
 }
 
@@ -191,7 +197,8 @@ FILE_MODE file_get_mode(const char *mode)
 
 int vfs_open(const char path[static 1], const char mode[static 1])
 {
-    int res                     = 0;
+    int res = 0;
+
     struct disk *disk           = nullptr;
     struct path_root *root_path = path_parser_parse(path, nullptr);
     if (!root_path) {
@@ -209,13 +216,13 @@ int vfs_open(const char path[static 1], const char mode[static 1])
     if (root_path->drive_number >= 0) {
         disk = disk_get(root_path->drive_number);
         if (!disk) {
-            warningf("Failed to get disk\n");
+            panic("Failed to get disk\n");
             res = -EIO;
             goto out;
         }
 
         if (disk->fs == nullptr) {
-            warningf("Disk has no file system\n");
+            panic("Disk has no file system\n");
             res = -EIO;
             goto out;
         }
@@ -229,26 +236,25 @@ int vfs_open(const char path[static 1], const char mode[static 1])
     }
 
     struct inode *inode = nullptr;
-    res                 = root_inode_lookup(root_path->first->name, &inode);
-    if (ISERR(res)) {
-        warningf("Failed to lookup inode\n");
-        goto out;
-    }
+
+    root_inode_lookup(root_path->first->name, &inode);
 
     // ! This means we can only have memfs directories mounted at the root,
     // ! and the device files cannot be in a sub sub directory.
-    if (inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
+    if (inode && inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
         memfs_lookup(inode, root_path->first->next->name, &inode);
     }
+
+    void *descriptor_private_data;
+
+    // If the inode is still null, then the file is probably on a disk
     if (inode == nullptr) {
-        warningf("Failed to lookup inode\n");
-        res = -EBADPATH;
-        goto out;
+        descriptor_private_data = disk->fs->ops->open(root_path, file_mode);
+    } else {
+        descriptor_private_data = inode->ops->open(root_path, file_mode);
     }
 
     struct file_descriptor *desc = nullptr;
-
-    void *descriptor_private_data = inode->ops->open(root_path, file_mode);
     if (ISERR(descriptor_private_data)) {
         warningf("Failed to open file\n");
         res = ERROR_I(descriptor_private_data);
@@ -259,11 +265,16 @@ int vfs_open(const char path[static 1], const char mode[static 1])
         warningf("Failed to create file descriptor\n");
         goto out;
     }
+    memcpy(desc->path, path, strlen(path));
     desc->fs_data = descriptor_private_data;
     if (disk) {
         desc->disk    = disk;
         desc->fs      = disk->fs;
         desc->fs_type = disk->fs->type;
+    }
+
+    if (inode == nullptr && disk) {
+        inode = memfs_create_inode(INODE_FILE, disk->fs->ops);
     }
 
     desc->inode = inode;
@@ -357,26 +368,13 @@ int vfs_get_non_root_mount_point_count()
     return count;
 }
 
-static int memfs_load_directory(struct inode *dir, const struct path_root *root_path)
+
+int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries)
 {
-    ASSERT(dir->ops->get_sub_directory);
+    // TODO: THIS IS NOW BROKEN. IT NEEDS TO LOAD THE DIRECTORY FROM DISK, NOT MEMORY
 
-    struct dir_entries *sub_dir_entries = kzalloc(sizeof(struct dir_entries));
-    const int res                       = dir->ops->get_sub_directory(root_path, sub_dir_entries);
-    if (res < 0) {
-        return -EBADPATH;
-    }
+    int res = ALL_OK;
 
-    for (size_t i = 0; i < sub_dir_entries->count; i++) {
-        memfs_add_entry_to_directory(dir, sub_dir_entries->entries[i]->inode, sub_dir_entries->entries[i]->name);
-    }
-
-    return res;
-}
-
-int vfs_open_dir(const char path[static 1], struct dir_entries **directory)
-{
-    int res                     = ALL_OK;
     struct path_root *root_path = path_parser_parse(path, nullptr);
 
     if (root_path == nullptr) {
@@ -384,22 +382,32 @@ int vfs_open_dir(const char path[static 1], struct dir_entries **directory)
         return -EBADPATH;
     }
 
-    struct dir_entries *root_dir = root_inode_get_root_directory();
-
     // We want to load the root directory
     if (root_path->first == nullptr) {
-        *directory = root_dir;
+        struct inode *root_inode = root_inode_get();
+
+        const struct disk *disk = disk_get(root_path->drive_number);
         path_parser_free(root_path);
-        return ALL_OK;
+        struct dir_entries *root_directory = kzalloc(sizeof(struct dir_entries));
+
+        res = disk->fs->get_root_directory(disk, root_directory);
+
+        for (size_t j = 0; j < root_directory->count; j++) {
+            memfs_add_entry_to_directory(
+                root_inode, root_directory->entries[j]->inode, root_directory->entries[j]->name);
+        }
+
+        *dir_entries = root_inode->data;
+        return res;
     }
 
     // We want to load a sub directory
     const struct path_part *part = root_path->first;
-    struct inode *dir            = nullptr;
+    struct inode *dir            = {};
     root_inode_lookup(part->name, &dir);
 
     while (part->next != nullptr) {
-        struct inode *next_dir;
+        struct inode *next_dir = {};
         // Try to find it in memory first
         ASSERT(dir->ops->lookup);
         res = dir->ops->lookup(dir, part->next->name, &next_dir);
@@ -420,8 +428,31 @@ int vfs_open_dir(const char path[static 1], struct dir_entries **directory)
         res = memfs_load_directory(dir, root_path);
     }
 
-    *directory = (struct dir_entries *)dir->data;
+    *dir_entries = (struct dir_entries *)dir->data;
     path_parser_free(root_path);
 
     return res;
+}
+
+int vfs_mkdir(const char *path)
+{
+    const struct path_root *root_path = path_parser_parse(path, nullptr);
+    if (root_path == nullptr) {
+        warningf("Failed to parse path\n");
+        return -EBADPATH;
+    }
+    struct inode *inode = {};
+
+    const int res = root_inode_lookup(root_path->first->name, &inode);
+
+    if (res < 0) {
+        const struct disk *disk = disk_get(root_path->drive_number);
+        if (disk == nullptr) {
+            warningf("Failed to get disk\n");
+            return -EIO;
+        }
+        return disk->fs->ops->mkdir(path);
+    } else {
+        return inode->ops->mkdir(path);
+    }
 }

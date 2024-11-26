@@ -50,8 +50,8 @@ void wait_for_network()
     }
     cli();
     if (!network_is_ready()) {
-        printf("[ " KBRED "FAIL" KRESET KWHT " ] ");
-        printf(KBYEL "Network failed to start\n" KRESET KWHT);
+        printf("[ " KBRED "FAIL" KWHT " ] ");
+        printf(KBYEL "Network failed to start\n" KWHT);
     }
 }
 
@@ -82,6 +82,7 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     keyboard_init();
     scheduler_start();
 
+
     printf("\nStarting the shell");
 
     // stdout
@@ -96,7 +97,6 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
 
 void start_shell(const int console)
 {
-    dbgprintf("Loading shell\n");
     struct process *process = nullptr;
     int res                 = process_load_enqueue("/bin/sh", &process);
     if (res < 0) {
@@ -131,7 +131,7 @@ void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
 
         if (type == MULTIBOOT_MEMORY_AVAILABLE) {
             if (mmmt->len > 0x100000) {
-                printf("[ " KBGRN "OK" KRESET KWHT " ] ");
+                printf("[ " KBGRN "OK" KWHT " ] ");
                 printf("Available memory: %u MiB\n", (uint16_t)(mmmt->len / 1024 / 1024));
             }
         }

@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <null.h>
 #include <root_inode.h>
+#include <status.h>
 
 extern struct inode_operations memfs_directory_inode_ops;
 
@@ -16,7 +17,7 @@ static int null_read(const void *descriptor, size_t size, off_t offset, char *ou
     return 0;
 }
 
-static int null_write(void *descriptor, const char *buffer, size_t size)
+static int null_write(const void *descriptor, const char *buffer, size_t size)
 {
     return size;
 }
@@ -54,17 +55,22 @@ struct inode_operations null_device_fops = {
 int null_init(void)
 {
     struct inode *dev_dir = nullptr;
-    int res               = root_inode_lookup("dev", &dev_dir);
-    if (!dev_dir || res != 0) {
+
+    int res = root_inode_lookup("dev", &dev_dir);
+    if (res != 0) {
         root_inode_mkdir("dev", &memfs_directory_inode_ops);
         res = root_inode_lookup("dev", &dev_dir);
         if (ISERR(res) || !dev_dir) {
             return res;
         }
         dev_dir->fs_type = FS_TYPE_RAMFS;
+        vfs_add_mount_point("/dev", -1, dev_dir);
     }
 
-    vfs_add_mount_point("/dev", -1, dev_dir);
+    struct inode *null_device = {};
+    if (dev_dir->ops->lookup(dev_dir, "null", &null_device) == ALL_OK) {
+        return ALL_OK;
+    }
 
     return dev_dir->ops->create_device(dev_dir, "null", &null_device_fops);
 }

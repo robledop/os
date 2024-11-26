@@ -17,6 +17,7 @@ void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
 void test();
+void rand_test();
 
 char *command_history[256];
 uint8_t history_index = 0;
@@ -33,6 +34,7 @@ const cmd commands[] = {
     {"reg",      print_registers},
     {"ms",       memstat        },
     {"test",     test           },
+    {"rand",     rand_test      },
 };
 
 int number_of_commands = sizeof(commands) / sizeof(struct cmd);
@@ -60,22 +62,49 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 void test()
 {
-    int fd = open("/dev/tty", "r");
+    const int fd = open("/mydir/file0.txt", "w");
     if (fd < 0) {
-        printf("Failed to open tty\n");
+        printf("Failed to open file0.txt\n");
         return;
     }
 
-    char *text = "\nHello, world!\n\n";
-
+    const char *text = "Changed!";
     write(fd, text, strlen(text));
+
     close(fd);
+
+    const int fd2 = open("/dev/random", "r");
+    if (fd2 < 0) {
+        printf("Failed to open /dev/random\n");
+        return;
+    }
+    printf("\n");
+    int random_number = 0;
+    read(&random_number, sizeof(int), 1, fd2);
+    printf("Random number: %d\n", random_number);
+    close(fd2);
+}
+
+void rand_test()
+{
+    const int fd2 = open("/dev/random", "r");
+    if (fd2 < 0) {
+        printf("Failed to open /dev/random\n");
+        return;
+    }
+    printf("\n");
+    while (true) {
+        char random[sizeof(int)];
+        read(&random, sizeof(int), 1, fd2);
+        printf("%s", random);
+    }
+    close(fd2);
 }
 
 
 int main(int argc, char **argv)
 {
-    printf(KRESET KWHT "\nUser mode shell started\n");
+    printf(KWHT "\nUser mode shell started\n");
     pass = 0;
 
     for (int i = 0; i < 256; i++) {
@@ -85,7 +114,7 @@ int main(int argc, char **argv)
     // ReSharper disable once CppDFAEndlessLoop
     while (1) {
         char *current_directory = get_current_directory();
-        printf(KRESET KWHT "%s" KGRN "> " KWHT, current_directory);
+        printf(KWHT "%s" KGRN "> " KWHT, current_directory);
 
         uint8_t buffer[1024] = {0};
         shell_terminal_readline(buffer, sizeof(buffer), true);

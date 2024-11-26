@@ -10,18 +10,18 @@ typedef struct stack_frame {
 } stack_frame_t;
 
 
-static struct elf32_shdr *symtab_section_header = NULL;
+static struct elf32_shdr *symtab_section_header = nullptr;
 static struct elf32_shdr *elf_section_headers;
 
 void stack_trace(void)
 {
-    printf(KBWHT "Stack trace:\n" KRESET);
+    printf(KBWHT "Stack trace:\n" KWHT);
 
     const stack_frame_t *stack = __builtin_frame_address(0);
     int max                    = 10;
     while (stack && stack->eip != 0 && max-- > 0) {
         auto const symbol = debug_function_symbol_lookup(stack->eip);
-        printf("\t%#lx " KBWHT "[" KRESET KCYN "%s" KWHT " + %#lx" KBWHT "]\n" KRESET,
+        printf("\t%#lx " KBWHT "[" KCYN "%s" KWHT " + %#lx" KBWHT "]\n" KWHT,
                stack->eip,
                (symbol.name == NULL) ? "[unknown]" : symbol.name,
                stack->eip - symbol.address);
@@ -104,7 +104,7 @@ void init_symbols(const multiboot_info_t *mbd)
 
 void assert(const char *snippet, const char *file, int line, const char *message, ...)
 {
-    printf(KBWHT "assert failed %s:%d %s" KRESET, file, line, snippet);
+    printf(KBWHT "assert failed %s:%d %s" KWHT, file, line, snippet);
 
     if (*message) {
         va_list arg;
@@ -118,7 +118,7 @@ void assert(const char *snippet, const char *file, int line, const char *message
 
 void print_registers()
 {
-    printf(KBWHT "Registers:\n" KRESET);
+    printf(KBWHT "Registers:\n" KWHT);
     uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
     asm volatile("movl %%eax, %0" : "=r"(eax));
     asm volatile("movl %%ebx, %0" : "=r"(ebx));

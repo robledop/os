@@ -51,6 +51,7 @@ int read(void *ptr, unsigned int size, unsigned int nmemb, int fd)
 {
     return syscall4(SYSCALL_READ, ptr, size, nmemb, fd);
 }
+
 int write(int fd, const char *buffer, size_t size)
 {
     return syscall3(SYSCALL_WRITE, fd, buffer, size);
@@ -60,6 +61,11 @@ void putchar(char c)
 {
     // syscall1(SYSCALL_PUTCHAR, c);
     write(1, &c, 1);
+}
+
+int mkdir(const char *path)
+{
+    return syscall1(SYSCALL_MKDIR, path);
 }
 
 /// @brief Opens a directory for reading

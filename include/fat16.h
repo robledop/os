@@ -9,6 +9,6 @@
 
 struct file_system *fat16_init(void);
 __attribute__((nonnull)) void fat16_print_partition_stats(const struct disk *disk);
-__attribute__((nonnull)) int fat16_get_vfs_root_directory(const struct disk *disk, struct dir_entries *directory);
+int fat16_get_vfs_root_directory(const struct disk *disk, struct dir_entries *directory);
 __attribute__((nonnull)) int fat16_get_directory_entries(const struct path_root *root_path,
                                                          struct dir_entries *dir_entries);

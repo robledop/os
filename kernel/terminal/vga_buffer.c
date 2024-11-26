@@ -293,7 +293,7 @@ bool param_process(int c)
         break;
 
     default:
-        panic("Escape sequence not implemented");
+        // panic("Escape sequence not implemented");
     }
 
     return true;

@@ -82,3 +82,10 @@ static inline void lcr3(uint32_t val)
 {
     asm volatile("movl %0,%%cr3" : : "r"(val));
 }
+
+static inline uint64_t rdtsc(void)
+{
+    uint32_t low, high;
+    asm volatile("rdtsc" : "=a"(low), "=d"(high));
+    return ((uint64_t)high << 32) | low;
+}
