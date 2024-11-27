@@ -1323,13 +1323,19 @@ int fat16_get_directory(const struct path_root *path_root, struct fat_directory 
     const struct fat_private *fat_private = disk->fs_private;
 
     if (path_root->first == nullptr) {
-        return fat16_load_root_directory(disk);
+        fat16_load_root_directory(disk);
+        const struct fat_directory *root_directory = &fat_private->root_directory;
+        *fat_directory                             = *root_directory;
+        return ALL_OK;
     }
 
     auto path_part                = path_root->first;
     struct fat_item *current_item = fat16_find_item_in_directory(disk, &fat_private->root_directory, path_part->name);
     if (current_item == nullptr) {
-        return fat16_load_root_directory(disk);
+        fat16_load_root_directory(disk);
+        const struct fat_directory *root_directory = &fat_private->root_directory;
+        *fat_directory                             = *root_directory;
+        return ALL_OK;
     }
     path_part = path_part->next;
 
@@ -1389,6 +1395,7 @@ time_t fat_date_time_to_unix_time(const uint16_t fat_date, const uint16_t fat_ti
 
 int fat16_read_file_dir_entry(const struct fat_directory_entry *fat_entry, struct dir_entry *entry)
 {
+    memset(entry, 0, sizeof(struct dir_entry));
     entry->inode               = memfs_create_inode(INODE_FILE, &fat16_file_inode_ops);
     entry->inode->data         = (void *)fat_entry;
     entry->inode->size         = fat_entry->size;
@@ -1413,8 +1420,8 @@ int fat16_read_file_dir_entry(const struct fat_directory_entry *fat_entry, struc
     }
     memcpy(name, fat_entry->name, 8);
     memcpy(ext, fat_entry->ext, 3);
-    name = trim(name, 8);
-    ext  = trim(ext, 3);
+    name = trim(name, 9);
+    ext  = trim(ext, 4);
 
     for (size_t i = 0; i < strlen(name); i++) {
         name[i] = tolower(name[i]);
@@ -1432,7 +1439,7 @@ int fat16_read_file_dir_entry(const struct fat_directory_entry *fat_entry, struc
         strcat(full_name, name);
     }
 
-    memcpy(entry->name, full_name, strlen(name));
+    memcpy(entry->name, full_name, strlen(full_name));
     entry->name_length = strlen(full_name);
 
     kfree(full_name);
@@ -1450,7 +1457,7 @@ int fat16_read_entry(struct file *descriptor, struct dir_entry *entry)
     ASSERT(descriptor->type == INODE_DIRECTORY);
     if (descriptor->offset >= fat_desc->item->directory->entry_count) {
         entry = nullptr;
-        return ALL_OK;
+        return -ENOENT;
     }
 
     const struct fat_directory *fat_directory      = fat_desc->item->directory;

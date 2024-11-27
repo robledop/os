@@ -23,13 +23,11 @@ int main(int argc, char **argv)
         dir = opendir(argv[1]);
     }
 
-    printf("\n%s", readdir(dir)->name);
-    printf("\n%s", readdir(dir)->name);
-    printf("\n%s", readdir(dir)->name);
-    printf("\n%s", readdir(dir)->name);
-    printf("\n%s", readdir(dir)->name);
-    printf("\n%s", readdir(dir)->name);
-    printf("\n%s", readdir(dir)->name);
+    struct dirent *entry = readdir(dir);
+    while (entry != nullptr) {
+        printf("\n%s\t%lu", entry->name, entry->inode_number);
+        entry = readdir(dir);
+    }
 
     // if (res == ALL_OK) {
     //     print_results(directory);

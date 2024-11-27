@@ -1,6 +1,8 @@
 #include <dirent.h>
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syscall.h>
 
 // FAT Directory entry attributes
@@ -105,21 +107,38 @@ DIR *opendir(const char *name)
 #define BUFFER_SIZE 256
 struct dirent *readdir(DIR *dirp)
 {
+    static struct dirent entry;
+    static int pos = 0;
+
+    memset(&entry, 0, sizeof(struct dirent));
     if (dirp->buffer == nullptr) {
-        dirp->buffer = malloc(BUFFER_SIZE * sizeof(struct dirent));
+        dirp->buffer = malloc(BUFFER_SIZE);
         if (dirp->buffer == nullptr) {
             return nullptr;
         }
     }
 
-    const int nread = getdents(dirp->fd, dirp->buffer, BUFFER_SIZE);
-    if (nread == -1) {
-        return nullptr;
+    if (pos >= dirp->nread) {
+        // Refill the buffer
+        dirp->nread = getdents(dirp->fd, dirp->buffer, BUFFER_SIZE);
+        if (dirp->nread <= 0) {
+            pos = 0;
+            return nullptr;
+        }
+        pos = 0;
     }
 
-    dirp->current_entry = dirp->buffer + dirp->offset;
+    const struct dirent *d = (struct dirent *)((void *)dirp->buffer + pos);
 
-    return dirp->current_entry;
+    entry.inode_number  = d->inode_number;
+    entry.record_length = d->record_length;
+    entry.offset        = d->offset;
+    strncpy(entry.name, d->name, NAME_MAX);
+    entry.name[NAME_MAX - 1] = '\0'; // Ensure null-termination
+
+    pos += d->record_length; // Move to the next entry
+
+    return &entry;
 }
 
 int getdents(unsigned int fd, struct dirent *buffer, unsigned int count)

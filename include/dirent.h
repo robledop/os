@@ -24,6 +24,7 @@ typedef struct {
     struct dirent *buffer; // Buffer to hold directory entries
     struct dirent *current_entry;
     off_t offset; // Current position in the directory stream
+    int nread;
 } DIR;
 
 

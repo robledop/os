@@ -99,7 +99,7 @@ all: ./bin/boot.bin ./bin/kernel.bin apps FORCE
 	dd if=./bin/stage2.bin of=./bin/disk.img bs=512 count=1 seek=1 conv=notrunc
 	dd if=./bin/kernel.bin of=./bin/disk.img bs=512 count=510 seek=2 conv=notrunc
 	sudo mount -t vfat ./bin/disk.img /mnt/d
-	./scripts/generate-files.sh
+	#./scripts/generate-files.sh
 	sudo cp -r ./rootfs/. /mnt/d/
 	sudo umount /mnt/d
 

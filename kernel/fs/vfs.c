@@ -385,7 +385,7 @@ struct dir_entry *read_next_directory_entry(struct file *file)
     }
 
     const int ret = dir_ops->read_entry(file, &entry);
-    if (ret == 0) {
+    if (ret == ALL_OK) {
         return &entry;
     } else if (ret > 0) {
         return nullptr; // End of directory
@@ -475,7 +475,7 @@ int vfs_getdents(const uint32_t fd, void *buffer, const int count)
             break; // End of directory
         }
 
-        struct dirent *dirent = (struct dirent *)(kbuf + bytes_read);
+        auto dirent = (struct dirent *)(kbuf + bytes_read);
         if (dentry->inode) {
             dirent->inode_number = dentry->inode->inode_number;
         }
