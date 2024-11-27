@@ -21,12 +21,17 @@
 #define EINFORMAT 9
 // No such file or directory
 #define ENOENT 10
-
 // Resource temporarily unavailable
 #define EAGAIN 11
-
 // Not a directory
 #define ENOTDIR 12
+// Bad file descriptor
+#define EBADF 13
+// Invalid memory address
+#define EFAULT 14
+// Operation not supported
+#define ENOTSUP 15
+
 
 static inline char *get_error_message(const int error)
 {
@@ -55,6 +60,12 @@ static inline char *get_error_message(const int error)
         return "Resource temporarily unavailable";
     case -ENOTDIR:
         return "Not a directory";
+    case -EBADF:
+        return "Bad file descriptor";
+    case -EFAULT:
+        return "Invalid memory address";
+    case -ENOTSUP:
+        return "Operation not supported";
     default:
         return "Unknown error";
     }

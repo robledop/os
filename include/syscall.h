@@ -19,7 +19,7 @@ enum SysCalls {
     SYSCALL_READ,
     SYSCALL_WRITE,
     SYSCALL_MKDIR,
-    SYSCALL_OPEN_DIR,
+    SYSCALL_GETDENTS, // Get directory entries
     SYSCALL_SET_CURRENT_DIRECTORY,
     SYSCALL_GET_CURRENT_DIRECTORY,
     SYSCALL_WAIT_PID,
@@ -50,7 +50,7 @@ void *sys_stat(struct interrupt_frame *frame);
 void *sys_read(struct interrupt_frame *frame);
 void *sys_write(struct interrupt_frame *frame);
 void *sys_mkdir(struct interrupt_frame *frame);
-void *sys_open_dir(struct interrupt_frame *frame);
+void *sys_getdents(struct interrupt_frame *frame);
 void *sys_set_current_directory(struct interrupt_frame *frame);
 void *sys_get_current_directory(struct interrupt_frame *frame);
 void *sys_wait_pid(struct interrupt_frame *frame);

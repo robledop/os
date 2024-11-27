@@ -62,7 +62,7 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 void test()
 {
-    const int fd = open("/mydir/file0.txt", "w");
+    const int fd = open("/mydir/file0.txt", O_RDWR);
     if (fd < 0) {
         printf("Failed to open file0.txt\n");
         return;
@@ -73,7 +73,7 @@ void test()
 
     close(fd);
 
-    const int fd2 = open("/dev/random", "r");
+    const int fd2 = open("/dev/random", O_RDONLY);
     if (fd2 < 0) {
         printf("Failed to open /dev/random\n");
         return;
@@ -83,11 +83,16 @@ void test()
     read(&random_number, sizeof(int), 1, fd2);
     printf("Random number: %d\n", random_number);
     close(fd2);
+
+    const int dirfd = open("/bin", O_RDONLY | O_DIRECTORY);
+    if (dirfd < 0) {
+        printf("Failed to open /bin\n");
+    }
 }
 
 void rand_test()
 {
-    const int fd2 = open("/dev/random", "r");
+    const int fd2 = open("/dev/random", O_RDONLY);
     if (fd2 < 0) {
         printf("Failed to open /dev/random\n");
         return;
@@ -371,25 +376,28 @@ void change_directory(char *args, char *current_directory)
 
 bool directory_exists(const char *path)
 {
-    struct dir_entries *directory = calloc(1, sizeof(struct dir_entries));
+    // struct dir_entries *directory = calloc(1, sizeof(struct dir_entries));
     char current_directory[MAX_PATH_LENGTH];
     const char *current_dir = get_current_directory();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
-    int res = 0;
+    // int res = 0;
 
+    DIR *dir;
     if (strncmp(path, "/", 3) == 0) {
-        res = opendir(directory, path);
+        dir = opendir(path);
     } else if (strncmp(path, "/", 1) == 0) {
         char root[MAX_PATH_LENGTH] = "/";
         const char *new_path       = strcat(root, path);
-        res                        = opendir(directory, new_path);
+        dir                        = opendir(new_path);
     } else {
         const char *new_path = strcat(current_directory, path);
-        res                  = opendir(directory, new_path);
+        dir                  = opendir(new_path);
     }
 
-    free(directory);
-    return res >= 0;
+    free(dir);
+
+    // free(directory);
+    return true;
 }
 
 void print_registers()

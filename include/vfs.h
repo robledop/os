@@ -5,7 +5,10 @@
 #endif
 
 #include <config.h>
+#include <dirent.h>
+#include <disk.h>
 #include <inode.h>
+#include <stat.h>
 #include <stdint.h>
 
 #define MAX_MOUNT_POINTS 10
@@ -14,7 +17,22 @@ typedef unsigned int FS_ITEM_TYPE;
 #define FS_ITEM_TYPE_DIRECTORY 0
 #define FS_ITEM_TYPE_FILE 1
 
-struct disk;
+#define MAX_NAME_LEN 256
+#define DIR_MAGIC 0x1eaadf71
+
+enum FS_TYPE {
+    FS_TYPE_FAT16,
+    FS_TYPE_RAMFS,
+};
+
+enum INODE_TYPE {
+    INODE_FILE,
+    INODE_DIRECTORY,
+    INODE_DEVICE,
+};
+
+struct dir_entries;
+
 
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 typedef int (*FS_GET_ROOT_DIRECTORY_FUNCTION)(const struct disk *disk, struct dir_entries *directory);
@@ -30,10 +48,12 @@ struct file_system {
     enum FS_TYPE type;
 };
 
-struct file_descriptor {
+struct file {
     char path[MAX_PATH_LENGTH];
     enum FS_TYPE fs_type;
+    enum INODE_TYPE type;
     int index;
+    off_t offset;
     struct file_system *fs;
     struct inode *inode;
     struct disk *disk;
@@ -47,9 +67,70 @@ struct mount_point {
     struct inode *inode;
 };
 
+
+struct inode {
+    uint32_t inode_number;
+    char path[MAX_PATH_LENGTH];
+    enum INODE_TYPE type;
+    enum FS_TYPE fs_type;
+    uint32_t size;
+    time_t atime; // Last access time
+    time_t mtime; // Last modification time
+    time_t ctime; // Creation time
+    bool is_read_only : 1;
+    bool is_hidden    : 1;
+    bool is_system    : 1;
+    bool is_archive   : 1;
+    struct inode_operations *ops;
+    uint32_t dir_magic; // Used to check if the directory has been initialized
+    void *data;
+};
+
+
+// In-memory representation of a directory entry
+struct dir_entry {
+    struct inode *inode;
+    uint8_t file_type;       // File type
+    uint8_t name_length;     // Length of the name
+    char name[NAME_MAX + 1]; // Null-terminated filename
+};
+
+struct dir_entries {
+    size_t count;
+    size_t capacity;
+    struct dir_entry **entries;
+};
+
+typedef unsigned int FILE_SEEK_MODE;
+enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
+
+typedef unsigned int FILE_MODE;
+enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
+
+struct inode_operations {
+    void *(*open)(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out);
+    int (*read)(const void *descriptor, size_t size, off_t nmemb, char *out);
+    int (*write)(const void *descriptor, const char *buffer, size_t size);
+    int (*seek)(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode);
+    int (*stat)(void *descriptor, struct file_stat *stat);
+    int (*close)(void *descriptor);
+    int (*ioctl)(void *descriptor, int request, void *arg);
+
+    int (*create_file)(struct inode *dir, const char *name, struct inode_operations *ops);
+    int (*create_device)(struct inode *dir, const char *name, struct inode_operations *ops);
+
+    int (*lookup)(const struct inode *dir, const char *name, struct inode **result);
+    int (*mkdir)(const char *name);
+
+    // typedef int (*FS_GET_SUB_DIRECTORY_FUNCTION)(const char *path, struct dir_entries *directory);
+    int (*get_sub_directory)(const struct path_root *path_root, struct dir_entries *result);
+
+    int (*read_entry)(struct file *descriptor, struct dir_entry *entry);
+};
+
 void vfs_init(void);
 void vfs_add_mount_point(const char *prefix, uint32_t disk_number, struct inode *inode);
-int vfs_open(const char path[static 1], const char mode[static 1]);
+int vfs_open(const char path[static 1], int mode);
 __attribute__((nonnull)) int vfs_read(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 __attribute__((nonnull)) int vfs_write(int fd, const char *buffer, size_t size);
 int vfs_seek(int fd, int offset, FILE_SEEK_MODE whence);
@@ -57,6 +138,7 @@ __attribute__((nonnull)) int vfs_stat(int fd, struct file_stat *stat);
 int vfs_close(int fd);
 __attribute__((nonnull)) void vfs_insert_file_system(struct file_system *filesystem);
 __attribute__((nonnull)) struct file_system *vfs_resolve(struct disk *disk);
+int vfs_getdents(const uint32_t fd, void *buffer, int count);
 int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries);
 int vfs_get_non_root_mount_point_count();
 int vfs_find_mount_point(const char *prefix);

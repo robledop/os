@@ -10,7 +10,7 @@
 
 extern struct inode_operations memfs_directory_inode_ops;
 
-static void *tty_open(const struct path_root *path_root, FILE_MODE mode)
+static void *tty_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out) 
 {
     return nullptr;
 }

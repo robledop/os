@@ -23,11 +23,11 @@ int main(const int argc, char **argv)
     int fd = 0;
 
     if (starts_with("/", file)) {
-        fd = open(file, "r");
+        fd = open(file, O_RDONLY);
     } else {
         strncpy(full_path, current_directory, MAX_PATH_LENGTH);
         strcat(full_path, file);
-        fd = open(full_path, "r");
+        fd = open(full_path, O_RDONLY);
     }
 
     if (fd <= 0) {

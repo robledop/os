@@ -183,7 +183,6 @@ struct path_root *path_parser_parse(const char path[static 1], const char *curre
     }
 
 out:
-    dbgprintf("Returning path %s\n", root ? "root" : "NULL");
     return root;
 }
 

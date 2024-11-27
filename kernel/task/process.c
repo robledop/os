@@ -9,6 +9,7 @@
 #include <scheduler.h>
 #include <serial.h>
 #include <spinlock.h>
+#include <stat.h>
 #include <status.h>
 #include <string.h>
 #include <thread.h>
@@ -335,7 +336,7 @@ static int process_load_binary(const char *file_name, struct process *process)
     void *program = nullptr;
 
     int res      = 0;
-    const int fd = vfs_open(file_name, "r");
+    const int fd = vfs_open(file_name, O_RDONLY);
     if (!fd) {
         warningf("Failed to open file %s\n", file_name);
         res = -EIO;

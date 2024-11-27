@@ -96,7 +96,7 @@ int memfs_add_entry_to_directory(struct inode *dir_inode, struct inode *entry, c
 
 int memfs_stat(void *descriptor, struct file_stat *stat)
 {
-    auto const desc = (struct file_descriptor *)descriptor;
+    auto const desc = (struct file *)descriptor;
     return desc->inode->ops->stat(descriptor, stat);
 }
 
@@ -112,13 +112,13 @@ int memfs_write(const void *descriptor, const char *buffer, size_t size)
     return 0;
 }
 
-void *memfs_open(const struct path_root *path_root, const FILE_MODE mode)
+void *memfs_open(const struct path_root *path_root, const FILE_MODE mode, enum INODE_TYPE *type_out)
 {
     struct inode *dir = nullptr;
     root_inode_lookup(path_root->first->name, &dir);
     struct inode *file;
     memfs_lookup(dir, path_root->first->next->name, &file);
-    return file->ops->open(path_root, mode);
+    return file->ops->open(path_root, mode, type_out);
 }
 
 int memfs_close(void *descriptor)

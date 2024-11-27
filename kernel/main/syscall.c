@@ -52,7 +52,7 @@ void register_syscalls()
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_WRITE, sys_write);
     register_syscall(SYSCALL_MKDIR, sys_mkdir);
-    register_syscall(SYSCALL_OPEN_DIR, sys_open_dir);
+    register_syscall(SYSCALL_GETDENTS, sys_getdents);
     register_syscall(SYSCALL_GET_CURRENT_DIRECTORY, sys_get_current_directory);
     register_syscall(SYSCALL_SET_CURRENT_DIRECTORY, sys_set_current_directory);
     register_syscall(SYSCALL_WAIT_PID, sys_wait_pid);
@@ -293,28 +293,28 @@ void *sys_get_current_directory(struct interrupt_frame *frame)
     return (void *)scheduler_get_current_process()->current_directory;
 }
 
-void *sys_open_dir(struct interrupt_frame *frame)
-{
-    const void *path_ptr = get_pointer_argument(0);
-    ASSERT(path_ptr, "Invalid path");
-    char path[MAX_PATH_LENGTH];
-
-    copy_string_from_thread(scheduler_get_current_thread(), path_ptr, path, sizeof(path));
-
-    struct dir_entries *directory = thread_virtual_to_physical_address(
-        scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 1));
-
-    ASSERT(directory, "Invalid directory");
-
-    struct dir_entries *dir_tmp = {};
-    int res                     = vfs_open_dir((const char *)path, &dir_tmp);
-    if (res < 0) {
-        return (void *)res;
-    }
-
-    memcpy(directory, dir_tmp, sizeof(struct dir_entries));
-    return (void *)res;
-}
+// void *sys_open_dir(struct interrupt_frame *frame)
+// {
+//     const void *path_ptr = get_pointer_argument(0);
+//     ASSERT(path_ptr, "Invalid path");
+//     char path[MAX_PATH_LENGTH];
+//
+//     copy_string_from_thread(scheduler_get_current_thread(), path_ptr, path, sizeof(path));
+//
+//     struct dir_entries *directory = thread_virtual_to_physical_address(
+//         scheduler_get_current_thread(), thread_peek_stack_item(scheduler_get_current_thread(), 1));
+//
+//     ASSERT(directory, "Invalid directory");
+//
+//     struct dir_entries *dir_tmp = {};
+//     int res                     = vfs_open_dir((const char *)path, &dir_tmp);
+//     if (res < 0) {
+//         return (void *)res;
+//     }
+//
+//     memcpy(directory, dir_tmp, sizeof(struct dir_entries));
+//     return (void *)res;
+// }
 
 void *sys_get_program_arguments(struct interrupt_frame *frame)
 {
@@ -391,14 +391,26 @@ void *sys_open(struct interrupt_frame *frame)
 
     copy_string_from_thread(scheduler_get_current_thread(), file_name, name, sizeof(name));
 
-    const void *mode = get_pointer_argument(0);
-    char mode_str[2];
+    const int mode = get_integer_argument(0);
 
-    copy_string_from_thread(scheduler_get_current_thread(), mode, mode_str, sizeof(mode_str));
-
-    const int fd = vfs_open((const char *)name, mode_str);
+    const int fd = vfs_open((const char *)name, mode);
     return (void *)(int)fd;
 }
+
+// int getdents(unsigned int fd, struct dirent *dirp, unsigned int count);
+void *sys_getdents(struct interrupt_frame *frame)
+{
+    int count                  = get_integer_argument(0);
+    void *dirp_virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 1);
+    const int fd               = get_integer_argument(2);
+
+    struct dirent *buffer = thread_virtual_to_physical_address(scheduler_get_current_thread(), dirp_virtual_address);
+
+    const int res = vfs_getdents(fd, buffer, count);
+
+    return (void *)res;
+}
+
 
 [[noreturn]] void *sys_exit(struct interrupt_frame *frame)
 {

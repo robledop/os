@@ -12,11 +12,14 @@
 #include <string.h>
 #include <vfs.h>
 
+#include <fat16.h>
 
+
+extern int errno;
 struct mount_point *mount_points[MAX_MOUNT_POINTS];
 
 struct file_system *file_systems[MAX_FILE_SYSTEMS];
-struct file_descriptor *file_descriptors[MAX_FILE_DESCRIPTORS];
+struct file *file_descriptors[MAX_FILE_DESCRIPTORS];
 
 static struct file_system **fs_get_free_file_system()
 {
@@ -119,7 +122,7 @@ void vfs_add_mount_point(const char *prefix, const uint32_t disk_number, struct 
     mount_points[index] = mount_point;
 }
 
-static void file_free_descriptor(struct file_descriptor *desc)
+static void file_free_descriptor(struct file *desc)
 {
     file_descriptors[desc->index - 1] = nullptr;
     if (desc->inode) {
@@ -131,12 +134,12 @@ static void file_free_descriptor(struct file_descriptor *desc)
     kfree(desc);
 }
 
-static int file_new_descriptor(struct file_descriptor **desc_out)
+static int file_new_descriptor(struct file **desc_out)
 {
     int res = -ENOMEM;
     for (int i = 0; i < MAX_FILE_DESCRIPTORS; i++) {
         if (file_descriptors[i] == nullptr) {
-            struct file_descriptor *desc = kzalloc(sizeof(struct file_descriptor));
+            struct file *desc = kzalloc(sizeof(struct file));
             if (desc == nullptr) {
                 warningf("Failed to allocate memory for file descriptor\n");
                 res = -ENOMEM;
@@ -155,7 +158,7 @@ static int file_new_descriptor(struct file_descriptor **desc_out)
     return res;
 }
 
-static struct file_descriptor *file_get_descriptor(const int index)
+static struct file *file_get_descriptor(const uint32_t index)
 {
     if (index < 1 || index > MAX_FILE_DESCRIPTORS) {
         return nullptr;
@@ -195,7 +198,7 @@ FILE_MODE file_get_mode(const char *mode)
     return FILE_MODE_INVALID;
 }
 
-int vfs_open(const char path[static 1], const char mode[static 1])
+int vfs_open(const char path[static 1], const int mode)
 {
     int res = 0;
 
@@ -203,12 +206,6 @@ int vfs_open(const char path[static 1], const char mode[static 1])
     struct path_root *root_path = path_parser_parse(path, nullptr);
     if (!root_path) {
         warningf("Failed to parse path\n");
-        res = -EBADPATH;
-        goto out;
-    }
-
-    if (!root_path->first) {
-        warningf("Path does not contain a file\n");
         res = -EBADPATH;
         goto out;
     }
@@ -228,53 +225,62 @@ int vfs_open(const char path[static 1], const char mode[static 1])
         }
     }
 
-    const FILE_MODE file_mode = file_get_mode(mode);
-    if (file_mode == FILE_MODE_INVALID) {
-        warningf("Invalid file mode\n");
-        res = -EINVARG;
-        goto out;
-    }
-
     struct inode *inode = nullptr;
 
-    root_inode_lookup(root_path->first->name, &inode);
+    if (root_path->first != nullptr) {
+        root_inode_lookup(root_path->first->name, &inode);
 
-    // ! This means we can only have memfs directories mounted at the root,
-    // ! and the device files cannot be in a sub sub directory.
-    if (inode && inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
-        memfs_lookup(inode, root_path->first->next->name, &inode);
+        // ! This means we can only have memfs directories mounted at the root,
+        // ! and the device files cannot be in a sub sub directory.
+        if (inode && inode->fs_type == FS_TYPE_RAMFS && inode->type == INODE_DIRECTORY) {
+            memfs_lookup(inode, root_path->first->next->name, &inode);
+        }
     }
 
+    enum INODE_TYPE type;
     void *descriptor_private_data;
 
     // If the inode is still null, then the file is probably on a disk
     if (inode == nullptr) {
-        descriptor_private_data = disk->fs->ops->open(root_path, file_mode);
+        descriptor_private_data = disk->fs->ops->open(root_path, mode, &type);
     } else {
-        descriptor_private_data = inode->ops->open(root_path, file_mode);
+        descriptor_private_data = inode->ops->open(root_path, mode, &type);
     }
 
-    struct file_descriptor *desc = nullptr;
+
     if (ISERR(descriptor_private_data)) {
         warningf("Failed to open file\n");
         res = ERROR_I(descriptor_private_data);
         goto out;
     }
+
+    struct file *desc = nullptr;
+
     res = file_new_descriptor(&desc);
     if (ISERR(res)) {
         warningf("Failed to create file descriptor\n");
         goto out;
     }
     memcpy(desc->path, path, strlen(path));
-    desc->fs_data = descriptor_private_data;
     if (disk) {
         desc->disk    = disk;
         desc->fs      = disk->fs;
         desc->fs_type = disk->fs->type;
     }
 
+    desc->fs_data = descriptor_private_data;
+    desc->type    = type;
+
+    // HACK: Don't forget to do this properly. The vfs must not know about the file system's internal data
+    if (descriptor_private_data) {
+        struct fat_file_descriptor *fat_desc = descriptor_private_data;
+        desc->fs_data                        = kzalloc(sizeof(struct fat_file_descriptor));
+        memcpy(desc->fs_data, fat_desc, sizeof(struct fat_file_descriptor));
+    }
+
     if (inode == nullptr && disk) {
         inode = memfs_create_inode(INODE_FILE, disk->fs->ops);
+        memcpy(inode->path, path, strlen(path));
     }
 
     desc->inode = inode;
@@ -295,7 +301,7 @@ out:
 
 int vfs_stat(const int fd, struct file_stat *stat)
 {
-    struct file_descriptor *desc = file_get_descriptor(fd);
+    struct file *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
@@ -306,7 +312,7 @@ int vfs_stat(const int fd, struct file_stat *stat)
 
 int vfs_seek(const int fd, const int offset, const FILE_SEEK_MODE whence)
 {
-    struct file_descriptor *desc = file_get_descriptor(fd);
+    struct file *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
@@ -317,7 +323,7 @@ int vfs_seek(const int fd, const int offset, const FILE_SEEK_MODE whence)
 
 int vfs_read(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
 {
-    struct file_descriptor *desc = file_get_descriptor(fd);
+    struct file *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
@@ -328,7 +334,7 @@ int vfs_read(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
 
 int vfs_close(const int fd)
 {
-    struct file_descriptor *desc = file_get_descriptor(fd);
+    struct file *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
@@ -345,7 +351,7 @@ int vfs_close(const int fd)
 
 int vfs_write(const int fd, const char *buffer, const size_t size)
 {
-    struct file_descriptor *desc = file_get_descriptor(fd);
+    struct file *desc = file_get_descriptor(fd);
     if (!desc) {
         warningf("Invalid file descriptor\n");
         return -EINVARG;
@@ -368,11 +374,133 @@ int vfs_get_non_root_mount_point_count()
     return count;
 }
 
+struct dir_entry *read_next_directory_entry(struct file *file)
+{
+    static struct dir_entry entry;
+
+    const struct inode_operations *dir_ops = file->inode->ops;
+    if (dir_ops == nullptr || dir_ops->read_entry == nullptr) {
+        errno = ENOTSUP;
+        return nullptr;
+    }
+
+    const int ret = dir_ops->read_entry(file, &entry);
+    if (ret == 0) {
+        return &entry;
+    } else if (ret > 0) {
+        return nullptr; // End of directory
+    } else {
+        errno = -ret; // Error code
+        return nullptr;
+    }
+}
+
+// struct dir_entry *read_next_directory_entry(struct file_descriptor *file)
+// {
+//     static struct dir_entry entry;
+//
+//     if (!file->type != INODE_DIRECTORY) {
+//         errno = ENOTDIR;
+//         return nullptr;
+//     }
+//
+//     uint8_t *dir_data       = file->inode->data;
+//     const uint32_t dir_size = file->inode->size;
+//     const uint32_t offset   = file->offset;
+//
+//     if (offset >= dir_size) {
+//         return nullptr; // End of directory
+//     }
+//
+//     // Read the directory entry at the current offset
+//     const struct fs_dir_entry *fs_entry = (struct fs_dir_entry *)(dir_data + offset);
+//
+//     // Validate record length
+//     if (fs_entry->record_length == 0) {
+//         errno = EIO; // I/O error or corrupt directory
+//         return nullptr;
+//     }
+//
+//     // Advance the offset for the next read
+//     file->offset += fs_entry->record_length;
+//
+//     // Skip entries with inode_number == 0 (deleted entries)
+//     if (fs_entry->inode_number == 0) {
+//         // Recursively read the next entry
+//         return read_next_directory_entry(file);
+//     }
+//
+//     // Populate the in-memory directory entry
+//     entry.inode->inode_number = fs_entry->inode_number;
+//     entry.file_type           = fs_entry->file_type;
+//     // Ensure name_length does not exceed NAME_MAX
+//     uint8_t name_len = fs_entry->name_length;
+//     if (name_len > NAME_MAX) {
+//         name_len = NAME_MAX;
+//     }
+//     memcpy(entry.name, fs_entry->name, name_len);
+//     entry.name[name_len] = '\0'; // Null-terminate the filename
+//
+//     return &entry;
+// }
+
+int copy_to_user(void *dest, const void *src, const size_t size)
+{
+    if (dest == nullptr || src == nullptr) {
+        return -EFAULT;
+    }
+
+    memcpy(dest, src, size);
+    return 0;
+}
+
+int vfs_getdents(const uint32_t fd, void *buffer, const int count)
+{
+    int bytes_read = 0;
+
+    char *kbuf = kzalloc(count * sizeof(struct dirent));
+    if (kbuf == nullptr) {
+        return -ENOMEM;
+    }
+
+    struct file *file = file_get_descriptor(fd);
+    if (file == nullptr || file->type != INODE_DIRECTORY) {
+        kfree(kbuf);
+        return -EBADF;
+    }
+
+    while (bytes_read < count) {
+        struct dir_entry *dentry = read_next_directory_entry(file);
+        if (dentry == nullptr) {
+            break; // End of directory
+        }
+
+        struct dirent *dirent = (struct dirent *)(kbuf + bytes_read);
+        if (dentry->inode) {
+            dirent->inode_number = dentry->inode->inode_number;
+        }
+        dirent->offset        = file->offset;
+        dirent->record_length = dirent_record_length(dentry->name_length);
+
+        // Copy the filename
+        memcpy(dirent->name, dentry->name, dentry->name_length);
+        dirent->name[dentry->name_length] = '\0';
+
+        bytes_read += dirent->record_length;
+    }
+
+    // Copy the kernel buffer to user space
+    if (copy_to_user(buffer, kbuf, bytes_read)) {
+        kfree(kbuf);
+        return -EFAULT;
+    }
+
+    kfree(kbuf);
+    return bytes_read;
+}
 
 int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries)
 {
-    // TODO: THIS IS NOW BROKEN. IT NEEDS TO LOAD THE DIRECTORY FROM DISK, NOT MEMORY
-
     int res = ALL_OK;
 
     struct path_root *root_path = path_parser_parse(path, nullptr);

@@ -4,6 +4,7 @@
 #include <memory.h>
 #include <paging.h>
 #include <serial.h>
+#include <stat.h>
 #include <status.h>
 #include <string.h>
 #include <vfs.h>
@@ -201,7 +202,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
         goto out;
     }
 
-    res = vfs_open(filename, "r");
+    res = vfs_open(filename, O_RDONLY);
     if (res <= 0) {
         warningf("Failed to open file %s\n", filename);
         res = -EIO;

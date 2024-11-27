@@ -6,6 +6,12 @@
 
 #include <vfs.h>
 
+struct fat_file_descriptor {
+    struct fat_item *item;
+    uint32_t position;
+    struct disk *disk;
+};
+
 
 struct file_system *fat16_init(void);
 __attribute__((nonnull)) void fat16_print_partition_stats(const struct disk *disk);

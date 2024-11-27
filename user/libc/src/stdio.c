@@ -1,5 +1,6 @@
-#include <inode.h>
+#include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <syscall.h>
 
 // FAT Directory entry attributes
@@ -37,7 +38,7 @@ int stat(int fd, struct file_stat *stat)
     return syscall2(SYSCALL_STAT, fd, stat);
 }
 
-int open(const char name[static 1], const char mode[static 1])
+int open(const char name[static 1], const int mode)
 {
     return syscall2(SYSCALL_OPEN, name, mode);
 }
@@ -68,41 +69,86 @@ int mkdir(const char *path)
     return syscall1(SYSCALL_MKDIR, path);
 }
 
-/// @brief Opens a directory for reading
-/// @param directory the directory to open
-/// @param path the path to the directory to open
-/// @return 0 on success
-/// @code
-/// struct file_directory *directory = malloc(sizeof(struct file_directory));
-/// int res = opendir(directory, "pah/to/directory");
-/// \endcode
-int opendir(struct dir_entries *directory, const char path[static 1])
+// /// @brief Opens a directory for reading
+// /// @param directory the directory to open
+// /// @param path the path to the directory to open
+// /// @return 0 on success
+// /// @code
+// /// struct file_directory *directory = malloc(sizeof(struct file_directory));
+// /// int res = opendir(directory, "pah/to/directory");
+// /// \endcode
+// int opendir(struct dir_entries *directory, const char path[static 1])
+// {
+//     return syscall2(SYSCALL_OPEN_DIR, directory, path);
+// }
+
+DIR *opendir(const char *name)
 {
-    return syscall2(SYSCALL_OPEN_DIR, directory, path);
+    const int fd = open(name, O_RDONLY | O_DIRECTORY);
+    if (fd == -1) {
+        return nullptr;
+    }
+
+    DIR *dirp = malloc(sizeof(DIR));
+    if (dirp == nullptr) {
+        close(fd);
+        return nullptr;
+    }
+
+    dirp->fd     = fd;
+    dirp->offset = 0;
+    dirp->buffer = nullptr;
+
+    return dirp;
 }
 
-/// @brief Reads an entry from a directory
-/// @param directory the directory to read from
-/// @param entry_out the entry to read into
-/// @param index the index of the entry to read
-/// @return 0 on success
-/// @code
-/// struct file_directory *directory = malloc(sizeof(struct file_directory));
-/// int res = opendir(directory, "pah/to/directory");
-/// for (size_t i = 0; i < directory->entry_count; i++) {
-///     struct directory_entry entry;
-///     readdir(directory, &entry, i);
-///     printf("\n%s", entry.name);
-/// }
-/// free(directory);
-/// \endcode
-int readdir(const struct dir_entries *directory, struct dir_entry **entry_out, const int index)
+#define BUFFER_SIZE 256
+struct dirent *readdir(DIR *dirp)
 {
-    struct dir_entry *entry = directory->entries[index];
-    *entry_out              = entry;
+    if (dirp->buffer == nullptr) {
+        dirp->buffer = malloc(BUFFER_SIZE * sizeof(struct dirent));
+        if (dirp->buffer == nullptr) {
+            return nullptr;
+        }
+    }
 
-    return 0;
+    const int nread = getdents(dirp->fd, dirp->buffer, BUFFER_SIZE);
+    if (nread == -1) {
+        return nullptr;
+    }
+
+    dirp->current_entry = dirp->buffer + dirp->offset;
+
+    return dirp->current_entry;
 }
+
+int getdents(unsigned int fd, struct dirent *buffer, unsigned int count)
+{
+    return syscall3(SYSCALL_GETDENTS, fd, buffer, count);
+}
+
+// /// @brief Reads an entry from a directory
+// /// @param directory the directory to read from
+// /// @param entry_out the entry to read into
+// /// @param index the index of the entry to read
+// /// @return 0 on success
+// /// @code
+// /// struct file_directory *directory = malloc(sizeof(struct file_directory));
+// /// int res = opendir(directory, "pah/to/directory");
+// /// for (size_t i = 0; i < directory->entry_count; i++) {
+// ///     struct directory_entry entry;
+// ///     readdir(directory, &entry, i);
+// ///     printf("\n%s", entry.name);
+// /// }
+// /// free(directory);
+// /// \endcode
+// int readdir(const struct dir_entries *directory, struct dir_entry **entry_out, const int index)
+// {
+//     struct dir_entry *entry = directory->entries[index];
+//     *entry_out              = entry;
+//
+//     return 0;
+// }
 
 // Get the current directory for the current process
 char *get_current_directory()
