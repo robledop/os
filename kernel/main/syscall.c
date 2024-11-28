@@ -337,7 +337,7 @@ void *sys_stat(struct interrupt_frame *frame)
     const int fd          = get_integer_argument(1);
     void *virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 0);
 
-    struct file_stat *stat = thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
+    struct stat *stat = thread_virtual_to_physical_address(scheduler_get_current_thread(), virtual_address);
 
     return (void *)vfs_stat(fd, stat);
 }
@@ -400,11 +400,11 @@ void *sys_open(struct interrupt_frame *frame)
 // int getdents(unsigned int fd, struct dirent *dirp, unsigned int count);
 void *sys_getdents(struct interrupt_frame *frame)
 {
-    int count                  = get_integer_argument(0);
-    void *dirp_virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 1);
-    const int fd               = get_integer_argument(2);
+    const int count              = get_integer_argument(0);
+    void *buffer_virtual_address = thread_peek_stack_item(scheduler_get_current_thread(), 1);
+    const int fd                 = get_integer_argument(2);
 
-    struct dirent *buffer = thread_virtual_to_physical_address(scheduler_get_current_thread(), dirp_virtual_address);
+    struct dirent *buffer = thread_virtual_to_physical_address(scheduler_get_current_thread(), buffer_virtual_address);
 
     const int res = vfs_getdents(fd, buffer, count);
 

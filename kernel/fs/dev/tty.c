@@ -10,7 +10,7 @@
 
 extern struct inode_operations memfs_directory_inode_ops;
 
-static void *tty_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out) 
+static void *tty_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out)
 {
     return nullptr;
 }
@@ -30,9 +30,9 @@ static int tty_write(const void *descriptor, const char *buffer, const size_t si
     return (int)size;
 }
 
-static int tty_stat(void *descriptor, struct file_stat *stat)
+static int tty_stat(void *descriptor, struct stat *stat)
 {
-    stat->size = strlen("Not implemented\n");
+    stat->st_size = strlen("Not implemented\n");
     return 0;
 }
 

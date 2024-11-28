@@ -8,7 +8,8 @@
 
 extern struct inode_operations memfs_directory_inode_ops;
 
-static void *random_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out)
+static void *random_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out,
+                         uint32_t *size_out)
 {
     return nullptr;
 }
@@ -25,9 +26,9 @@ static int random_write(const void *descriptor, const char *buffer, size_t size)
     return 0;
 }
 
-static int random_stat(void *descriptor, struct file_stat *stat)
+static int random_stat(void *descriptor, struct stat *stat)
 {
-    stat->size = sizeof(int);
+    stat->st_size = sizeof(int);
     return 0;
 }
 

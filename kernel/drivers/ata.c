@@ -1,13 +1,10 @@
-#include "ata.h"
-
-#include <debug.h>
+#include <ata.h>
+#include <io.h>
+#include <kernel.h>
 #include <spinlock.h>
-#include "io.h"
-#include "kernel.h"
-#include "serial.h"
-#include "status.h"
+#include <status.h>
 
-#define ATA_PRIMARY_IO 0x1F0
+#define ATA_PRIMARY_IO 0x1F0                    // Primary IO port
 #define ATA_REG_DEVSEL 0x1F6                    // Device/Head register
 #define ATA_REG_STATUS 0x1F7                    // Status register
 #define ATA_REG_CMD 0x1F7                       // Status register
@@ -19,19 +16,18 @@
 #define ATA_REG_CONTROL (ATA_PRIMARY_IO + 0x0C) // Control register
 #define ATA_REG_DATA ATA_PRIMARY_IO             // Data register
 
-
 #define ATA_CMD_IDENTIFY 0xEC    // Identify drive
 #define ATA_CMD_CACHE_FLUSH 0xE7 // Flush cache
 #define ATA_CMD_READ_PIO 0x20    // Read PIO
 #define ATA_CMD_WRITE_PIO 0x30   // Write PIO
 
-#define ATA_STATUS_ERR 0x01
-#define ATA_STATUS_DRQ 0x08
-#define ATA_STATUS_BUSY 0x80
-#define ATA_STATUS_FAULT 0x20
+#define ATA_STATUS_ERR 0x01   // Error bit
+#define ATA_STATUS_DRQ 0x08   // Data request bit
+#define ATA_STATUS_BUSY 0x80  // Busy bit
+#define ATA_STATUS_FAULT 0x20 // Drive fault bit
 
-#define ATA_MASTER 0xE0
-#define ATA_SLAVE 0xF0
+#define ATA_MASTER 0xE0 // Select master drive
+#define ATA_SLAVE 0xF0  // Select slave drive
 
 spinlock_t disk_lock = 0;
 
@@ -42,6 +38,7 @@ int ata_get_sector_size()
 
 int ata_wait_for_ready()
 {
+    // Ignore the first four status reads
     inb(ATA_REG_STATUS);
     inb(ATA_REG_STATUS);
     inb(ATA_REG_STATUS);
@@ -49,6 +46,7 @@ int ata_wait_for_ready()
 
     uint8_t status = inb(ATA_REG_STATUS);
 
+    // Wait for the BUSY bit to clear or the DRQ bit to be set
     while ((status & ATA_STATUS_BUSY) && !(status & ATA_STATUS_DRQ)) {
         if (status & ATA_STATUS_ERR || status & ATA_STATUS_FAULT) {
             panic("Error: Drive fault\n");
@@ -64,7 +62,7 @@ int ata_wait_for_ready()
 int ata_read_sectors(const uint32_t lba, const int total, void *buffer)
 {
     spin_lock(&disk_lock);
-    outb(ATA_REG_CONTROL, 0x02); // Disable interrupts
+    outb(ATA_REG_CONTROL, 0x02); // Disable interrupts. We are polling.
 
     outb(ATA_REG_DEVSEL, (lba >> 24 & 0x0F) | ATA_MASTER);
     outb(ATA_REG_SEC_COUNT, total); // Number of sectors to read
@@ -95,7 +93,7 @@ int ata_write_sectors(const uint32_t lba, const int total, void *buffer)
 {
     spin_lock(&disk_lock);
 
-    outb(ATA_REG_CONTROL, 0x02); // Disable interrupts
+    outb(ATA_REG_CONTROL, 0x02); // Disable interrupts. We are polling.
 
     int result = ata_wait_for_ready();
     if (result != ALL_OK) {
@@ -131,7 +129,7 @@ int ata_write_sectors(const uint32_t lba, const int total, void *buffer)
         }
         outb(ATA_REG_CMD, ATA_CMD_CACHE_FLUSH);
         ata_wait_for_ready();
-        ptr += 512; // Advance the buffer 512 bytes
+        ptr += 512; // Advance the buffer 512 bytes (one sector)
     }
 
     spin_unlock(&disk_lock);

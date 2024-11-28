@@ -9,9 +9,9 @@
 #include <scheduler.h>
 #include <serial.h>
 #include <spinlock.h>
-#include <stat.h>
 #include <status.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <thread.h>
 #include <vfs.h>
 
@@ -157,6 +157,17 @@ int process_free_program_data(const struct process *process)
     return res;
 }
 
+int process_free_file_descriptors(const struct process *process)
+{
+    for (int i = 0; i < MAX_FILE_DESCRIPTORS; i++) {
+        if (process->file_descriptors[i]) {
+            vfs_close(i);
+        }
+    }
+
+    return 0;
+}
+
 /// @brief Turn the process into a zombie and deallocates its resources
 /// The process remains in the process list until the parent process reads the exit code
 int process_zombify(struct process *process)
@@ -164,10 +175,12 @@ int process_zombify(struct process *process)
     spin_lock(&process_lock);
 
     process->state = ZOMBIE;
-    // fclose(process->tty_fd);
 
     int res = process_free_allocations(process);
     ASSERT(res == 0, "Failed to free allocations for process");
+
+    res = process_free_file_descriptors(process);
+    ASSERT(res == 0, "Failed to free file descriptors for process");
 
     res = process_free_program_data(process);
     ASSERT(res == 0, "Failed to free program data for process");
@@ -343,22 +356,22 @@ static int process_load_binary(const char *file_name, struct process *process)
         goto out;
     }
 
-    struct file_stat stat;
-    res = vfs_stat(fd, &stat);
+    struct stat fstat;
+    res = vfs_stat(fd, &fstat);
     if (res != ALL_OK) {
         warningf("Failed to get file stat\n");
         res = -EIO;
         goto out;
     }
 
-    program = kzalloc(stat.size);
+    program = kzalloc(fstat.st_size);
     if (program == nullptr) {
         ASSERT(false, "Failed to allocate memory for program");
         res = -ENOMEM;
         goto out;
     }
 
-    if (vfs_read(program, stat.size, 1, fd) != 1) {
+    if (vfs_read(program, fstat.st_size, 1, fd) != 1) {
         warningf("Failed to read file\n");
         res = -EIO;
         goto out;
@@ -366,7 +379,7 @@ static int process_load_binary(const char *file_name, struct process *process)
 
     process->file_type = PROCESS_FILE_TYPE_BINARY;
     process->pointer   = program;
-    process->size      = stat.size;
+    process->size      = fstat.st_size;
 
     dbgprintf("Loaded binary %s to %x\n", file_name, program);
     dbgprintf("Program size: %d\n", stat.size);
@@ -662,6 +675,8 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
     }
 
     proc->state = RUNNING;
+    memset(proc->file_descriptors, 0, sizeof(proc->file_descriptors));
+
     // proc->tty_fd = fopen("/dev/tty", "w");
 
     *process = proc;
@@ -861,4 +876,50 @@ void process_command_argument_free(struct command_argument *argument)
         process_command_argument_free(argument->next);
     }
     kfree(argument);
+}
+
+void process_free_file_descriptor(struct process *process, struct file *desc)
+{
+    process->file_descriptors[desc->index - 1] = nullptr;
+    // Do not free device inodes
+    if (desc->inode && desc->inode->type != INODE_DEVICE) {
+        if (desc->inode->data) {
+            kfree(desc->inode->data);
+        }
+        kfree(desc->inode);
+    }
+    kfree(desc);
+}
+
+int process_new_file_descriptor(struct process *process, struct file **desc_out)
+{
+    int res = -ENOMEM;
+    for (int i = 0; i < MAX_FILE_DESCRIPTORS; i++) {
+        if (process->file_descriptors[i] == nullptr) {
+            struct file *desc = kzalloc(sizeof(struct file));
+            if (desc == nullptr) {
+                warningf("Failed to allocate memory for file descriptor\n");
+                res = -ENOMEM;
+                break;
+            }
+
+            // Descriptors start at 1
+            desc->index                  = i + 1;
+            process->file_descriptors[i] = desc;
+            *desc_out                    = desc;
+            res                          = 0;
+            break;
+        }
+    }
+
+    return res;
+}
+
+struct file *process_get_file_descriptor(const struct process *process, const uint32_t index)
+{
+    if (index < 1 || index > MAX_FILE_DESCRIPTORS) {
+        return nullptr;
+    }
+
+    return process->file_descriptors[index - 1];
 }

@@ -36,7 +36,7 @@ int main(const int argc, char **argv)
         return fd;
     }
 
-    struct file_stat s;
+    struct stat s;
     int res = stat(fd, &s);
     if (res < 0) {
         printf("\nFailed to get file stat. File: %s", full_path);
@@ -44,14 +44,14 @@ int main(const int argc, char **argv)
         return res;
     }
 
-    char *buffer = malloc(s.size + 1);
-    res          = read((void *)buffer, s.size, 1, fd);
+    char *buffer = malloc(s.st_size + 1);
+    res          = read((void *)buffer, s.st_size, 1, fd);
     if (res < 0) {
         printf("\nFailed to read file: %s", full_path);
         printf("\nError: %s", get_error_message(res));
         return res;
     }
-    buffer[s.size] = 0x00;
+    buffer[s.st_size] = 0x00;
 
     printf(KCYN "\n%s", buffer);
 

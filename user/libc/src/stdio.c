@@ -35,7 +35,7 @@ void clear_screen()
     printf("\033[2J\033[H");
 }
 
-int stat(int fd, struct file_stat *stat)
+int stat(int fd, struct stat *stat)
 {
     return syscall2(SYSCALL_STAT, fd, stat);
 }
@@ -97,8 +97,17 @@ DIR *opendir(const char *name)
         return nullptr;
     }
 
+    struct stat fstat;
+    int res = stat(fd, &fstat);
+    if (res < 0) {
+        close(fd);
+        free(dirp);
+        return nullptr;
+    }
+
     dirp->fd     = fd;
     dirp->offset = 0;
+    dirp->size   = fstat.st_size;
     dirp->buffer = nullptr;
 
     return dirp;
@@ -107,6 +116,12 @@ DIR *opendir(const char *name)
 #define BUFFER_SIZE 256
 struct dirent *readdir(DIR *dirp)
 {
+    if ((uint32_t)dirp->offset >= dirp->size) {
+        dirp->offset = 0;
+        free(dirp->buffer);
+        return nullptr;
+    }
+
     static struct dirent entry;
     static int pos = 0;
 
@@ -122,7 +137,6 @@ struct dirent *readdir(DIR *dirp)
         // Refill the buffer
         dirp->nread = getdents(dirp->fd, dirp->buffer, BUFFER_SIZE);
         if (dirp->nread <= 0) {
-            pos = 0;
             return nullptr;
         }
         pos = 0;
@@ -137,6 +151,7 @@ struct dirent *readdir(DIR *dirp)
     entry.name[NAME_MAX - 1] = '\0'; // Ensure null-termination
 
     pos += d->record_length; // Move to the next entry
+    dirp->offset++;
 
     return &entry;
 }
@@ -145,29 +160,6 @@ int getdents(unsigned int fd, struct dirent *buffer, unsigned int count)
 {
     return syscall3(SYSCALL_GETDENTS, fd, buffer, count);
 }
-
-// /// @brief Reads an entry from a directory
-// /// @param directory the directory to read from
-// /// @param entry_out the entry to read into
-// /// @param index the index of the entry to read
-// /// @return 0 on success
-// /// @code
-// /// struct file_directory *directory = malloc(sizeof(struct file_directory));
-// /// int res = opendir(directory, "pah/to/directory");
-// /// for (size_t i = 0; i < directory->entry_count; i++) {
-// ///     struct directory_entry entry;
-// ///     readdir(directory, &entry, i);
-// ///     printf("\n%s", entry.name);
-// /// }
-// /// free(directory);
-// /// \endcode
-// int readdir(const struct dir_entries *directory, struct dir_entry **entry_out, const int index)
-// {
-//     struct dir_entry *entry = directory->entries[index];
-//     *entry_out              = entry;
-//
-//     return 0;
-// }
 
 // Get the current directory for the current process
 char *get_current_directory()

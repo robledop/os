@@ -8,8 +8,8 @@
 #include <dirent.h>
 #include <disk.h>
 #include <inode.h>
-#include <stat.h>
 #include <stdint.h>
+#include <sys/stat.h>
 
 #define MAX_MOUNT_POINTS 10
 
@@ -54,6 +54,7 @@ struct file {
     enum INODE_TYPE type;
     int index;
     off_t offset;
+    uint32_t size;
     struct file_system *fs;
     struct inode *inode;
     struct disk *disk;
@@ -108,11 +109,11 @@ typedef unsigned int FILE_MODE;
 enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
 struct inode_operations {
-    void *(*open)(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out);
+    void *(*open)(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out);
     int (*read)(const void *descriptor, size_t size, off_t nmemb, char *out);
     int (*write)(const void *descriptor, const char *buffer, size_t size);
     int (*seek)(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode);
-    int (*stat)(void *descriptor, struct file_stat *stat);
+    int (*stat)(void *descriptor, struct stat *stat);
     int (*close)(void *descriptor);
     int (*ioctl)(void *descriptor, int request, void *arg);
 
@@ -134,12 +135,12 @@ int vfs_open(const char path[static 1], int mode);
 __attribute__((nonnull)) int vfs_read(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 __attribute__((nonnull)) int vfs_write(int fd, const char *buffer, size_t size);
 int vfs_seek(int fd, int offset, FILE_SEEK_MODE whence);
-__attribute__((nonnull)) int vfs_stat(int fd, struct file_stat *stat);
+__attribute__((nonnull)) int vfs_stat(int fd, struct stat *stat);
 int vfs_close(int fd);
 __attribute__((nonnull)) void vfs_insert_file_system(struct file_system *filesystem);
 __attribute__((nonnull)) struct file_system *vfs_resolve(struct disk *disk);
 int vfs_getdents(const uint32_t fd, void *buffer, int count);
-int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries);
+// int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries);
 int vfs_get_non_root_mount_point_count();
 int vfs_find_mount_point(const char *prefix);
 struct mount_point *vfs_get_mount_point(int index);

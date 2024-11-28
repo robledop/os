@@ -1,7 +1,7 @@
 #include "io.h"
 #include <cpuid.h>
-#include "vga_buffer.h"
 #include <printf.h>
+#include "vga_buffer.h"
 
 // Vendor strings from CPUs.
 #define CPUID_VENDOR_AMD "AuthenticAMD"
@@ -123,17 +123,17 @@ uint32_t inl(uint16_t p)
     return r;
 }
 
-void outb(uint16_t portid, uint8_t value)
+inline void outb(uint16_t portid, uint8_t value)
 {
     asm volatile("outb %%al, %%dx" ::"d"(portid), "a"(value));
 }
 
-void outw(uint16_t portid, uint16_t value)
+inline void outw(uint16_t portid, uint16_t value)
 {
     asm volatile("outw %%ax, %%dx" ::"d"(portid), "a"(value));
 }
 
-void outl(uint16_t portid, uint32_t value)
+inline void outl(uint16_t portid, uint32_t value)
 {
     asm volatile("outl %%eax, %%dx" ::"d"(portid), "a"(value));
 }
@@ -160,7 +160,7 @@ int cpuid_string(int code, int where[4])
 
 static inline void cpuid(uint32_t reg, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
 {
-    __asm__ volatile("cpuid" : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx) : "0"(reg));
+    asm volatile("cpuid" : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx) : "0"(reg));
 }
 
 char *cpu_string()
@@ -238,12 +238,10 @@ void cpu_print_info()
     }
 
     // Extended Function 0x00 - Largest Extended Function
-
     uint32_t largestExtendedFunc;
     cpuid(0x80000000, &largestExtendedFunc, &ebx, &ecx, &edx);
 
     // Extended Function 0x01 - Extended Feature Bits
-
     if (largestExtendedFunc >= 0x80000001) {
         cpuid(0x80000001, &eax, &ebx, &ecx, &edx);
 

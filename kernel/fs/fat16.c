@@ -10,10 +10,10 @@
 #include <path_parser.h>
 #include <serial.h>
 #include <spinlock.h>
-#include <stat.h>
 #include <status.h>
 #include <stream.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 
 
@@ -96,10 +96,8 @@ struct fat_directory {
 };
 
 struct fat_item {
-    union {
-        struct fat_directory_entry *item;
-        struct fat_directory *directory;
-    };
+    struct fat_directory_entry *item;
+    struct fat_directory *directory;
     FAT_ITEM_TYPE type;
 };
 
@@ -116,14 +114,15 @@ struct fat_private {
 
 static uint8_t *fat_table         = nullptr;
 spinlock_t fat16_table_lock       = 0;
+spinlock_t fat16_set_entry_lock   = 0;
 spinlock_t fat16_table_flush_lock = 0;
 
 int fat16_resolve(struct disk *disk);
-void *fat16_open(const struct path_root *path, FILE_MODE mode, enum INODE_TYPE *type_out);
+void *fat16_open(const struct path_root *path, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out);
 int fat16_read(const void *descriptor, size_t size, off_t nmemb, char *out);
 int fat16_write(const void *descriptor, const char *data, size_t size);
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
-int fat16_stat(void *descriptor, struct file_stat *stat);
+int fat16_stat(void *descriptor, struct stat *stat);
 int fat16_close(void *descriptor);
 time_t fat_date_time_to_unix_time(uint16_t fat_date, uint16_t fat_time);
 static int fat16_get_fat_entry(const struct disk *disk, int cluster);
@@ -185,7 +184,19 @@ static void fat16_init_private(const struct disk *disk, struct fat_private *fat_
     fat_private->directory_stream    = disk_stream_create(disk->id);
 }
 
-int fat16_sector_to_absolute(const struct disk *disk, const int sector)
+static uint32_t fat16_cluster_to_sector(const struct fat_private *fat_private, const int cluster)
+{
+    return fat_private->root_directory.ending_sector_position +
+        ((cluster - 2) * fat_private->header.primary_header.sectors_per_cluster);
+}
+
+static uint16_t fat16_sector_to_cluster(const struct fat_private *fat_private, const int sector)
+{
+    const int cluster_size = fat_private->header.primary_header.sectors_per_cluster;
+    return sector / cluster_size;
+}
+
+static int fat16_sector_to_absolute(const struct disk *disk, const int sector)
 {
     return sector * disk->sector_size;
 }
@@ -193,7 +204,14 @@ int fat16_sector_to_absolute(const struct disk *disk, const int sector)
 /// @brief Load the first FAT into memory
 int fat16_load_table(const struct fat_private *fat_private)
 {
-    ASSERT(fat_table);
+    if (fat_table == nullptr) {
+        fat_table = kzalloc(fat_private->header.primary_header.sectors_per_fat *
+                            fat_private->header.primary_header.bytes_per_sector);
+        if (fat_table == nullptr) {
+            panic("Failed to allocate memory for FAT table\n");
+            return -ENOMEM;
+        }
+    }
 
     const uint16_t first_fat_start_sector = fat_private->header.primary_header.reserved_sectors;
     const uint16_t sector_size            = fat_private->header.primary_header.bytes_per_sector;
@@ -207,6 +225,7 @@ int fat16_load_table(const struct fat_private *fat_private)
             return -EIO;
         }
     }
+
     spin_unlock(&fat16_table_lock);
     return ALL_OK;
 }
@@ -233,26 +252,20 @@ void fat16_flush_table(const struct fat_private *fat_private)
     spin_unlock(&fat16_table_flush_lock);
 }
 
-/// @brief Set a FAT entry in memory. This needs to be flushed to disk to persist.
 void fat16_set_fat_entry(const uint32_t cluster, const uint16_t value)
 {
-    if (fat_table == nullptr) {
-        return;
-    }
-
-    spin_lock(&fat16_table_lock);
-
     const uint32_t fat_offset             = cluster * FAT16_FAT_ENTRY_SIZE;
-    *(uint16_t *)(fat_table + fat_offset) = value;
-
-    // TODO: I'm flushing the table every time a new entry is added because currently fat16_get_fat_entry
-    // only reads from disk. I need to change fat16_get_fat_entry so that it reads from memory first,
-    // and if it's not there, it reads from disk
     const struct disk *disk               = disk_get(0);
     const struct fat_private *fat_private = disk->fs_private;
+
+    spin_lock(&fat16_set_entry_lock);
+
+    // Inefficient, but I don't care for now
+    fat16_load_table(fat_private);
+    *(uint16_t *)(fat_table + fat_offset) = value;
     fat16_flush_table(fat_private);
 
-    spin_unlock(&fat16_table_lock);
+    spin_unlock(&fat16_set_entry_lock);
 }
 
 uint32_t fat16_get_free_cluster(const struct disk *disk)
@@ -400,16 +413,9 @@ int fat16_resolve(struct disk *disk)
         goto out;
     }
 
-    fat_table = kzalloc(fat_private->header.primary_header.sectors_per_fat * disk->sector_size);
-    if (!fat_table) {
-        warningf("Failed to allocate memory for FAT table\n");
-        res = -ENOMEM;
-        goto out;
-    }
-
-    fat16_load_table(fat_private);
-    // Writing the FAT back to disk just to test if the write works and doesn't corrupt the table
-    fat16_flush_table(fat_private);
+    // fat16_load_table(fat_private);
+    // // Writing the FAT back to disk just to test if the write works and doesn't corrupt the table
+    // fat16_flush_table(fat_private);
 
     char data[] = "Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! "
                   "Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! "
@@ -442,6 +448,7 @@ int fat16_resolve(struct disk *disk)
                   "Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! Hello, World! "
                   "END OF FILE";
 
+    fat16_create_directory("/bin/test");
     fat16_create_directory("/mydir");
 
     // Load it again with the new directory
@@ -458,6 +465,8 @@ int fat16_resolve(struct disk *disk)
         sprintf(path, "/mydir/file%d.txt", i);
         fat16_create_file(path, data, (int)strlen(data));
     }
+
+    fat16_create_file("/create.txt", data, (int)strlen(data));
 
     // Load it again with the new files
     if (fat16_load_root_directory(disk) != ALL_OK) {
@@ -561,11 +570,6 @@ struct fat_directory_entry *fat16_clone_fat_directory_entry(const struct fat_dir
     return new_entry;
 }
 
-static uint32_t fat16_cluster_to_sector(const struct fat_private *fat_private, const int cluster)
-{
-    return fat_private->root_directory.ending_sector_position +
-        ((cluster - 2) * fat_private->header.primary_header.sectors_per_cluster);
-}
 
 static int fat16_get_fat_entry(const struct disk *disk, const int cluster)
 {
@@ -578,7 +582,7 @@ static int fat16_get_fat_entry(const struct disk *disk, const int cluster)
         (fat_offset / fs_private->header.primary_header.bytes_per_sector);
     const uint32_t fat_entry_offset = fat_offset % fs_private->header.primary_header.bytes_per_sector;
 
-    uint8_t buffer[fs_private->header.primary_header.bytes_per_sector];
+    uint8_t buffer[512];
 
     int res = disk_read_sector(fat_sector, buffer);
     result  = *(uint16_t *)&buffer[fat_entry_offset];
@@ -774,6 +778,8 @@ struct fat_item *fat16_new_fat_item_for_directory_entry(const struct disk *disk,
         return nullptr;
     }
 
+    f_item->item = fat16_clone_fat_directory_entry(entry, sizeof(struct fat_directory_entry));
+
     if (entry->attributes & FAT_FILE_SUBDIRECTORY) {
         f_item->directory                  = fat16_load_fat_directory(disk, entry);
         f_item->type                       = FAT_ITEM_TYPE_DIRECTORY;
@@ -784,7 +790,6 @@ struct fat_item *fat16_new_fat_item_for_directory_entry(const struct disk *disk,
     }
 
     f_item->type = FAT_ITEM_TYPE_FILE;
-    f_item->item = fat16_clone_fat_directory_entry(entry, sizeof(struct fat_directory_entry));
     return f_item;
 }
 
@@ -833,7 +838,7 @@ out:
     return current_item;
 }
 
-void *fat16_open(const struct path_root *path, const FILE_MODE mode, enum INODE_TYPE *type_out)
+void *fat16_open(const struct path_root *path, const FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out)
 {
     struct fat_file_descriptor *descriptor = nullptr;
     int error_code                         = 0;
@@ -855,8 +860,7 @@ void *fat16_open(const struct path_root *path, const FILE_MODE mode, enum INODE_
             goto error_out;
         }
     } else {
-        const struct fat_private *fat_private = disk->fs_private;
-        // const struct fat_directory *root_directory = fat16_clone_fat_directory(&fat_private->root_directory);
+        const struct fat_private *fat_private      = disk->fs_private;
         const struct fat_directory *root_directory = &fat_private->root_directory;
         descriptor->item                           = fat16_new_fat_item_for_directory(root_directory);
     }
@@ -869,6 +873,8 @@ void *fat16_open(const struct path_root *path, const FILE_MODE mode, enum INODE_
 
     descriptor->position = 0;
     descriptor->disk     = disk;
+    *size_out            = descriptor->item->type == FAT_ITEM_TYPE_FILE ? descriptor->item->item->size
+                                                                        : (uint32_t)descriptor->item->directory->entry_count;
 
     return descriptor;
 
@@ -936,7 +942,7 @@ int fat16_add_entry(const struct fat_directory *directory, const char *name, con
     for (uint32_t dir_sector = first_dir_sector; dir_sector <= last_dir_sector; dir_sector++) {
         if (disk_read_sector(dir_sector, buffer) < 0) {
             panic("Error reading block\n");
-            return -1;
+            return -EIO;
         }
 
         for (int entry = 0; entry < (int)FAT_ENTRIES_PER_SECTOR; entry++) {
@@ -947,6 +953,7 @@ int fat16_add_entry(const struct fat_directory *directory, const char *name, con
                 memset(dir_entry->name, ' ', 8);
                 memcpy(dir_entry->name, name, 8);
                 if (ext != nullptr) {
+                    memset(dir_entry->ext, ' ', 3);
                     memcpy(dir_entry->ext, ext, 3);
                 }
                 dir_entry->attributes    = attributes;
@@ -1029,24 +1036,49 @@ void debug_print_fat_chain(const struct disk *disk, const uint16_t first_cluster
     }
 }
 
+void fat16_initialize_directory(const struct disk *disk, const uint16_t cluster, const uint16_t parent_cluster,
+                                const uint16_t current_cluster)
+{
+    uint8_t buffer[512] = {0};
+
+    auto const dot_entry = (struct fat_directory_entry *)buffer;
+    memset(dot_entry, 0, sizeof(struct fat_directory_entry));
+    memset(dot_entry->name, ' ', 11);
+    dot_entry->name[0]       = '.';
+    dot_entry->attributes    = FAT_FILE_SUBDIRECTORY;
+    dot_entry->first_cluster = current_cluster;
+    dot_entry->size          = 0;
+
+    auto const dotdot_entry = (struct fat_directory_entry *)(buffer + sizeof(struct fat_directory_entry));
+    memset(dotdot_entry, 0, sizeof(struct fat_directory_entry));
+    memset(dotdot_entry->name, ' ', 11);
+    dotdot_entry->name[0]       = '.';
+    dotdot_entry->name[1]       = '.';
+    dotdot_entry->attributes    = FAT_FILE_SUBDIRECTORY;
+    dotdot_entry->first_cluster = parent_cluster;
+    dotdot_entry->size          = 0;
+
+    const struct fat_private *fat_private = disk->fs_private;
+    const uint32_t sector                 = fat16_cluster_to_sector(fat_private, cluster);
+
+    disk_write_sector(sector, buffer);
+}
+
 int fat16_create_directory(const char *path)
 {
     const struct path_root *root = path_parser_parse(path, nullptr);
-
-    // TODO: The disk needs to be inferred from the path
-    const struct disk *disk               = disk_get(0);
-    const struct fat_private *fat_private = disk->fs_private;
-
+    const struct disk *disk      = disk_get(root->drive_number);
     const uint16_t first_cluster = fat16_allocate_new_entry(disk, 1);
 
     struct fat_directory parent_dir = {};
     fat16_get_directory(root, &parent_dir);
-
     const struct path_part *dir_part = path_parser_get_last_part(root);
-
     fat16_add_entry(&parent_dir, dir_part->name, nullptr, FAT_FILE_SUBDIRECTORY, first_cluster, 0);
 
-    fat16_flush_table(fat_private);
+    const struct fat_private *fat_private = disk->fs_private;
+    const uint16_t parent_cluster         = fat16_sector_to_cluster(fat_private, parent_dir.sector_position);
+    // Initialize the new directory with '.' and '..' entries
+    fat16_initialize_directory(disk, first_cluster, parent_cluster, first_cluster);
 
     return 0;
 }
@@ -1055,18 +1087,12 @@ int fat16_create_file(const char *path, void *data, const int size)
 {
     const struct path_root *path_root = path_parser_parse(path, nullptr);
 
-    // TODO: The disk needs to be inferred from the path
-    const struct disk *disk               = disk_get(0);
+    const struct disk *disk               = disk_get(path_root->drive_number);
     const struct fat_private *fat_private = disk->fs_private;
 
     const uint16_t bytes_per_sector   = fat_private->header.primary_header.bytes_per_sector;
     const uint8_t sectors_per_cluster = fat_private->header.primary_header.sectors_per_cluster;
     const uint32_t bytes_per_cluster  = bytes_per_sector * sectors_per_cluster;
-
-    // const uint16_t reserved_sectors   = fat_private->header.primary_header.reserved_sectors;
-    // const uint8_t fat_copies          = fat_private->header.primary_header.fat_copies;
-    // const uint16_t sectors_per_fat    = fat_private->header.primary_header.sectors_per_fat;
-    // const uint16_t first_data_sector  = reserved_sectors + (fat_copies * sectors_per_fat);
 
     const uint16_t clusters_needed = (size + bytes_per_cluster - 1) / bytes_per_cluster;
     const uint16_t first_cluster   = fat16_allocate_new_entry(disk, clusters_needed);
@@ -1177,29 +1203,53 @@ out:
     return res;
 }
 
-int fat16_stat(void *descriptor, struct file_stat *stat)
+int fat16_stat(void *descriptor, struct stat *stat)
 {
-    int res = 0;
-
     auto const desc                  = (struct file *)descriptor;
     auto const fat_desc              = (struct fat_file_descriptor *)desc->fs_data;
     const struct fat_item *desc_item = fat_desc->item;
-    if (desc_item->type != FAT_ITEM_TYPE_FILE) {
-        warningf("Invalid file descriptor\n");
-        res = -EINVARG;
-        goto out;
+
+    stat->st_lfn  = false;
+    stat->st_mode = 0;
+
+    const struct fat_directory_entry *entry = nullptr;
+    if (desc_item->item) {
+        entry = desc_item->item;
+    }
+    if (desc_item->type == FAT_ITEM_TYPE_FILE) {
+
+        stat->st_size = entry->size;
+        stat->st_mode |= S_IRUSR;
+        stat->st_mode |= S_IRGRP;
+        stat->st_mode |= S_IROTH;
+
+        stat->st_mode |= S_IXUSR;
+        stat->st_mode |= S_IXGRP;
+        stat->st_mode |= S_IXOTH;
+
+        if (!(entry->attributes & FAT_FILE_READ_ONLY)) {
+            stat->st_mode |= S_IWUSR;
+            stat->st_mode |= S_IWGRP;
+            stat->st_mode |= S_IWOTH;
+        }
+        stat->st_mode |= S_IFREG;
+        stat->st_mode |= S_IFBLK;
+
+        if (entry->attributes == FAT_FILE_LONG_NAME) {
+            stat->st_lfn = true;
+        }
+    } else if (desc_item->type == FAT_ITEM_TYPE_DIRECTORY) {
+        const struct fat_directory *directory = desc_item->directory;
+
+        stat->st_size = directory->entry_count;
+        stat->st_mode |= S_IFDIR;
     }
 
-    const struct fat_directory_entry *entry = desc_item->item;
-
-    stat->size  = entry->size;
-    stat->flags = 0;
-    if (entry->attributes & FAT_FILE_READ_ONLY) {
-        stat->flags |= FILE_STAT_IS_READ_ONLY;
+    if (entry) {
+        stat->st_mtime = fat_date_time_to_unix_time(entry->modification_date, entry->modification_time);
     }
 
-out:
-    return res;
+    return ALL_OK;
 }
 
 static void fat16_free_file_descriptor(struct fat_file_descriptor *descriptor)
@@ -1303,8 +1353,6 @@ void fat16_convert_fat_to_vfs(const struct fat_directory *fat_directory, struct 
 
         vfs_directory->entries[index] = entry;
         index++;
-        // vfs_directory->entries[i] = kzalloc(sizeof(struct dir_entry));
-        // memcpy(vfs_directory->entries[i], &entry, sizeof(struct dir_entry));
     }
 }
 

@@ -4,9 +4,9 @@
 #include <memory.h>
 #include <paging.h>
 #include <serial.h>
-#include <stat.h>
 #include <status.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <vfs.h>
 
 constexpr char elf_signature[] = {0x7f, 'E', 'L', 'F'};
@@ -210,15 +210,15 @@ int elf_load(const char *filename, struct elf_file **file_out)
     }
 
     fd = res;
-    struct file_stat stat;
+    struct stat stat;
     res = vfs_stat(fd, &stat);
     if (res < 0) {
         warningf("Failed to get file stat for %s\n", filename);
         goto out;
     }
 
-    elf_file->elf_memory = kzalloc(stat.size);
-    res                  = vfs_read(elf_file->elf_memory, stat.size, 1, fd);
+    elf_file->elf_memory = kzalloc(stat.st_size);
+    res                  = vfs_read(elf_file->elf_memory, stat.st_size, 1, fd);
     if (res < 0) {
         warningf("Failed to read file %s\n", filename);
         goto out;
@@ -229,7 +229,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
         warningf("Failed to process loaded ELF file %s\n", filename);
         goto out;
     }
-    elf_file->in_memory_size = stat.size;
+    elf_file->in_memory_size = stat.st_size;
     strncpy(elf_file->filename, filename, MAX_PATH_LENGTH);
 
     *file_out = elf_file;

@@ -7,7 +7,7 @@
 
 extern struct inode_operations memfs_directory_inode_ops;
 
-static void *null_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out)
+static void *null_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out)
 {
     *type_out = INODE_DEVICE;
     return nullptr;
@@ -23,7 +23,7 @@ static int null_write(const void *descriptor, const char *buffer, size_t size)
     return size;
 }
 
-static int null_stat(void *descriptor, struct file_stat *stat)
+static int null_stat(void *descriptor, struct stat *stat)
 {
     return 0;
 }
