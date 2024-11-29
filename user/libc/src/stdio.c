@@ -2,9 +2,12 @@
 #include <dirent.h>
 #include <memory.h>
 #include <status.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <syscall.h>
 
 // FAT Directory entry attributes
@@ -31,6 +34,8 @@ struct fat_directory_entry {
     uint16_t first_cluster;
     uint32_t size;
 } __attribute__((packed));
+
+extern int errno;
 
 void clear_screen()
 {
@@ -72,6 +77,12 @@ int mkdir(const char *path)
 {
     return syscall1(SYSCALL_MKDIR, path);
 }
+
+int lseek(int fd, int offset, int whence)
+{
+    return syscall3(SYSCALL_LSEEK, fd, offset, whence);
+}
+
 
 DIR *opendir(const char *path)
 {
@@ -212,4 +223,225 @@ int getkey_blocking()
     __sync_synchronize();
 
     return key;
+}
+
+int parse_mode(const char *mode_str, int *flags)
+{
+    if (strncmp(mode_str, "r", 1) == 0) {
+        *flags = O_RDONLY;
+    } else if (strncmp(mode_str, "w", 1) == 0) {
+        *flags = O_WRONLY | O_CREAT | O_TRUNC;
+    } else if (strncmp(mode_str, "a", 1) == 0) {
+        *flags = O_WRONLY | O_CREAT | O_APPEND;
+    } else if (strncmp(mode_str, "r+", 2) == 0) {
+        *flags = O_RDWR;
+    } else if (strncmp(mode_str, "w+", 2) == 0) {
+        *flags = O_RDWR | O_CREAT | O_TRUNC;
+    } else if (strncmp(mode_str, "a+", 2) == 0) {
+        *flags = O_RDWR | O_CREAT | O_APPEND;
+    } else {
+        return -1; // Invalid mode
+    }
+    return 0;
+}
+
+#define BUFSIZ 1024
+
+FILE *fopen(const char *pathname, const char *mode)
+{
+    int flags;
+    if (parse_mode(mode, &flags) != 0) {
+        // Set errno to EINVAL for invalid argument
+        errno = EINVARG;
+        return nullptr;
+    }
+
+    int fd = open(pathname, flags);
+    if (fd == -1) {
+        return nullptr;
+    }
+
+    FILE *stream = malloc(sizeof(FILE));
+    if (!stream) {
+        errno = ENOMEM;
+        close(fd);
+        return nullptr;
+    }
+
+    stream->fd          = fd;
+    stream->buffer_size = BUFSIZ;
+    stream->buffer      = malloc(stream->buffer_size);
+    if (!stream->buffer) {
+        errno = ENOMEM;
+        close(fd);
+        free(stream);
+        return nullptr;
+    }
+    stream->pos             = 0;
+    stream->bytes_available = 0;
+    stream->eof             = 0;
+    stream->error           = 0;
+    stream->mode            = flags;
+
+    return stream;
+}
+
+size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    size_t total_bytes = size * nmemb;
+    size_t bytes_read  = 0;
+    char *dest         = ptr;
+
+    while (bytes_read < total_bytes) {
+        if (stream->bytes_available == 0) {
+            // Buffer is empty; read from file
+            ssize_t n = read(stream->buffer, stream->buffer_size, 1, stream->fd);
+            if (n == -1) {
+                stream->error = 1;
+                return bytes_read / size;
+            } else if (n == 0) {
+                stream->eof = 1;
+                break; // EOF reached
+            }
+            stream->bytes_available = n;
+            stream->pos             = 0;
+        }
+
+        size_t bytes_to_copy = stream->bytes_available;
+        if (bytes_to_copy > total_bytes - bytes_read) {
+            bytes_to_copy = total_bytes - bytes_read;
+        }
+
+        memcpy(dest + bytes_read, stream->buffer + stream->pos, bytes_to_copy);
+        stream->pos += bytes_to_copy;
+        stream->bytes_available -= bytes_to_copy;
+        bytes_read += bytes_to_copy;
+    }
+
+    return bytes_read / size;
+}
+
+
+int fclose(FILE *stream)
+{
+    if (!stream) {
+        errno = EINVARG;
+        return EOF;
+    }
+
+    // Flush write buffer if needed
+    if (stream->mode & O_WRONLY || stream->mode & O_RDWR) {
+        fflush(stream);
+    }
+
+    close(stream->fd);
+
+    free(stream->buffer);
+    free(stream);
+
+    return 0;
+}
+
+int fflush(FILE *stream)
+{
+    if (!stream) {
+        errno = EINVARG;
+        return EOF;
+    }
+
+    if (stream->mode & O_WRONLY || stream->mode & O_RDWR) {
+        // Flush write buffer
+        if (stream->pos > 0) {
+            ssize_t n = write(stream->fd, stream->buffer, stream->pos);
+            if (n == -1) {
+                stream->error = 1;
+                return EOF;
+            }
+            stream->pos = 0;
+        }
+    }
+
+    return 0;
+}
+
+size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    size_t total_bytes   = size * nmemb;
+    size_t bytes_written = 0;
+    const char *src      = ptr;
+
+    // Error checking
+    if (!stream || !ptr || size == 0 || nmemb == 0) {
+        return 0;
+    }
+
+    // Ensure the stream is writable
+    if (!(stream->mode & O_WRONLY || stream->mode & O_RDWR)) {
+        stream->error = 1;
+        errno         = EBADF;
+        return 0;
+    }
+
+    while (bytes_written < total_bytes) {
+        size_t space_in_buffer = stream->buffer_size - stream->pos;
+        size_t bytes_to_copy   = total_bytes - bytes_written;
+
+        if (bytes_to_copy > space_in_buffer) {
+            bytes_to_copy = space_in_buffer;
+        }
+
+        // Copy data to the buffer
+        memcpy(stream->buffer + stream->pos, src + bytes_written, bytes_to_copy);
+        stream->pos += bytes_to_copy;
+        bytes_written += bytes_to_copy;
+
+        // If buffer is full, flush it
+        if (stream->pos == stream->buffer_size) {
+            if (fflush(stream) == EOF) {
+                // Error occurred during flush
+                return bytes_written / size;
+            }
+        }
+    }
+
+    // Return the number of complete elements written
+    return bytes_written / size;
+}
+
+int fseek(FILE *stream, long offset, int whence)
+{
+    // Flush write buffer if needed
+    if (stream->mode & O_WRONLY || stream->mode & O_RDWR) {
+        fflush(stream);
+    }
+
+    // Adjust file position
+    off_t result = lseek(stream->fd, offset, whence);
+    if (result == (off_t)-1) {
+        stream->error = 1;
+        return -1;
+    }
+
+    // Reset buffer
+    stream->pos             = 0;
+    stream->bytes_available = 0;
+    stream->eof             = 0;
+
+    return ALL_OK;
+}
+
+int feof(FILE *stream)
+{
+    return stream->eof;
+}
+
+int ferror(FILE *stream)
+{
+    return stream->error;
+}
+
+void clearerr(FILE *stream)
+{
+    stream->eof   = 0;
+    stream->error = 0;
 }

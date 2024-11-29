@@ -25,6 +25,7 @@ void register_syscalls()
     register_syscall(SYSCALL_STAT, sys_stat);
     register_syscall(SYSCALL_READ, sys_read);
     register_syscall(SYSCALL_WRITE, sys_write);
+    register_syscall(SYSCALL_LSEEK, sys_lseek);
     register_syscall(SYSCALL_MKDIR, sys_mkdir);
     register_syscall(SYSCALL_GETDENTS, sys_getdents);
     register_syscall(SYSCALL_GETCWD, sys_getcwd);

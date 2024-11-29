@@ -117,7 +117,7 @@ struct thread *scheduler_get_thread_sleeping_for_keyboard()
 
     auto thread = list_entry(list_begin(&thread_list), struct thread, elem);
     for (size_t i = 0; i < size; i++) {
-        if (thread->process->state == SLEEPING && thread->process->sleep_reason == SLEEP_REASON_KEYBOARD) {
+        if (thread->process->state == SLEEPING && thread->process->sleep_reason == SLEEP_REASON_STDIN) {
             return thread;
         }
         thread = list_entry(list_next(&thread->elem), struct thread, elem);

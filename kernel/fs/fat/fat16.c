@@ -167,6 +167,11 @@ struct file_system *fat16_init()
     return fat16_fs;
 }
 
+bool fat16_is_root_directory(const struct fat_directory *directory, const struct fat_private *fat_private)
+{
+    return directory->sector_position == fat_private->root_directory.sector_position;
+}
+
 static uint16_t get_fat_start_sector(const struct fat_private *fat_private)
 {
     return fat_private->header.primary_header.reserved_sectors;
@@ -838,12 +843,22 @@ void *fat16_open(const struct path_root *path, const FILE_MODE mode, enum INODE_
             if (mode & O_CREAT) {
                 char path_str[MAX_PATH_LENGTH] = {0};
 
-                const int res = path_parser_unparse(path, path_str, sizeof(path_str));
+                int res = path_parser_unparse(path, path_str, sizeof(path_str));
                 if (res < 0) {
                     error_code = res;
                     goto error_out;
                 }
-                fat16_create_file(path_str, nullptr, 0);
+                res = fat16_create_file(path_str, nullptr, 0);
+                if (res < 0) {
+                    error_code = res;
+                    goto error_out;
+                }
+                descriptor->item = fat16_get_directory_entry(disk, path->first);
+                if (!descriptor->item) {
+                    error_code = -EIO;
+                    goto error_out;
+                }
+                goto success_out;
             }
             error_code = -EIO;
             goto error_out;
@@ -854,6 +869,7 @@ void *fat16_open(const struct path_root *path, const FILE_MODE mode, enum INODE_
         descriptor->item                           = fat16_new_fat_item_for_directory(root_directory);
     }
 
+success_out:
     if (descriptor->item->type == FAT_ITEM_TYPE_FILE) {
         *type_out = INODE_FILE;
     } else if (descriptor->item->type == FAT_ITEM_TYPE_DIRECTORY) {
@@ -913,6 +929,11 @@ int fat16_change_entry(const struct fat_directory *directory, const struct fat_d
                 dir_entry->size       = file_size;
 
                 disk_write_sector(dir_sector, buffer);
+                const struct disk *disk               = disk_get(0);
+                const struct fat_private *fat_private = disk->fs_private;
+                if (fat16_is_root_directory(directory, fat_private)) {
+                    fat16_load_root_directory(disk);
+                }
                 return ALL_OK;
             }
         }
@@ -1049,10 +1070,6 @@ void fat16_initialize_directory(const struct disk *disk, const uint16_t cluster,
     disk_write_sector(sector, buffer);
 }
 
-bool fat16_is_root_directory(const struct fat_directory *directory, const struct fat_private *fat_private)
-{
-    return directory->sector_position == fat_private->root_directory.sector_position;
-}
 
 int fat16_create_directory(const char *path)
 {
@@ -1070,7 +1087,7 @@ int fat16_create_directory(const char *path)
     // Initialize the new directory with '.' and '..' entries
     fat16_initialize_directory(disk, first_cluster, parent_cluster, first_cluster);
 
-    // Reload the root directory if the directory was created in the root directory
+    // // Reload the root directory if the directory was created in the root directory
     if (fat16_is_root_directory(&parent_dir, fat_private)) {
         fat16_load_root_directory(disk);
     }
@@ -1094,7 +1111,10 @@ int fat16_create_file(const char *path, void *data, const int size)
     const uint16_t first_cluster = fat16_allocate_new_entry(disk, clusters_needed);
 
     struct fat_directory parent_dir = {};
-    fat16_get_directory(path_root, &parent_dir);
+    int res                         = fat16_get_directory(path_root, &parent_dir);
+    if (res < 0) {
+        return res;
+    }
 
     char file_name[12]                = {0};
     const struct path_part *file_part = path_parser_get_last_part(path_root);
@@ -1103,7 +1123,10 @@ int fat16_create_file(const char *path, void *data, const int size)
     const char *name = strtok(file_name, ".");
     const char *ext  = strtok(nullptr, ".");
 
-    fat16_add_entry(&parent_dir, name, ext, FAT_FILE_ARCHIVE, first_cluster, size);
+    res = fat16_add_entry(&parent_dir, name, ext, FAT_FILE_ARCHIVE, first_cluster, size);
+    if (res < 0) {
+        return res;
+    }
 
     if (size > 0 && data != nullptr) {
         fat16_write_data_to_clusters(data, first_cluster, size);
@@ -1116,7 +1139,7 @@ int fat16_create_file(const char *path, void *data, const int size)
         fat16_load_root_directory(disk);
     }
 
-    return 0;
+    return ALL_OK;
 }
 
 int fat16_write(const void *descriptor, const char *data, const size_t size)
@@ -1132,8 +1155,11 @@ int fat16_write(const void *descriptor, const char *data, const size_t size)
     // Update the entry with the new size
     fat16_change_entry(&directory, entry, (char *)entry->name, (char *)entry->ext, entry->attributes, size);
 
+    HERE; // Add support for seeking using fat_desc->position
+
     // Write the file's content
     fat16_write_data_to_clusters((uint8_t *)data, entry->first_cluster, size);
+
 
     return ALL_OK;
 }
@@ -1192,10 +1218,11 @@ int fat16_seek(void *private, const uint32_t offset, const enum FILE_SEEK_MODE s
         fat_desc->position += offset;
         break;
     case SEEK_END:
+        panic("SEEK_END not implemented\n");
         res = -EUNIMP;
         break;
     default:
-        warningf("Invalid seek mode: %d\n", seek_mode);
+        panic("Invalid seek mode\n");
         res = -EINVARG;
         break;
     }
@@ -1286,7 +1313,7 @@ int fat16_get_directory(const struct path_root *path_root, struct fat_directory 
     auto path_part                = path_root->first;
     struct fat_item *current_item = fat16_find_item_in_directory(disk, &fat_private->root_directory, path_part->name);
     // If the first part of the path is not found in the root directory, then we also return the root directory
-    if (current_item == nullptr) {
+    if (current_item == nullptr || current_item->type == FAT_ITEM_TYPE_FILE) {
         fat16_load_root_directory(disk);
         const struct fat_directory *root_directory = &fat_private->root_directory;
         *fat_directory                             = *root_directory;
@@ -1308,6 +1335,9 @@ int fat16_get_directory(const struct path_root *path_root, struct fat_directory 
     if (current_item == nullptr) {
         return -ENOENT;
     }
+
+    ASSERT(current_item);
+    ASSERT(current_item->directory);
 
     *fat_directory = *current_item->directory;
 

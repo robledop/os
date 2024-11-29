@@ -62,32 +62,20 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 void test()
 {
-    const int fd = open("/mydir/file0.txt", O_RDWR);
-    if (fd < 0) {
-        printf("Failed to open file0.txt\n");
-        return;
+    const char *text     = "Changed!Changed!Changed!Changed!Changed!";
+    const char *new_text = "NEW";
+
+    FILE *file = fopen("/a.txt", "w+");
+    if (file == nullptr) {
+        printf("Failed to open file\n");
     }
 
-    const char *text = "Changed!";
-    write(fd, text, strlen(text));
-
-    close(fd);
-
-    const int fd2 = open("/dev/random", O_RDONLY);
-    if (fd2 < 0) {
-        printf("Failed to open /dev/random\n");
-        return;
-    }
-    printf("\n");
-    int random_number = 0;
-    read(&random_number, sizeof(int), 1, fd2);
-    printf("Random number: %d\n", random_number);
-    close(fd2);
-
-    const int dirfd = open("/bin", O_RDONLY | O_DIRECTORY);
-    if (dirfd < 0) {
-        printf("Failed to open /bin\n");
-    }
+    fwrite(text, strlen(text), 1, file);
+    fflush(file);
+    fseek(file, 10, SEEK_SET);
+    fwrite(new_text, strlen(new_text), 1, file);
+    fflush(file);
+    fclose(file);
 }
 
 void rand_test()

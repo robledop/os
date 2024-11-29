@@ -1572,3 +1572,21 @@ int fctprintf(void (*out)(char c, void *extra_arg), void *extra_arg, const char 
     va_end(args);
     return ret;
 }
+
+#ifndef __KERNEL__
+
+// int vfprintf(FILE *stream, const char *format, va_list arg)
+// {
+//     output_gadget_t gadget = file_gadget(stream);
+//     return vsnprintf_impl(&gadget, format, arg);
+// }
+//
+// int fprintf(FILE *stream, const char *format, ...)
+// {
+//     va_list args;
+//     va_start(args, format);
+//     const int ret = vfprintf(stream, format, args);
+//     va_end(args);
+//     return ret;
+// }
+#endif

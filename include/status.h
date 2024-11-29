@@ -34,6 +34,9 @@
 // Buffer full
 #define EBUFFULL 16
 
+// End of file
+#define EOF -1
+
 
 static inline char *get_error_message(const int error)
 {

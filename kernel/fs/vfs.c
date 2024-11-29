@@ -529,3 +529,20 @@ int vfs_mkdir(const char *path)
         return inode->ops->mkdir(path);
     }
 }
+
+int vfs_lseek(const int fd, const int offset, const enum FILE_SEEK_MODE whence)
+{
+    struct file *desc;
+    struct process *current_process = scheduler_get_current_process();
+    if (current_process) {
+        desc = process_get_file_descriptor(current_process, fd);
+    } else {
+        desc = sys_get_file_descriptor(fd);
+    }
+    if (!desc) {
+        warningf("Invalid file descriptor\n");
+        return -EINVARG;
+    }
+
+    return desc->inode->ops->seek(desc, offset, whence);
+}

@@ -102,7 +102,6 @@ struct dir_entries {
     struct dir_entry **entries;
 };
 
-enum FILE_SEEK_MODE { SEEK_SET, SEEK_CURRENT, SEEK_END };
 
 // enum FILE_MODE { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
@@ -138,8 +137,8 @@ int vfs_close(int fd);
 __attribute__((nonnull)) void vfs_insert_file_system(struct file_system *filesystem);
 __attribute__((nonnull)) struct file_system *vfs_resolve(struct disk *disk);
 int vfs_getdents(const uint32_t fd, void *buffer, int count);
-// int vfs_open_dir(const char path[static 1], struct dir_entries **dir_entries);
 int vfs_get_non_root_mount_point_count();
 int vfs_find_mount_point(const char *prefix);
 struct mount_point *vfs_get_mount_point(int index);
 int vfs_mkdir(const char *path);
+int vfs_lseek(int fd, int offset, enum FILE_SEEK_MODE whence);

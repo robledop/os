@@ -20,6 +20,7 @@ enum SysCalls {
     SYSCALL_STAT,
     SYSCALL_READ,
     SYSCALL_WRITE,
+    SYSCALL_LSEEK,
     SYSCALL_MKDIR,
     SYSCALL_GETDENTS, // Get directory entries
     SYSCALL_CHDIR,    // Change directory
@@ -51,6 +52,7 @@ void *sys_close(struct interrupt_frame *frame);
 void *sys_stat(struct interrupt_frame *frame);
 void *sys_read(struct interrupt_frame *frame);
 void *sys_write(struct interrupt_frame *frame);
+void *sys_lseek(struct interrupt_frame *frame);
 void *sys_mkdir(struct interrupt_frame *frame);
 void *sys_getdents(struct interrupt_frame *frame);
 void *sys_chdir(struct interrupt_frame *frame);

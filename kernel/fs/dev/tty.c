@@ -19,6 +19,20 @@ static int tty_read(const void *descriptor, size_t size, off_t offset, char *out
 {
     memcpy(out, "Not implemented\n", strlen("Not implemented\n"));
     return 0;
+
+    // size_t bytes_read = 0;
+    // while (bytes_read < count) {
+    //     if (tty_input_buffer_is_empty(tty)) {
+    //         // Blocking read: wait for data
+    //         wait_for_input(tty);
+    //     }
+    //     char c = tty_input_buffer_get(tty);
+    //     ((char *)buf)[bytes_read++] = c;
+    //     if (tty->mode == CANONICAL && c == '\n') {
+    //         break; // End of line in canonical mode
+    //     }
+    // }
+    // return bytes_read;
 }
 
 static int tty_write(const void *descriptor, const char *buffer, const size_t size)

@@ -77,7 +77,7 @@ uint8_t keyboard_pop()
         return 0;
     }
 
-    struct process *process = scheduler_get_current_thread()->process;
+    struct process *process = scheduler_get_current_process();
 
     const int real_index = process->keyboard.head % KEYBOARD_BUFFER_SIZE;
     const uint8_t c      = process->keyboard.buffer[real_index];
