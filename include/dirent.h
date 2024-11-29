@@ -5,6 +5,7 @@
 
 #define NAME_MAX 256
 
+typedef int FILE_MODE;
 #define O_RDONLY 0x0000
 #define O_WRONLY 0x0001
 #define O_RDWR 0x0002
@@ -29,7 +30,7 @@ typedef struct {
 } DIR;
 
 
-DIR *opendir(const char *name);
+DIR *opendir(const char *path);
 int closedir(DIR *dir);
 struct dirent *readdir(DIR *dirp);
 int getdents(unsigned int fd, struct dirent *buffer, unsigned int count);

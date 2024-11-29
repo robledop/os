@@ -12,7 +12,7 @@ int main(const int argc, char **argv)
     free(current_dir);
 
     if (argc != 2) {
-        printf("\nUsage: mkdir <path>");
+        printf("\nUsage: touch <path>");
         return -EINVARG;
     }
 
@@ -23,11 +23,11 @@ int main(const int argc, char **argv)
     int res = 0;
 
     if (starts_with("/", dir)) {
-        res = mkdir(dir);
+        res = open(dir, O_CREAT);
     } else {
         strncpy(full_path, current_directory, MAX_PATH_LENGTH);
         strcat(full_path, dir);
-        res = mkdir(full_path);
+        res = open(full_path, O_CREAT);
     }
 
     if (res < 0) {

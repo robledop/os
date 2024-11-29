@@ -13,6 +13,7 @@ struct inode *memfs_create_inode(enum INODE_TYPE type, struct inode_operations *
 int memfs_read(const void *descriptor, size_t size, off_t offset, char *out);
 int memfs_write(const void *descriptor, const char *buffer, size_t size);
 void *memfs_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out);
+int memfs_read_entry(struct file *descriptor, struct dir_entry *entry);
 int memfs_close(void *descriptor);
 int memfs_create_file(struct inode *dir, const char *name, struct inode_operations *ops);
 int memfs_create_device(struct inode *dir, const char *name, struct inode_operations *ops);

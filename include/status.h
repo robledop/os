@@ -31,6 +31,8 @@
 #define EFAULT 14
 // Operation not supported
 #define ENOTSUP 15
+// Buffer full
+#define EBUFFULL 16
 
 
 static inline char *get_error_message(const int error)

@@ -882,7 +882,7 @@ void process_free_file_descriptor(struct process *process, struct file *desc)
 {
     process->file_descriptors[desc->index - 1] = nullptr;
     // Do not free device inodes
-    if (desc->inode && desc->inode->type != INODE_DEVICE) {
+    if (desc->inode && desc->inode->type != INODE_DEVICE && desc->fs_type != FS_TYPE_RAMFS) {
         if (desc->inode->data) {
             kfree(desc->inode->data);
         }

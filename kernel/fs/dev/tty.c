@@ -33,6 +33,7 @@ static int tty_write(const void *descriptor, const char *buffer, const size_t si
 static int tty_stat(void *descriptor, struct stat *stat)
 {
     stat->st_size = strlen("Not implemented\n");
+    stat->st_mode = S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     return 0;
 }
 
@@ -46,7 +47,7 @@ static int tty_ioctl(void *descriptor, int request, void *arg)
     return 0;
 }
 
-static int tty_seek(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode)
+static int tty_seek(void *descriptor, uint32_t offset, enum FILE_SEEK_MODE seek_mode)
 {
     return 0;
 }

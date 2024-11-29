@@ -29,6 +29,7 @@ static int random_write(const void *descriptor, const char *buffer, size_t size)
 static int random_stat(void *descriptor, struct stat *stat)
 {
     stat->st_size = sizeof(int);
+    stat->st_mode = S_IFCHR | S_IRUSR | S_IRGRP | S_IROTH;
     return 0;
 }
 
@@ -42,7 +43,7 @@ static int random_ioctl(void *descriptor, int request, void *arg)
     return 0;
 }
 
-static int random_seek(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode)
+static int random_seek(void *descriptor, uint32_t offset, enum FILE_SEEK_MODE seek_mode)
 {
     return 0;
 }

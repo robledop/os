@@ -4,5 +4,6 @@
 add-symbol-file ./rootfs/bin/ls 0x400000
 #add-symbol-file ./rootfs/bin/cat 0x400000
 #add-symbol-file ./rootfs/bin/forktest 0x400000
+
 break idt_exception_handler
 break panic

@@ -20,8 +20,33 @@ struct inode_operations memfs_directory_inode_ops = {
     .create_file   = memfs_create_file,
     .create_device = memfs_create_device,
     .lookup        = memfs_lookup,
-    // .mkdir         = memfs_mkdir,
+    .read_entry    = memfs_read_entry,
 };
+
+int memfs_read_entry(struct file *descriptor, struct dir_entry *entry)
+{
+    const struct inode *dir = descriptor->inode;
+    if (dir->type != INODE_DIRECTORY) {
+        return -ENOTDIR;
+    }
+
+    const struct dir_entries *entries = (struct dir_entries *)dir->data;
+    if (entries == nullptr) {
+        return -ENOENT;
+    }
+
+    if (descriptor->offset >= (off_t)entries->count) {
+        return -ENOENT;
+    }
+
+    if (entries->entries[0] == nullptr) {
+        return -ENOENT;
+    }
+
+    *entry = *entries->entries[descriptor->offset++];
+
+    return ALL_OK;
+}
 
 void *create_directory_entries()
 {
@@ -74,7 +99,8 @@ int memfs_add_entry_to_directory(struct inode *dir_inode, struct inode *entry, c
     }
 
     strncpy(new_entry->name, name, MAX_NAME_LEN);
-    new_entry->inode = entry;
+    new_entry->inode       = entry;
+    new_entry->name_length = strlen(name);
 
     auto const entries = (struct dir_entries *)dir_inode->data;
     if (entries->count >= entries->capacity) {
@@ -97,6 +123,14 @@ int memfs_add_entry_to_directory(struct inode *dir_inode, struct inode *entry, c
 int memfs_stat(void *descriptor, struct stat *stat)
 {
     auto const desc = (struct file *)descriptor;
+    if (desc->type == INODE_DIRECTORY) {
+        stat->st_mode                     = S_IFDIR;
+        stat->st_ino                      = desc->inode->inode_number;
+        const struct dir_entries *entries = desc->inode->data;
+        stat->st_size                     = entries->count;
+        return ALL_OK;
+    }
+    stat->st_mode = S_IFCHR;
     return desc->inode->ops->stat(descriptor, stat);
 }
 
@@ -116,6 +150,14 @@ void *memfs_open(const struct path_root *path_root, const FILE_MODE mode, enum I
 {
     struct inode *dir = nullptr;
     root_inode_lookup(path_root->first->name, &dir);
+    // We are opening the directory itself
+    if (path_root->first->next == nullptr) {
+        *type_out = dir->type;
+        *size_out = dir->size;
+        return dir;
+    }
+
+    // We are opening a file in the directory
     struct inode *file;
     memfs_lookup(dir, path_root->first->next->name, &file);
     return file->ops->open(path_root, mode, type_out, size_out);
@@ -123,7 +165,7 @@ void *memfs_open(const struct path_root *path_root, const FILE_MODE mode, enum I
 
 int memfs_close(void *descriptor)
 {
-    panic("Not implemented");
+    // panic("Not implemented");
     return 0;
 }
 

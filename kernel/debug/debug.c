@@ -102,19 +102,6 @@ void init_symbols(const multiboot_info_t *mbd)
     }
 }
 
-void assert(const char *snippet, const char *file, int line, const char *message, ...)
-{
-    printf(KBWHT "assert failed %s:%d %s" KWHT, file, line, snippet);
-
-    if (*message) {
-        va_list arg;
-        va_start(arg, message);
-        const char *data = va_arg(arg, char *);
-        printf(data, arg);
-        panic(message);
-    }
-    panic("Assertion failed");
-}
 
 void print_registers()
 {

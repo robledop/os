@@ -376,11 +376,9 @@ void change_directory(char *args, char *current_directory)
 
 bool directory_exists(const char *path)
 {
-    // struct dir_entries *directory = calloc(1, sizeof(struct dir_entries));
     char current_directory[MAX_PATH_LENGTH];
     const char *current_dir = get_current_directory();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
-    // int res = 0;
 
     DIR *dir;
     if (strncmp(path, "/", 3) == 0) {
@@ -394,10 +392,12 @@ bool directory_exists(const char *path)
         dir                  = opendir(new_path);
     }
 
-    free(dir);
+    const bool exists = dir != nullptr;
+    if (dir) {
+        closedir(dir);
+    }
 
-    // free(directory);
-    return true;
+    return exists;
 }
 
 void print_registers()

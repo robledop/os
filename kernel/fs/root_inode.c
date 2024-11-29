@@ -1,15 +1,13 @@
 #include <dev_random.h>
-#include <disk.h>
-#include <kernel_heap.h>
+-
 #include <memfs.h>
 #include <null.h>
 #include <root_inode.h>
-#include <status.h>
 #include <string.h>
 #include <tty.h>
 #include <vfs.h>
 
-extern struct inode_operations memfs_directory_inode_ops;
+    extern struct inode_operations memfs_directory_inode_ops;
 extern struct mount_point *mount_points[MAX_MOUNT_POINTS];
 
 static struct inode *root_inode = nullptr;

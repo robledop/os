@@ -195,3 +195,21 @@ struct path_part *path_parser_get_last_part(const struct path_root *root)
 
     return (struct path_part *)part;
 }
+
+int path_parser_unparse(const struct path_root *root, char *buffer, const size_t buffer_size)
+{
+    if (buffer_size < MAX_PATH_LENGTH) {
+        return -EBUFFULL;
+    }
+
+    const struct path_part *part = root->first;
+    while (part) {
+        strncat(buffer, part->name, buffer_size);
+        part = part->next;
+        if (part) {
+            strncat(buffer, "/", buffer_size);
+        }
+    }
+
+    return ALL_OK;
+}

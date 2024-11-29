@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <dirent.h>
 #include <status.h>
 #include <stdio.h>
@@ -55,6 +56,10 @@ void print_file_info(const char *path, const struct dirent *entry)
 
     if (S_ISDIR(file_stat.st_mode)) {
         printf(KBBLU "%s\n" KWHT, entry->name);
+    } else if (file_stat.st_mode & S_IFCHR) {
+        printf(KGRN "%s\n" KWHT, entry->name);
+    } else if (file_stat.st_mode & S_IFBLK) {
+        printf(KBRED "%s\n" KWHT, entry->name);
     } else {
         printf("%s\n", entry->name);
     }
@@ -65,14 +70,24 @@ int main(int argc, char **argv)
     const char *current_directory = get_current_directory();
 
     DIR *dir;
-    if (argv[1] == NULL || strlen(argv[1]) < 2) {
+    if (argc == 2) {
+        dir = opendir(argv[1]);
+    } else if (argc == 1) {
         dir = opendir(current_directory);
     } else {
-        dir = opendir(argv[1]);
+        printf("Usage: ls [directory]\n");
+        return -1;
     }
+
+    ASSERT(dir);
 
     printf("\n");
     const struct dirent *entry = readdir(dir);
+    if ((int)(int *)entry < 0) {
+        printf("ls: cannot access '%s': No such file or directory\n", argv[1]);
+        return -1;
+    }
+
     while (entry != nullptr) {
         print_file_info(current_directory, entry);
         entry = readdir(dir);

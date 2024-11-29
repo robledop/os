@@ -11,7 +11,7 @@ int main(const int argc, char **argv)
     const char *current_dir = get_current_directory();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
 
-    if (argc < 2) {
+    if (argc != 2) {
         printf("\nUsage: cat <file>");
         return -EINVARG;
     }

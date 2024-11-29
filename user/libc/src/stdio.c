@@ -1,5 +1,7 @@
+#include <assert.h>
 #include <dirent.h>
 #include <memory.h>
+#include <status.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,39 +73,33 @@ int mkdir(const char *path)
     return syscall1(SYSCALL_MKDIR, path);
 }
 
-// /// @brief Opens a directory for reading
-// /// @param directory the directory to open
-// /// @param path the path to the directory to open
-// /// @return 0 on success
-// /// @code
-// /// struct file_directory *directory = malloc(sizeof(struct file_directory));
-// /// int res = opendir(directory, "pah/to/directory");
-// /// \endcode
-// int opendir(struct dir_entries *directory, const char path[static 1])
-// {
-//     return syscall2(SYSCALL_OPEN_DIR, directory, path);
-// }
-
-DIR *opendir(const char *name)
+DIR *opendir(const char *path)
 {
-    const int fd = open(name, O_RDONLY | O_DIRECTORY);
+    const int fd = open(path, O_RDONLY | O_DIRECTORY);
     if (fd == -1) {
         return nullptr;
     }
 
+    struct stat fstat;
+    const int res = stat(fd, &fstat);
+    if (res < 0) {
+        close(fd);
+        return nullptr;
+    }
+
+    if (!S_ISDIR(fstat.st_mode)) {
+        close(fd);
+        return nullptr;
+    }
+
     DIR *dirp = malloc(sizeof(DIR));
+    ASSERT(dirp);
     if (dirp == nullptr) {
         close(fd);
         return nullptr;
     }
 
-    struct stat fstat;
-    int res = stat(fd, &fstat);
-    if (res < 0) {
-        close(fd);
-        free(dirp);
-        return nullptr;
-    }
+    ASSERT(dirp != nullptr);
 
     dirp->fd     = fd;
     dirp->offset = 0;
@@ -113,9 +109,11 @@ DIR *opendir(const char *name)
     return dirp;
 }
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 10240
 struct dirent *readdir(DIR *dirp)
 {
+    ASSERT(dirp != nullptr);
+
     if ((uint32_t)dirp->offset >= dirp->size) {
         dirp->offset = 0;
         free(dirp->buffer);
@@ -123,26 +121,32 @@ struct dirent *readdir(DIR *dirp)
     }
 
     static struct dirent entry;
-    static int pos = 0;
+    static uint16_t pos = 0;
 
     memset(&entry, 0, sizeof(struct dirent));
     if (dirp->buffer == nullptr) {
-        dirp->buffer = malloc(BUFFER_SIZE);
+        dirp->buffer = calloc(BUFFER_SIZE, sizeof(char));
         if (dirp->buffer == nullptr) {
             return nullptr;
         }
     }
 
+    ASSERT(dirp->buffer);
+
     if (pos >= dirp->nread) {
         // Refill the buffer
         dirp->nread = getdents(dirp->fd, dirp->buffer, BUFFER_SIZE);
         if (dirp->nread <= 0) {
+            pos = 0;
             return nullptr;
         }
         pos = 0;
     }
 
     const struct dirent *d = (struct dirent *)((void *)dirp->buffer + pos);
+    if (d->record_length == 0) {
+        return nullptr;
+    }
 
     entry.inode_number  = d->inode_number;
     entry.record_length = d->record_length;
@@ -153,7 +157,24 @@ struct dirent *readdir(DIR *dirp)
     pos += d->record_length; // Move to the next entry
     dirp->offset++;
 
+
     return &entry;
+}
+
+
+int closedir(DIR *dir)
+{
+    if (dir == nullptr) {
+        return -1;
+    }
+
+    if (dir->buffer) {
+        free(dir->buffer);
+    }
+    close(dir->fd);
+    free(dir);
+
+    return ALL_OK;
 }
 
 int getdents(unsigned int fd, struct dirent *buffer, unsigned int count)

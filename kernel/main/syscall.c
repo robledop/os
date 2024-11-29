@@ -391,7 +391,7 @@ void *sys_open(struct interrupt_frame *frame)
 
     copy_string_from_thread(scheduler_get_current_thread(), file_name, name, sizeof(name));
 
-    const int mode = get_integer_argument(0);
+    const FILE_MODE mode = get_integer_argument(0);
 
     const int fd = vfs_open((const char *)name, mode);
     return (void *)(int)fd;
@@ -472,7 +472,7 @@ void *sys_malloc(struct interrupt_frame *frame)
 void *sys_free(struct interrupt_frame *frame)
 {
     void *ptr = get_pointer_argument(0);
-    process_free(scheduler_get_current_thread()->process, ptr);
+    process_free(scheduler_get_current_process(), ptr);
     return NULL;
 }
 

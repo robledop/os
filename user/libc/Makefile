@@ -35,8 +35,8 @@ FLAGS = -g \
 
 FLAGS += -D__USER__
 
-all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
-	ar rcs libclib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o
+all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o ./build/assert.o
+	ar rcs libclib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o ./build/assert.o
 	cp libclib.a ../../rootfs/lib
 
 ./build/%.asm.o: ./src/%.asm
@@ -59,6 +59,9 @@ all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o 
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 ./build/time.o: ../../kernel/lib/time.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
+
+./build/assert.o: ../../kernel/lib/assert.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 clean:

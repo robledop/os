@@ -102,17 +102,15 @@ struct dir_entries {
     struct dir_entry **entries;
 };
 
-typedef unsigned int FILE_SEEK_MODE;
-enum { SEEK_SET, SEEK_CURRENT, SEEK_END };
+enum FILE_SEEK_MODE { SEEK_SET, SEEK_CURRENT, SEEK_END };
 
-typedef unsigned int FILE_MODE;
-enum { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
+// enum FILE_MODE { FILE_MODE_READ, FILE_MODE_WRITE, FILE_MODE_APPEND, FILE_MODE_INVALID };
 
 struct inode_operations {
     void *(*open)(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out);
     int (*read)(const void *descriptor, size_t size, off_t nmemb, char *out);
     int (*write)(const void *descriptor, const char *buffer, size_t size);
-    int (*seek)(void *descriptor, uint32_t offset, FILE_SEEK_MODE seek_mode);
+    int (*seek)(void *descriptor, uint32_t offset, enum FILE_SEEK_MODE seek_mode);
     int (*stat)(void *descriptor, struct stat *stat);
     int (*close)(void *descriptor);
     int (*ioctl)(void *descriptor, int request, void *arg);
@@ -134,7 +132,7 @@ void vfs_add_mount_point(const char *prefix, uint32_t disk_number, struct inode 
 int vfs_open(const char path[static 1], int mode);
 __attribute__((nonnull)) int vfs_read(void *ptr, uint32_t size, uint32_t nmemb, int fd);
 __attribute__((nonnull)) int vfs_write(int fd, const char *buffer, size_t size);
-int vfs_seek(int fd, int offset, FILE_SEEK_MODE whence);
+int vfs_seek(int fd, int offset, enum FILE_SEEK_MODE whence);
 __attribute__((nonnull)) int vfs_stat(int fd, struct stat *stat);
 int vfs_close(int fd);
 __attribute__((nonnull)) void vfs_insert_file_system(struct file_system *filesystem);

@@ -39,7 +39,7 @@ int disk_stream_read(struct disk_stream *stream, void *out, const uint32_t size)
 
     int res = disk_read_sector(sector, buffer);
     if (res < 0) {
-        warningf("Failed to read block\n");
+        panic("Failed to read block\n");
         return res;
     }
 

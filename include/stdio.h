@@ -39,7 +39,7 @@ int write(int fd, const char *buffer, size_t size);
 __attribute__((nonnull)) int stat(int fd, struct stat *stat);
 void clear_screen();
 int mkdir(const char *path);
-DIR *opendir(const char *name);
+DIR *opendir(const char *path);
 int getkey(void);
 int getkey_blocking(void);
 char *get_current_directory(void);
