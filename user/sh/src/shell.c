@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
     // ReSharper disable once CppDFAEndlessLoop
     while (1) {
-        char *current_directory = get_current_directory();
+        char *current_directory = getcwd();
         printf(KWHT "%s" KGRN "> " KWHT, current_directory);
 
         uint8_t buffer[1024] = {0};
@@ -318,10 +318,10 @@ void change_directory(char *args, char *current_directory)
         }
 
         if (str_ends_with(new_dir, "/")) {
-            set_current_directory((char *)args);
+            chdir((char *)args);
         } else {
             const char *new_path = strcat(new_dir, "/");
-            set_current_directory(new_path);
+            chdir(new_path);
         }
     } else if (strncmp(new_dir, "/", 1) == 0) {
         if (!directory_exists(new_dir)) {
@@ -335,7 +335,7 @@ void change_directory(char *args, char *current_directory)
 
         char root[MAX_PATH_LENGTH];
 
-        set_current_directory(strcat(root, new_dir));
+        chdir(strcat(root, new_dir));
     } else if (strncmp(new_dir, "..", 2) == 0) {
         const size_t len = strnlen(current_directory, MAX_PATH_LENGTH);
         if (len == 3) {
@@ -355,7 +355,7 @@ void change_directory(char *args, char *current_directory)
             current_directory[3] = '\0';
         }
 
-        set_current_directory(current_directory);
+        chdir(current_directory);
     } else {
         if (!directory_exists((char *)args)) {
             printf("\nDirectory does not exist: %s\n", args);
@@ -364,10 +364,10 @@ void change_directory(char *args, char *current_directory)
 
         if (str_ends_with(new_dir, "/")) {
             const char *new_path = strcat(current_directory, new_dir);
-            set_current_directory(new_path);
+            chdir(new_path);
         } else {
             char *new_path = strcat(current_directory, new_dir);
-            set_current_directory(strcat(new_path, "/"));
+            chdir(strcat(new_path, "/"));
         }
     }
 
@@ -377,7 +377,7 @@ void change_directory(char *args, char *current_directory)
 bool directory_exists(const char *path)
 {
     char current_directory[MAX_PATH_LENGTH];
-    const char *current_dir = get_current_directory();
+    const char *current_dir = getcwd();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
 
     DIR *dir;

@@ -1,5 +1,5 @@
-#include "stdio.h"
-#include "syscall.h"
+#include <stdio.h>
+#include <syscall.h>
 
 extern int main(int argc, char **argv);
 
@@ -7,6 +7,10 @@ void c_start()
 {
     struct process_arguments arguments;
     syscall1(SYSCALL_GET_PROGRAM_ARGUMENTS, &arguments);
+
+    // TODO: Create stdin
+
+    // stdout, fd 0
     open("/dev/tty", O_WRONLY);
 
     main(arguments.argc, arguments.argv);

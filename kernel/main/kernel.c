@@ -85,9 +85,6 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
 
     printf("\nStarting the shell");
 
-    // stdout
-    // vfs_open("/dev/tty", O_RDWR);
-
     start_shell(0);
 
     schedule();

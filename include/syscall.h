@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 enum SysCalls {
     SYSCALL_EXIT,
     SYSCALL_GETKEY,
@@ -20,8 +22,8 @@ enum SysCalls {
     SYSCALL_WRITE,
     SYSCALL_MKDIR,
     SYSCALL_GETDENTS, // Get directory entries
-    SYSCALL_SET_CURRENT_DIRECTORY,
-    SYSCALL_GET_CURRENT_DIRECTORY,
+    SYSCALL_CHDIR,    // Change directory
+    SYSCALL_GETCWD,
     SYSCALL_WAIT_PID,
     SYSCALL_REBOOT,
     SYSCALL_SHUTDOWN,
@@ -51,8 +53,8 @@ void *sys_read(struct interrupt_frame *frame);
 void *sys_write(struct interrupt_frame *frame);
 void *sys_mkdir(struct interrupt_frame *frame);
 void *sys_getdents(struct interrupt_frame *frame);
-void *sys_set_current_directory(struct interrupt_frame *frame);
-void *sys_get_current_directory(struct interrupt_frame *frame);
+void *sys_chdir(struct interrupt_frame *frame);
+void *sys_getcwd(struct interrupt_frame *frame);
 void *sys_wait_pid(struct interrupt_frame *frame);
 void *sys_reboot(struct interrupt_frame *frame);
 void *sys_shutdown(struct interrupt_frame *frame);
@@ -64,6 +66,11 @@ void *sys_sleep(struct interrupt_frame *frame);
 void *sys_yield(struct interrupt_frame *frame);
 void *sys_ps(struct interrupt_frame *frame);
 void *sys_memstat(struct interrupt_frame *frame);
+
+void *get_pointer_argument(int index);
+int get_integer_argument(int index);
+char *get_string_argument(int index, size_t max_len);
+struct command_argument *parse_command(char **args);
 
 #else
 

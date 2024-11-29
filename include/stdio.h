@@ -42,6 +42,6 @@ int mkdir(const char *path);
 DIR *opendir(const char *path);
 int getkey(void);
 int getkey_blocking(void);
-char *get_current_directory(void);
-int set_current_directory(const char path[static 1]);
+char *getcwd(void);
+int chdir(const char path[static 1]);
 void exit(void);

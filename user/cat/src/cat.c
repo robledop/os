@@ -8,7 +8,7 @@
 int main(const int argc, char **argv)
 {
     char current_directory[MAX_PATH_LENGTH];
-    const char *current_dir = get_current_directory();
+    const char *current_dir = getcwd();
     strncpy(current_directory, current_dir, MAX_PATH_LENGTH);
 
     if (argc != 2) {

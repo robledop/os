@@ -107,8 +107,9 @@ Written in C23, so it requires a version of GCC that supports it.
 - ⬜ dup2
 - ⬜ pipe
 - ⬜ ioctl
+- ✅ opendir
 - ✅ readdir
-- ⬜ closedir
+- ✅ closedir
 - ⬜ signal
 - ⬜ sigaction
 - ⬜ fcntl

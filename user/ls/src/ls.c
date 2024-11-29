@@ -67,7 +67,7 @@ void print_file_info(const char *path, const struct dirent *entry)
 
 int main(int argc, char **argv)
 {
-    const char *current_directory = get_current_directory();
+    const char *current_directory = getcwd();
 
     DIR *dir;
     if (argc == 2) {

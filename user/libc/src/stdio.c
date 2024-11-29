@@ -183,14 +183,14 @@ int getdents(unsigned int fd, struct dirent *buffer, unsigned int count)
 }
 
 // Get the current directory for the current process
-char *get_current_directory()
+char *getcwd()
 {
-    return (char *)syscall0(SYSCALL_GET_CURRENT_DIRECTORY);
+    return (char *)syscall0(SYSCALL_GETCWD);
 }
 // Set the current directory for the current process
-int set_current_directory(const char path[static 1])
+int chdir(const char path[static 1])
 {
-    return syscall1(SYSCALL_SET_CURRENT_DIRECTORY, path);
+    return syscall1(SYSCALL_CHDIR, path);
 }
 void exit()
 {
