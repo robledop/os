@@ -72,6 +72,30 @@ void vga_buffer_write(const char c, const uint8_t attribute, const int x, const 
     *where                   = c | (attribute << 8);
 }
 
+static void cursor_left()
+{
+    cursor_x--;
+    update_cursor(cursor_y, cursor_x);
+}
+
+static void cursor_right()
+{
+    cursor_x++;
+    update_cursor(cursor_y, cursor_x);
+}
+
+static void cursor_up()
+{
+    cursor_y--;
+    update_cursor(cursor_y, cursor_x);
+}
+
+static void cursor_down()
+{
+    cursor_y++;
+    update_cursor(cursor_y, cursor_x);
+}
+
 static void write_character(const uint8_t c, const int x, const int y)
 {
     ASSERT(x < VGA_WIDTH, "X is out of bounds");
@@ -119,7 +143,6 @@ uint16_t get_cursor_position(void)
 void scroll_screen()
 {
     auto const video_memory = (uint8_t *)VIDEO_MEMORY;
-    // auto const video_memory = (uchar *)consoles[active_console].framebuffer;
 
     // Move all rows up by one
     memmove(video_memory, video_memory + ROW_SIZE, SCREEN_SIZE - ROW_SIZE);
@@ -235,8 +258,22 @@ bool param_process(int c)
     }
 
     switch (c) {
+    case 'A': // Cursor up
+        cursor_up();
+        break;
+    case 'B': // Cursor down
+        cursor_down();
+        break;
+    case 'C': // Cursor forward
+        cursor_left();
+        break;
+    case 'D': // Cursor back
+        cursor_right();
+        break;
     case 'H':
-        update_cursor(0, 0);
+        int row = params[0];
+        int col = params[1];
+        update_cursor(row, col);
         break;
     case 'J':
         switch (params[0]) {

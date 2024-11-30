@@ -37,7 +37,7 @@ int main(const int argc, char **argv)
     }
 
     struct stat s;
-    int res = stat(fd, &s);
+    int res = fstat(fd, &s);
     if (res < 0) {
         printf("\nFailed to get file stat. File: %s", full_path);
         printf("\nError: %s", get_error_message(res));

@@ -40,7 +40,7 @@ Written in C23, so it requires a version of GCC that supports it.
 - ✅ IDT
 - ✅ ATA PIO
 - ✅ FAT16 - read
-- ⬜ FAT16 - write
+- ✅ FAT16 - write
 - ⬜ MBR
 - ✅ User mode
 - ✅ Idle thread
@@ -57,13 +57,13 @@ Written in C23, so it requires a version of GCC that supports it.
 - ✅ Serial
 - ☑️ User standard library (still in progress)
 - ✅ Framebuffer text mode
-- ☑️ TTY
+- ✅ TTY
 - ✅ PIT
 - ✅ Panic with stack trace
 - ⬜ DWARF debugging
 - ✅ Undefined behavior sanitizer
 - ✅ Stack smashing protector
-- ☑️ VFS
+- ✅ VFS
 - ☑️ Network stack
 - ⬜ Make the syscalls more POSIX-like
 - ⬜ GUI
@@ -86,7 +86,7 @@ Written in C23, so it requires a version of GCC that supports it.
 - ✅ close
 - ✅ read
 - ✅ write
-- ⬜ lseek
+- ✅ lseek
 - ✅ fstat
 - ✅ getcwd (get_current_directory)
 - ✅ chdir (set_current_directory)

@@ -1215,7 +1215,7 @@ int fat16_read(const void *descriptor, const size_t size, const off_t nmemb, cha
         offset += size;
     }
 
-    res = (int)nmemb;
+    res = (int)nmemb * (int)size;
 
     return res;
 }

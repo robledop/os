@@ -11,6 +11,11 @@
 #include <sys/stat.h>
 #include <termcolors.h>
 
+#define CURSOR_UP "\033[A"
+#define CURSOR_DOWN "\033[B"
+#define CURSOR_RIGHT "\033[D"
+#define CURSOR_LEFT "\033[C"
+
 typedef struct file_directory_entry (*DIRECTORY_GET_ENTRY)(void *entries, int index);
 
 typedef struct {
@@ -54,7 +59,6 @@ int open(const char name[static 1], int mode);
 int close(int fd);
 __attribute__((nonnull)) int read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
 int write(int fd, const char *buffer, size_t size);
-__attribute__((nonnull)) int stat(int fd, struct stat *stat);
 int lseek(int fd, int offset, int whence);
 void clear_screen();
 int mkdir(const char *path);
@@ -66,11 +70,13 @@ int chdir(const char path[static 1]);
 void exit(void);
 
 FILE *fopen(const char *pathname, const char *mode);
+int fstat(int fd, struct stat *stat);
 int fflush(FILE *stream);
 int fclose(FILE *stream);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fseek(FILE *stream, long offset, int whence);
+int fgetc(FILE *stream);
 int feof(FILE *stream);
 int ferror(FILE *stream);
 void clearerr(FILE *stream);

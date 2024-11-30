@@ -18,7 +18,7 @@ void print_file_info(const char *path, const struct dirent *entry)
     }
 
     const int fd = open(full_path, O_RDONLY);
-    if (stat(fd, &file_stat) == -1) {
+    if (fstat(fd, &file_stat) == -1) {
         close(fd);
         return;
     }

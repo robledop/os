@@ -42,7 +42,7 @@ void clear_screen()
     printf("\033[2J\033[H");
 }
 
-int stat(int fd, struct stat *stat)
+int fstat(int fd, struct stat *stat)
 {
     return syscall2(SYSCALL_STAT, fd, stat);
 }
@@ -91,14 +91,14 @@ DIR *opendir(const char *path)
         return nullptr;
     }
 
-    struct stat fstat;
-    const int res = stat(fd, &fstat);
+    struct stat fs;
+    const int res = fstat(fd, &fs);
     if (res < 0) {
         close(fd);
         return nullptr;
     }
 
-    if (!S_ISDIR(fstat.st_mode)) {
+    if (!S_ISDIR(fs.st_mode)) {
         close(fd);
         return nullptr;
     }
@@ -114,7 +114,7 @@ DIR *opendir(const char *path)
 
     dirp->fd     = fd;
     dirp->offset = 0;
-    dirp->size   = fstat.st_size;
+    dirp->size   = fs.st_size;
     dirp->buffer = nullptr;
 
     return dirp;
@@ -288,6 +288,7 @@ FILE *fopen(const char *pathname, const char *mode)
     return stream;
 }
 
+
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t total_bytes = size * nmemb;
@@ -430,6 +431,15 @@ int fseek(FILE *stream, long offset, int whence)
     stream->eof             = 0;
 
     return ALL_OK;
+}
+
+int fgetc(FILE *stream)
+{
+    char c;
+    if (fread(&c, 1, 1, stream) == 0) {
+        return EOF;
+    }
+    return c;
 }
 
 int feof(FILE *stream)
