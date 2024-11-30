@@ -1,6 +1,7 @@
 #include "keyboard.h"
 
 #include <scheduler.h>
+#include <tty.h>
 
 #include "debug.h"
 #include "ps2_kbd.h"
@@ -52,6 +53,8 @@ void keyboard_push(const uint8_t c)
     if (c == 0x00) {
         return;
     }
+
+    tty_input_buffer_put(c);
 
     auto const thread = scheduler_get_thread_sleeping_for_keyboard();
     if (!thread) {

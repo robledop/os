@@ -52,8 +52,11 @@ int main(const int argc, char **argv)
         return res;
     }
     buffer[s.st_size] = 0x00;
+    putchar('\n');
 
-    printf(KCYN "\n%s", buffer);
+    write(1, buffer, s.st_size);
+
+    // printf(KCYN "\n%s", buffer);
 
 
     close(fd);

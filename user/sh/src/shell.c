@@ -17,6 +17,7 @@ void print_help();
 int cmd_lookup(const char *name);
 void change_directory(char *args, char *current_directory);
 void test();
+void mod();
 void rand_test();
 
 char *command_history[256];
@@ -34,6 +35,7 @@ const cmd commands[] = {
     {"reg",      print_registers},
     {"ms",       memstat        },
     {"test",     test           },
+    {"mod",      mod            },
     {"rand",     rand_test      },
 };
 
@@ -62,8 +64,7 @@ void stack_overflow() // NOLINT(*-no-recursion)
 
 void test()
 {
-    const char *text     = "Changed!Changed!Changed!Changed!Changed!";
-    const char *new_text = "NEW";
+    const char *text = "Changed!Changed!Changed!Changed!Changed!";
 
     FILE *file = fopen("/a.txt", "w+");
     if (file == nullptr) {
@@ -72,6 +73,138 @@ void test()
 
     fwrite(text, strlen(text), 1, file);
     fflush(file);
+    fclose(file);
+}
+
+void mod()
+{
+    char *new_text =
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "New text New text New text New text New text New text New text New text New text New text New text "
+        "END OF FILE";
+
+    FILE *file = fopen("/a.txt", "w+");
+    if (file == nullptr) {
+        printf("Failed to open file\n");
+    }
+
     fseek(file, 10, SEEK_SET);
     fwrite(new_text, strlen(new_text), 1, file);
     fflush(file);

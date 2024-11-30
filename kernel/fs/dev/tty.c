@@ -2,37 +2,79 @@
 #include <kernel.h>
 #include <memory.h>
 #include <root_inode.h>
+#include <scheduler.h>
 #include <status.h>
 #include <string.h>
 #include <tty.h>
 #include <vfs.h>
 #include <vga_buffer.h>
 
+enum tty_mode {
+    RAW,
+    CANONICAL,
+};
+struct tty {
+    enum tty_mode mode;
+};
+
+struct tty_input_buffer {
+    char buffer[256];
+    size_t head;
+    size_t tail;
+};
+static struct tty_input_buffer tty_input_buffer;
+static struct tty tty;
+
 extern struct inode_operations memfs_directory_inode_ops;
+
+void tty_input_buffer_put(char c)
+{
+    tty_input_buffer.buffer[tty_input_buffer.head] = c;
+
+    tty_input_buffer.head = (tty_input_buffer.head + 1) % sizeof(tty_input_buffer.buffer);
+}
+
+static char tty_input_buffer_get(void)
+{
+    char c                = tty_input_buffer.buffer[tty_input_buffer.tail];
+    tty_input_buffer.tail = (tty_input_buffer.tail + 1) % sizeof(tty_input_buffer.buffer);
+    return c;
+}
+
+static bool tty_input_buffer_is_empty(void)
+{
+    return tty_input_buffer.head == tty_input_buffer.tail;
+}
+
+static void wait_for_input(struct tty *tty)
+{
+    while (tty_input_buffer_is_empty()) {
+        schedule();
+    }
+}
 
 static void *tty_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out)
 {
     return nullptr;
 }
 
+
 static int tty_read(const void *descriptor, size_t size, off_t offset, char *out)
 {
-    memcpy(out, "Not implemented\n", strlen("Not implemented\n"));
-    return 0;
+    size_t bytes_read = 0;
+    while (bytes_read < size) {
+        if (tty_input_buffer_is_empty()) {
+            // Blocking read: wait for data
+            wait_for_input(&tty);
+        }
+        char c = tty_input_buffer_get();
 
-    // size_t bytes_read = 0;
-    // while (bytes_read < count) {
-    //     if (tty_input_buffer_is_empty(tty)) {
-    //         // Blocking read: wait for data
-    //         wait_for_input(tty);
-    //     }
-    //     char c = tty_input_buffer_get(tty);
-    //     ((char *)buf)[bytes_read++] = c;
-    //     if (tty->mode == CANONICAL && c == '\n') {
-    //         break; // End of line in canonical mode
-    //     }
-    // }
-    // return bytes_read;
+        ((char *)out)[bytes_read++] = c;
+        if (tty.mode == CANONICAL && c == '\n') {
+            break; // End of line in canonical mode
+        }
+    }
+    return (int)bytes_read;
 }
 
 static int tty_write(const void *descriptor, const char *buffer, const size_t size)

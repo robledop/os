@@ -105,7 +105,9 @@ struct fat_private {
     struct fat_h header;
     struct fat_directory root_directory;
     struct disk_stream *cluster_read_stream;
+    struct disk_stream *cluster_write_stream;
     struct disk_stream *fat_read_stream;
+    struct disk_stream *fat_write_stream;
     struct disk_stream *directory_stream;
 };
 
@@ -129,6 +131,7 @@ int fat16_create_file(const char *path, void *data, int size);
 int fat16_create_directory(const char *path);
 int fat16_get_directory(const struct path_root *path_root, struct fat_directory *fat_directory);
 int fat16_read_entry(struct file *descriptor, struct dir_entry *entry);
+uint16_t fat16_allocate_new_entry(const struct disk *disk, const uint16_t clusters_needed);
 
 struct inode_operations fat16_file_inode_ops = {
     .open  = fat16_open,
@@ -181,9 +184,11 @@ static void fat16_init_private(const struct disk *disk, struct fat_private *fat_
 {
     memset(&fat_private->header, 0, sizeof(struct fat_h));
 
-    fat_private->cluster_read_stream = disk_stream_create(disk->id);
-    fat_private->fat_read_stream     = disk_stream_create(disk->id);
-    fat_private->directory_stream    = disk_stream_create(disk->id);
+    fat_private->cluster_read_stream  = disk_stream_create(disk->id);
+    fat_private->cluster_write_stream = disk_stream_create(disk->id);
+    fat_private->fat_read_stream      = disk_stream_create(disk->id);
+    fat_private->fat_write_stream     = disk_stream_create(disk->id);
+    fat_private->directory_stream     = disk_stream_create(disk->id);
 }
 
 static uint32_t fat16_cluster_to_sector(const struct fat_private *fat_private, const int cluster)
@@ -1001,7 +1006,17 @@ void fat16_write_data_to_clusters(uint8_t *data, const uint16_t starting_cluster
         data_offset += bytes_to_write;
 
         // Get the next cluster in the chain
-        current_cluster = fat16_get_fat_entry(disk, current_cluster);
+        const uint16_t next_cluster = fat16_get_fat_entry(disk, current_cluster);
+
+        // If we reached the end of the chain, but we need more space, allocate a new cluster
+        // TODO: Allocate all the clusters needed at once
+        if (next_cluster >= FAT16_EOC && data_offset < size) {
+            const uint16_t new_cluster = fat16_allocate_new_entry(disk, 1);
+            fat16_set_fat_entry(current_cluster, new_cluster);
+            current_cluster = new_cluster;
+        } else {
+            current_cluster = next_cluster;
+        }
     }
 }
 
@@ -1144,22 +1159,37 @@ int fat16_create_file(const char *path, void *data, const int size)
 
 int fat16_write(const void *descriptor, const char *data, const size_t size)
 {
-    const struct file *desc                    = descriptor;
-    const struct fat_file_descriptor *fat_desc = desc->fs_data;
-    const struct fat_directory_entry *entry    = fat_desc->item->item;
-
     // TODO: lock
+    // TODO: use stream to write data
+    const struct file *desc              = descriptor;
+    struct fat_file_descriptor *fat_desc = desc->fs_data;
+    struct fat_directory_entry *entry    = fat_desc->item->item;
+
+    if (entry->size - fat_desc->position < size) {
+        entry->size = fat_desc->position + size;
+    }
+
+    // Save the current write position
+    const uint32_t write_position = fat_desc->position;
+    // Set the position to the beginning of the file so we can read the existing data
+    fat_desc->position = 0;
+
+    char existing_data[entry->size + 1] = {};
+    fat16_read(descriptor, entry->size, 1, (char *)existing_data);
+    // Restore the write position
+    fat_desc->position = write_position;
+    memcpy(existing_data + fat_desc->position, data, size);
+
     const struct path_root *path_root = path_parser_parse(desc->path, nullptr);
     struct fat_directory directory    = {};
     fat16_get_directory(path_root, &directory);
-    // Update the entry with the new size
-    fat16_change_entry(&directory, entry, (char *)entry->name, (char *)entry->ext, entry->attributes, size);
 
-    HERE; // Add support for seeking using fat_desc->position
+    // Update the entry with the new size
+    fat16_change_entry(&directory, entry, (char *)entry->name, (char *)entry->ext, entry->attributes, entry->size);
 
     // Write the file's content
-    fat16_write_data_to_clusters((uint8_t *)data, entry->first_cluster, size);
-
+    fat16_write_data_to_clusters((uint8_t *)existing_data, entry->first_cluster, entry->size);
+    fat_desc->position = entry->size - 1;
 
     return ALL_OK;
 }

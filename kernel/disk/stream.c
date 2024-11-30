@@ -8,13 +8,17 @@ struct disk_stream *disk_stream_create(const int disk_index)
 {
     struct disk *disk = disk_get(disk_index);
     if (!disk) {
-        warningf("Failed to get disk %d\n", disk_index);
+        panic("Failed to get disk %d\n");
         return nullptr;
     }
 
     struct disk_stream *stream = kzalloc(sizeof(struct disk_stream));
-    stream->position           = 0;
-    stream->disk               = disk;
+    if (!stream) {
+        panic("Failed to allocate memory for disk stream\n");
+        return nullptr;
+    }
+    stream->position = 0;
+    stream->disk     = disk;
     return stream;
 }
 
