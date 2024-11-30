@@ -41,6 +41,10 @@ struct process_arguments {
     char **argv;
 };
 
+#define STDIN 0
+#define STDOUT 1
+#define STDERR 2
+
 extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
@@ -70,3 +74,4 @@ int fseek(FILE *stream, long offset, int whence);
 int feof(FILE *stream);
 int ferror(FILE *stream);
 void clearerr(FILE *stream);
+bool isascii(int c);

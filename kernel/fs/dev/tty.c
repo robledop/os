@@ -4,15 +4,16 @@
 #include <root_inode.h>
 #include <scheduler.h>
 #include <status.h>
-#include <string.h>
 #include <tty.h>
 #include <vfs.h>
 #include <vga_buffer.h>
+#include <x86.h>
 
 enum tty_mode {
     RAW,
     CANONICAL,
 };
+
 struct tty {
     enum tty_mode mode;
 };
@@ -26,6 +27,19 @@ static struct tty_input_buffer tty_input_buffer;
 static struct tty tty;
 
 extern struct inode_operations memfs_directory_inode_ops;
+
+// static int tty_get_tail_index(void)
+// {
+//     return (int)tty_input_buffer.tail % KEYBOARD_BUFFER_SIZE;
+// }
+
+// void tty_backspace(void)
+// {
+//     tty_input_buffer.tail               = (tty_input_buffer.tail - 1) % KEYBOARD_BUFFER_SIZE;
+//     const int real_index                = tty_get_tail_index();
+//     tty_input_buffer.buffer[real_index] = 0x00;
+// }
+
 
 void tty_input_buffer_put(char c)
 {
@@ -41,15 +55,18 @@ static char tty_input_buffer_get(void)
     return c;
 }
 
+
 static bool tty_input_buffer_is_empty(void)
 {
     return tty_input_buffer.head == tty_input_buffer.tail;
 }
 
-static void wait_for_input(struct tty *tty)
+static void wait_for_input()
 {
-    while (tty_input_buffer_is_empty()) {
-        schedule();
+    if (tty_input_buffer_is_empty()) {
+        scheduler_get_current_process()->state        = SLEEPING;
+        scheduler_get_current_process()->sleep_reason = SLEEP_REASON_STDIN;
+        sti();
     }
 }
 
@@ -63,11 +80,11 @@ static int tty_read(const void *descriptor, size_t size, off_t offset, char *out
 {
     size_t bytes_read = 0;
     while (bytes_read < size) {
-        if (tty_input_buffer_is_empty()) {
-            // Blocking read: wait for data
-            wait_for_input(&tty);
+        while (tty_input_buffer_is_empty()) {
+            wait_for_input();
         }
-        char c = tty_input_buffer_get();
+
+        const char c = tty_input_buffer_get();
 
         ((char *)out)[bytes_read++] = c;
         if (tty.mode == CANONICAL && c == '\n') {
@@ -88,7 +105,7 @@ static int tty_write(const void *descriptor, const char *buffer, const size_t si
 
 static int tty_stat(void *descriptor, struct stat *stat)
 {
-    stat->st_size = strlen("Not implemented\n");
+    stat->st_size = tty_input_buffer.head;
     stat->st_mode = S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     return 0;
 }
@@ -118,24 +135,31 @@ struct inode_operations tty_device_fops = {
     .ioctl = tty_ioctl,
 };
 
+#define DEV_DIRECTORY "dev"
+#define DEV_NAME "tty"
+
 int tty_init(void)
 {
+    memset(&tty_input_buffer, 0, sizeof(tty_input_buffer));
+
+    tty.mode = CANONICAL;
+
     struct inode *dev_dir = nullptr;
-    int res               = root_inode_lookup("dev", &dev_dir);
+    int res               = root_inode_lookup(DEV_DIRECTORY, &dev_dir);
     if (!dev_dir || res != 0) {
-        root_inode_mkdir("dev", &memfs_directory_inode_ops);
-        res = root_inode_lookup("dev", &dev_dir);
+        root_inode_mkdir(DEV_DIRECTORY, &memfs_directory_inode_ops);
+        res = root_inode_lookup(DEV_DIRECTORY, &dev_dir);
         if (ISERR(res) || !dev_dir) {
             return res;
         }
         dev_dir->fs_type = FS_TYPE_RAMFS;
-        vfs_add_mount_point("/dev", -1, dev_dir);
+        vfs_add_mount_point("/" DEV_DIRECTORY, -1, dev_dir);
     }
 
     struct inode *tty_device = {};
-    if (dev_dir->ops->lookup(dev_dir, "random", &tty_device) == ALL_OK) {
+    if (dev_dir->ops->lookup(dev_dir, DEV_NAME, &tty_device) == ALL_OK) {
         return ALL_OK;
     }
 
-    return dev_dir->ops->create_device(dev_dir, "tty", &tty_device_fops);
+    return dev_dir->ops->create_device(dev_dir, DEV_NAME, &tty_device_fops);
 }

@@ -9,7 +9,6 @@
 void register_syscalls()
 {
     register_syscall(SYSCALL_EXIT, sys_exit);
-    register_syscall(SYSCALL_GETKEY, sys_getkey);
     register_syscall(SYSCALL_PUTCHAR, sys_putchar);
     register_syscall(SYSCALL_PRINT, sys_print);
     register_syscall(SYSCALL_MALLOC, sys_malloc);

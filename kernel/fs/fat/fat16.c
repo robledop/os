@@ -1285,11 +1285,6 @@ int fat16_stat(void *descriptor, struct stat *stat)
         stat->st_mode |= S_IXGRP;
         stat->st_mode |= S_IXOTH;
 
-        if (!(entry->attributes & FAT_FILE_READ_ONLY)) {
-            stat->st_mode |= S_IWUSR;
-            stat->st_mode |= S_IWGRP;
-            stat->st_mode |= S_IWOTH;
-        }
         stat->st_mode |= S_IFREG;
 
         if (entry->attributes == FAT_FILE_LONG_NAME) {
@@ -1300,10 +1295,20 @@ int fat16_stat(void *descriptor, struct stat *stat)
 
         stat->st_size = directory->entry_count;
         stat->st_mode |= S_IFDIR;
+
+        stat->st_mode |= S_IRUSR;
+        stat->st_mode |= S_IRGRP;
+        stat->st_mode |= S_IROTH;
     }
 
     if (entry) {
         stat->st_mtime = fat_date_time_to_unix_time(entry->modification_date, entry->modification_time);
+
+        if (!(entry->attributes & FAT_FILE_READ_ONLY)) {
+            stat->st_mode |= S_IWUSR;
+            stat->st_mode |= S_IWGRP;
+            stat->st_mode |= S_IWOTH;
+        }
     }
 
     return ALL_OK;

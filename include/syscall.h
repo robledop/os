@@ -4,7 +4,7 @@
 
 enum SysCalls {
     SYSCALL_EXIT,
-    SYSCALL_GETKEY,
+    // SYSCALL_GETKEY,
     SYSCALL_PUTCHAR,
     SYSCALL_PRINT,
     SYSCALL_MALLOC,
@@ -40,7 +40,7 @@ void register_syscalls();
 struct interrupt_frame;
 
 [[noreturn]] void *sys_exit(struct interrupt_frame *frame);
-void *sys_getkey(struct interrupt_frame *frame);
+// void *sys_getkey(struct interrupt_frame *frame);
 void *sys_putchar(struct interrupt_frame *frame);
 void *sys_print(struct interrupt_frame *frame);
 void *sys_malloc(struct interrupt_frame *frame);

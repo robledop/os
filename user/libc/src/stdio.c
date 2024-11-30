@@ -209,7 +209,9 @@ void exit()
 }
 int getkey()
 {
-    return syscall0(SYSCALL_GETKEY);
+    int c = 0;
+    read(&c, 1, 1, 0); // Read from stdin
+    return c;
 }
 
 int getkey_blocking()
@@ -444,4 +446,9 @@ void clearerr(FILE *stream)
 {
     stream->eof   = 0;
     stream->error = 0;
+}
+
+bool isascii(int c)
+{
+    return c >= 0 && c <= 127;
 }

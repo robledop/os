@@ -350,7 +350,7 @@ static int process_load_binary(const char *file_name, struct process *process)
 
     int res      = 0;
     const int fd = vfs_open(file_name, O_RDONLY);
-    if (!fd) {
+    if (fd < 0) {
         warningf("Failed to open file %s\n", file_name);
         res = -EIO;
         goto out;
@@ -880,7 +880,7 @@ void process_command_argument_free(struct command_argument *argument)
 
 void process_free_file_descriptor(struct process *process, struct file *desc)
 {
-    process->file_descriptors[desc->index - 1] = nullptr;
+    process->file_descriptors[desc->index] = nullptr;
     // Do not free device inodes
     if (desc->inode && desc->inode->type != INODE_DEVICE && desc->fs_type != FS_TYPE_RAMFS) {
         if (desc->inode->data) {
@@ -898,13 +898,12 @@ int process_new_file_descriptor(struct process *process, struct file **desc_out)
         if (process->file_descriptors[i] == nullptr) {
             struct file *desc = kzalloc(sizeof(struct file));
             if (desc == nullptr) {
-                warningf("Failed to allocate memory for file descriptor\n");
+                panic("Failed to allocate memory for file descriptor\n");
                 res = -ENOMEM;
                 break;
             }
 
-            // Descriptors start at 1
-            desc->index                  = i + 1;
+            desc->index                  = i;
             process->file_descriptors[i] = desc;
             *desc_out                    = desc;
             res                          = 0;
@@ -917,9 +916,9 @@ int process_new_file_descriptor(struct process *process, struct file **desc_out)
 
 struct file *process_get_file_descriptor(const struct process *process, const uint32_t index)
 {
-    if (index < 1 || index > MAX_FILE_DESCRIPTORS) {
+    if (index > MAX_FILE_DESCRIPTORS - 1) {
         return nullptr;
     }
 
-    return process->file_descriptors[index - 1];
+    return process->file_descriptors[index];
 }

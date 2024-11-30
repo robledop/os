@@ -194,7 +194,7 @@ out:
 int elf_load(const char *filename, struct elf_file **file_out)
 {
     int res;
-    int fd = 0;
+    int fd = -1;
     dbgprintf("Loading ELF file %s\n", filename);
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     if (!elf_file) {
@@ -203,7 +203,7 @@ int elf_load(const char *filename, struct elf_file **file_out)
     }
 
     res = vfs_open(filename, O_RDONLY);
-    if (res <= 0) {
+    if (res < 0) {
         warningf("Failed to open file %s\n", filename);
         res = -EIO;
         goto out;
@@ -243,7 +243,9 @@ out:
             kfree(elf_file);
         }
     }
-    vfs_close(fd);
+    if (fd != -1) {
+        vfs_close(fd);
+    }
     return res;
 }
 

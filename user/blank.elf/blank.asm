@@ -8,7 +8,7 @@ _start:
     push ebp
     push message
     push len
-    mov eax, 3          ; print syscall
+    mov eax, 2          ; print syscall
     int 0x80
     mov eax, 0           ; sys_exit syscall
     int 0x80

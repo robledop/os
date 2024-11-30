@@ -43,11 +43,13 @@ static inline void load_gs(uint16_t v)
     asm volatile("movw %0, %%gs" : : "r"(v));
 }
 
+/// @brief Disable interrupts
 static inline void cli(void)
 {
     asm volatile("cli");
 }
 
+/// @brief Enable interrupts
 static inline void sti(void)
 {
     asm volatile("sti");

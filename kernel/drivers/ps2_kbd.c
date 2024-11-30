@@ -107,7 +107,6 @@ void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame 
     auto const thread = scheduler_get_thread_sleeping_for_keyboard();
     if (thread) {
         thread->process->signal = SIGWAKEUP;
-        // thread->process->sleep_reason = SLEEP_REASON_NONE;
     }
 
     spin_unlock(&keyboard_lock);
@@ -118,7 +117,6 @@ struct keyboard *ps2_init()
     struct keyboard *kbd = kzalloc(sizeof(struct keyboard));
     strncpy(kbd->name, "ps2", sizeof(kbd->name));
     kbd->init = ps2_keyboard_init;
-
 
     return kbd;
 }

@@ -19,7 +19,7 @@ struct keyboard {
 };
 
 void keyboard_init(void);
-__attribute__((nonnull)) void keyboard_backspace(struct process *process);
+// __attribute__((nonnull)) void keyboard_backspace(struct process *process);
 void keyboard_push(uint8_t c);
 uint8_t keyboard_pop(void);
-__attribute__((nonnull)) int keyboard_register(struct keyboard *kbd);
+__attribute__((nonnull)) int keyboard_register(const struct keyboard *kbd);

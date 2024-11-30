@@ -34,7 +34,7 @@ static struct file_system **fs_get_free_file_system()
 
 void sys_free_file_descriptor(struct file *desc)
 {
-    file_descriptors[desc->index - 1] = nullptr;
+    file_descriptors[desc->index] = nullptr;
     if (desc->inode) {
         if (desc->inode->data) {
             kfree(desc->inode->data);
@@ -51,13 +51,12 @@ int sys_new_file_descriptor(struct file **desc_out)
         if (file_descriptors[i] == nullptr) {
             struct file *desc = kzalloc(sizeof(struct file));
             if (desc == nullptr) {
-                warningf("Failed to allocate memory for file descriptor\n");
+                panic("Failed to allocate memory for file descriptor\n");
                 res = -ENOMEM;
                 break;
             }
 
-            // Descriptors start at 1
-            desc->index         = i + 1;
+            desc->index         = i;
             file_descriptors[i] = desc;
             *desc_out           = desc;
             res                 = 0;
@@ -70,11 +69,11 @@ int sys_new_file_descriptor(struct file **desc_out)
 
 struct file *sys_get_file_descriptor(const uint32_t index)
 {
-    if (index < 1 || index > MAX_FILE_DESCRIPTORS) {
+    if (index > MAX_FILE_DESCRIPTORS - 1) {
         return nullptr;
     }
 
-    return file_descriptors[index - 1];
+    return file_descriptors[index];
 }
 
 void vfs_insert_file_system(struct file_system *filesystem)
@@ -180,26 +179,9 @@ struct file_system *vfs_resolve(struct disk *disk)
     return nullptr;
 }
 
-// FILE_MODE file_get_mode(const char *mode)
-// {
-//     if (strncmp(mode, "r", 1) == 0) {
-//         return FILE_MODE_READ;
-//     }
-//
-//     if (strncmp(mode, "w", 1) == 0) {
-//         return FILE_MODE_WRITE;
-//     }
-//
-//     if (strncmp(mode, "a", 1) == 0) {
-//         return FILE_MODE_APPEND;
-//     }
-//
-//     return FILE_MODE_INVALID;
-// }
-
 int vfs_open(const char path[static 1], const FILE_MODE mode)
 {
-    int res = 0;
+    int res = -EIO;
 
     struct disk *disk           = nullptr;
     struct path_root *root_path = path_parser_parse(path, nullptr);
@@ -249,7 +231,6 @@ int vfs_open(const char path[static 1], const FILE_MODE mode)
         descriptor_private_data = inode->ops->open(root_path, mode, &type, &size);
     }
 
-
     if (ISERR(descriptor_private_data)) {
         warningf("Failed to open file\n");
         res = ERROR_I(descriptor_private_data);
@@ -274,22 +255,23 @@ int vfs_open(const char path[static 1], const FILE_MODE mode)
         desc->disk    = nullptr;
         desc->fs      = nullptr;
         desc->fs_type = inode->fs_type;
+        desc->fs_data = descriptor_private_data;
+
     } else if (disk) {
         desc->disk    = disk;
         desc->fs      = disk->fs;
         desc->fs_type = disk->fs->type;
+
+        // HACK: Don't forget to do this properly. The VFS must not know about the file system's internal data.
+        if (descriptor_private_data) {
+            const struct fat_file_descriptor *fat_desc = descriptor_private_data;
+            desc->fs_data                              = kzalloc(sizeof(struct fat_file_descriptor));
+            memcpy(desc->fs_data, fat_desc, sizeof(struct fat_file_descriptor));
+        }
     }
 
-    desc->fs_data = descriptor_private_data;
-    desc->type    = type;
-    desc->size    = size;
-
-    // HACK: Don't forget to do this properly. The vfs must not know about the file system's internal data
-    if (descriptor_private_data) {
-        struct fat_file_descriptor *fat_desc = descriptor_private_data;
-        desc->fs_data                        = kzalloc(sizeof(struct fat_file_descriptor));
-        memcpy(desc->fs_data, fat_desc, sizeof(struct fat_file_descriptor));
-    }
+    desc->type = type;
+    desc->size = size;
 
     if (inode == nullptr && disk) {
         inode = memfs_create_inode(INODE_FILE, disk->fs->ops);
@@ -300,12 +282,6 @@ int vfs_open(const char path[static 1], const FILE_MODE mode)
     res         = desc->index;
 
 out:
-    // fopen returns 0 on error
-    if (ISERR(res)) {
-        errno = res;
-        res   = 0;
-    }
-
     if (root_path) {
         path_parser_free(root_path);
     }

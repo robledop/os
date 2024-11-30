@@ -22,7 +22,7 @@
 #define S_IFCHR 0x2000  // character device
 #define S_IFIFO 0x1000  // fifo
 
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR) // is directory
 
 struct stat {
     uint16_t st_dev;     // ID of device containing file

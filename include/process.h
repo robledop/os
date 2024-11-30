@@ -67,12 +67,12 @@ struct process {
     void *stack;
     uint32_t size;
 
-    struct keyboard_buffer {
-        uint8_t buffer[KEYBOARD_BUFFER_SIZE];
-        int tail;
-        int head;
-
-    } keyboard;
+    // struct keyboard_buffer {
+    //     uint8_t buffer[KEYBOARD_BUFFER_SIZE];
+    //     int tail;
+    //     int head;
+    //
+    // } keyboard;
 
     struct process_arguments arguments;
     char *current_directory;

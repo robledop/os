@@ -6,6 +6,7 @@
 
 extern int main(int argc, char **argv);
 
+
 FILE *stdin;
 FILE *stdout;
 FILE *stderr;
@@ -16,7 +17,7 @@ void c_start()
     struct process_arguments arguments;
     syscall1(SYSCALL_GET_PROGRAM_ARGUMENTS, &arguments);
 
-    open("/dev/tty", O_WRONLY); // stdin
+    open("/dev/tty", O_RDONLY); // stdin
     open("/dev/tty", O_WRONLY); // stdout
     open("/dev/tty", O_WRONLY); // stderr
 

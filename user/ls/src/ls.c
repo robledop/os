@@ -49,8 +49,8 @@ void print_file_info(const char *path, const struct dirent *entry)
     unix_timestamp_to_tm(file_stat.st_mtime, &modify_time);
 
     const char *date_time_format = "%Y %B %d %H:%M";
+    char modify_time_str[25]     = {0};
 
-    char modify_time_str[25] = {0};
     strftime(date_time_format, &modify_time, modify_time_str, sizeof(modify_time_str));
     printf("%s ", modify_time_str);
 
@@ -67,17 +67,18 @@ void print_file_info(const char *path, const struct dirent *entry)
 
 int main(int argc, char **argv)
 {
-    const char *current_directory = getcwd();
+    const char *path;
 
-    DIR *dir;
     if (argc == 2) {
-        dir = opendir(argv[1]);
+        path = argv[1];
     } else if (argc == 1) {
-        dir = opendir(current_directory);
+        path = getcwd();
     } else {
         printf("Usage: ls [directory]\n");
         return -1;
     }
+
+    DIR *dir = opendir(path);
 
     ASSERT(dir);
 
@@ -89,7 +90,7 @@ int main(int argc, char **argv)
     }
 
     while (entry != nullptr) {
-        print_file_info(current_directory, entry);
+        print_file_info(path, entry);
         entry = readdir(dir);
     }
 
