@@ -433,6 +433,75 @@ int fseek(FILE *stream, long offset, int whence)
     return ALL_OK;
 }
 
+int ftell(FILE *stream)
+{
+    return lseek(stream->fd, 0, SEEK_CURRENT);
+}
+
+void rewind(FILE *stream)
+{
+    fseek(stream, 0, SEEK_SET);
+}
+
+int getc()
+{
+    int c = 0;
+    read(&c, 1, 1, 0); // Read from stdin
+    return c;
+}
+
+int fputc(int c, FILE *stream)
+{
+    char ch = c;
+    write(stream->fd, &ch, 1);
+    return c;
+}
+
+int vfscanf(FILE *stream, const char *format, va_list args)
+{
+    char c;
+    int ret = 0;
+    while ((c = fgetc(stream)) != EOF) {
+        if (c == '%') {
+            c = fgetc(stream);
+            if (c == 'd') {
+                int *i = va_arg(args, int *);
+                *i     = 0;
+                while ((c = fgetc(stream)) >= '0' && c <= '9') {
+                    *i = *i * 10 + c - '0';
+                }
+                ret++;
+            } else if (c == 's') {
+                char *s = va_arg(args, char *);
+                while ((c = fgetc(stream)) != ' ' && c != '\n') {
+                    *s++ = c;
+                }
+                *s = '\0';
+                ret++;
+            }
+        }
+    }
+    return ret;
+}
+
+int scanf(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int ret = vfscanf(stdin, format, args);
+    va_end(args);
+    return ret;
+}
+
+int fscanf(FILE *stream, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int ret = vfscanf(stream, format, args);
+    va_end(args);
+    return ret;
+}
+
 int fgetc(FILE *stream)
 {
     char c;

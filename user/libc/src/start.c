@@ -6,7 +6,6 @@
 
 extern int main(int argc, char **argv);
 
-
 FILE *stdin;
 FILE *stdout;
 FILE *stderr;

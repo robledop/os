@@ -76,8 +76,17 @@ int fclose(FILE *stream);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fseek(FILE *stream, long offset, int whence);
-int fgetc(FILE *stream);
 int feof(FILE *stream);
 int ferror(FILE *stream);
 void clearerr(FILE *stream);
 bool isascii(int c);
+
+
+int scanf(const char *format, ...);
+int fscanf(FILE *stream, const char *format, ...);
+int fgetc(FILE *stream);
+int vfscanf(FILE *stream, const char *format, va_list args);
+int fputc(int c, FILE *stream);
+int getc();
+void rewind(FILE *stream);
+int ftell(FILE *stream);

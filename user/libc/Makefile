@@ -36,8 +36,8 @@ FLAGS = -g \
 FLAGS += -D__USER__
 
 all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o ./build/assert.o ./build/errno.o
-	ar rcs libclib.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o ./build/assert.o ./build/errno.o
-	cp libclib.a ../../rootfs/lib
+	ar rcs libc.a $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o ./build/time.o ./build/assert.o ./build/errno.o
+	cp libc.a ../../rootfs/lib
 
 ./build/%.asm.o: ./src/%.asm
 	nasm -f elf -g $< -o $@
@@ -68,4 +68,4 @@ all: $(FILES) ./build/memory.o ./build/string.o ./build/printf.o ./build/math.o 
 	i686-elf-gcc $(INCLUDES) $(FLAGS) -std=gnu23 -c $< -o $@
 
 clean:
-	rm -rf ./build  ./libstdlib.a ./libclib.a ../../rootfs/lib
+	rm -rf ./build  ./libc.a ../../rootfs/lib
