@@ -55,12 +55,6 @@ extern FILE *stdout;
 extern FILE *stderr;
 
 int print(const char str[static 1], uint32_t size);
-int open(const char name[static 1], int mode);
-int close(int fd);
-__attribute__((nonnull)) int read(void *ptr, unsigned int size, unsigned int nmemb, int fd);
-int write(int fd, const char *buffer, size_t size);
-int lseek(int fd, int offset, int whence);
-void clear_screen();
 int mkdir(const char *path);
 DIR *opendir(const char *path);
 int getkey(void);
