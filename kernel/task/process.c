@@ -188,7 +188,14 @@ int process_zombify(struct process *process)
     if (process->stack) {
         kfree(process->stack);
     }
-    process->stack = nullptr;
+
+    if (process->kernel_stack) {
+        kfree(process->kernel_stack);
+    }
+
+    process->stack        = nullptr;
+    process->kernel_stack = nullptr;
+
     if (process->thread) {
         thread_free(process->thread);
     }
@@ -545,7 +552,6 @@ int process_map_memory(struct process *process)
                         PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_IS_WRITABLE |
                             PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
-
 out:
     return res;
 }
@@ -617,24 +623,22 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
     struct thread *thread       = nullptr;
     struct process *proc        = nullptr;
     void *program_stack_pointer = nullptr;
+    void *kernel_stack_pointer  = nullptr;
 
     dbgprintf("Loading process %s to slot %d\n", file_name, pid);
 
     if (scheduler_get_process(pid) != nullptr) {
-        warningf("Process slot is not empty\n");
-        ASSERT(false, "Process slot is not empty");
+        panic("Process slot is not empty\n");
         res = -EINSTKN;
         goto out;
     }
 
     proc = kzalloc(sizeof(struct process));
     if (!proc) {
-        warningf("Failed to allocate memory for process\n");
-        ASSERT(false, "Failed to allocate memory for process");
+        panic("Failed to allocate memory for process\n");
         res = -ENOMEM;
         goto out;
     }
-
 
     res = process_load_data(file_name, proc);
     if (res < 0) {
@@ -644,40 +648,42 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
 
     program_stack_pointer = kzalloc(USER_STACK_SIZE);
     if (!program_stack_pointer) {
-        warningf("Failed to allocate memory for program stack\n");
-        ASSERT(false, "Failed to allocate memory for program stack");
+        panic("Failed to allocate memory for program stack\n");
+        res = -ENOMEM;
+        goto out;
+    }
+
+    kernel_stack_pointer = kzalloc(KERNEL_STACK_SIZE);
+    if (!kernel_stack_pointer) {
+        panic("Failed to allocate memory for kernel stack\n");
         res = -ENOMEM;
         goto out;
     }
 
     strncpy(proc->file_name, file_name, sizeof(proc->file_name));
-    proc->stack = program_stack_pointer;
-    proc->pid   = pid;
-
-    dbgprintf("Process %s stack pointer is %x and process id is %d\n", file_name, program_stack_pointer, pid);
+    proc->stack        = program_stack_pointer;
+    proc->kernel_stack = kernel_stack_pointer;
+    proc->pid          = pid;
 
     thread = thread_create(proc);
     if (ISERR(thread)) {
-        warningf("Failed to create thread\n");
-        ASSERT(false, "Failed to create thread");
+        panic("Failed to create thread\n");
         res = -ENOMEM;
         goto out;
     }
 
     proc->thread  = thread;
-    proc->rand_id = rand();
+    proc->rand_id = get_random();
 
     res = process_map_memory(proc);
     if (res < 0) {
-        warningf("Failed to map memory for process\n");
-        ASSERT(false, "Failed to map memory for process");
+        panic("Failed to map memory for process\n");
         goto out;
     }
 
-    proc->state = RUNNING;
+    proc->state         = RUNNING;
+    proc->thread->state = TASK_READY;
     memset(proc->file_descriptors, 0, sizeof(proc->file_descriptors));
-
-    // proc->tty_fd = fopen("/dev/tty", "w");
 
     *process = proc;
 
@@ -826,7 +832,7 @@ void process_copy_thread(struct process *dest, const struct process *src)
     if (ISERR(thread)) {
         panic("Failed to create thread");
     }
-    thread_copy_registers(thread, src->thread);
+    // thread_copy_registers(thread, src->thread);
     dest->thread          = thread;
     dest->thread->process = dest;
 }
@@ -922,3 +928,15 @@ struct file *process_get_file_descriptor(const struct process *process, const ui
 
     return process->file_descriptors[index];
 }
+
+// void save_kernel_stack_pointer(struct process *current_process)
+// {
+//     // Save the current ESP into the process's PCB
+//     asm volatile("movl %%esp, %0" : "=g"(current_process->thread->kernel_state.esp));
+// }
+//
+// void restore_kernel_stack_pointer(struct process *next_process)
+// {
+//     // Load the next process's kernel stack pointer into ESP
+//     asm volatile("movl %0, %%esp" : : "g"(next_process->thread->kernel_state.esp));
+// }

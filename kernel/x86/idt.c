@@ -2,6 +2,7 @@
 #include <pic.h>
 #include <scheduler.h>
 #include <string.h>
+#include <tss.h>
 #include <x86.h>
 #include "config.h"
 #include "debug.h"

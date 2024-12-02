@@ -1,3 +1,4 @@
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syscall.h>
@@ -40,6 +41,7 @@ void init_standard_streams()
     stdin->eof             = 0;
     stdin->error           = 0;
     stdin->mode            = O_RDONLY;
+    memset(stdin->buffer, 0, stdin->buffer_size);
 
     // Initialize stdout
     stdout->fd              = 1; // File descriptor for standard output
@@ -50,6 +52,7 @@ void init_standard_streams()
     stdout->eof             = 0;
     stdout->error           = 0;
     stdout->mode            = O_WRONLY;
+    memset(stdout->buffer, 0, stdout->buffer_size);
 
     // Initialize stderr (unbuffered)
     stderr->fd              = 2; // File descriptor for standard error

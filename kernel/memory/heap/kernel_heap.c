@@ -70,4 +70,7 @@ void kernel_heap_print_stats()
     printf(" %-12s %lu\n", "Free blocks:", free_blocks);
     printf(" %-12s %.1f MiB (%lu bytes)\n", "Memory used:", (double)used_bytes / 1024 / 1024, used_bytes);
     printf(" %-12s %.1f MiB (%lu bytes)\n", "Memory free:", (double)free_bytes / 1024 / 1024, free_bytes);
+    uint32_t esp = 0;
+    asm volatile("movl %%esp, %0" : "=r"(esp));
+    printf(" %-12s %p\n", "ESP:", (void *)esp);
 }

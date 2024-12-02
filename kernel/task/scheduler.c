@@ -13,12 +13,15 @@
 #include <spinlock.h>
 #include <status.h>
 #include <string.h>
+#include <tss.h>
 #include <x86.h>
 
 // How often the PIT should interrupt
 #define PIT_INTERVAL 100 // ms
 // How often the scheduler should run
 #define TIME_SLICE 100 // ms
+
+struct thread current_task;
 
 // Milliseconds since boot
 uint32_t jiffies                                = 0;
@@ -27,8 +30,12 @@ spinlock_t scheduler_lock                       = 0;
 
 struct list thread_list;
 bool scheduler_enabled = false;
+struct cpu_context idle_thread_context;
+
+uint32_t idle_thread_esp;
 
 struct thread *current_thread = nullptr;
+struct thread first_thread;
 
 void scheduler_initialize_idle_thread(uint32_t idle_thread_stack_address);
 
@@ -39,8 +46,11 @@ __attribute__((noreturn, naked)) void scheduler_idle_thread()
     // Defined in assembly
     extern uint32_t kernel_stack_top;
 
+
     // The kernel stack gets reset when the idle thread runs
     asm volatile("mov %0, %%esp" ::"r"(&kernel_stack_top));
+    asm volatile("mov %0, %%ebp" ::"r"(&kernel_stack_top));
+    set_kernel_stack(kernel_stack_top);
 
     asm volatile("sti;"
                  "_idle_loop:;"
@@ -144,6 +154,24 @@ struct thread *scheduler_get_runnable_thread()
     return nullptr;
 }
 
+struct thread *scheduler_get_idle_thread()
+{
+    const size_t size = list_size(&thread_list);
+    if (size == 0) {
+        return nullptr;
+    }
+
+    auto thread = list_entry(list_begin(&thread_list), struct thread, elem);
+    for (size_t i = 0; i < size; i++) {
+        if (thread->process->priority == 0) {
+            return thread;
+        }
+        thread = list_entry(list_next(&thread->elem), struct thread, elem);
+    }
+
+    return nullptr;
+}
+
 struct thread *scheduler_get_next_thread()
 {
     if (list_size(&thread_list) == 0) {
@@ -171,7 +199,7 @@ void scheduler_save_current_thread(const struct interrupt_frame *interrupt_frame
             printf(KMAG "." KWHT);
             return;
         }
-        thread_save_state(thread, interrupt_frame);
+        // thread_save_state(thread, interrupt_frame);
     }
 }
 
@@ -183,9 +211,12 @@ int scheduler_switch_thread(struct thread *thread)
     ASSERT(thread->process->state != ZOMBIE, "Trying to switch to a zombie thread");
     ASSERT(thread_is_valid(thread));
 
+
+    cli();
+    switch_tasks(thread);
     current_thread = thread;
-    paging_switch_directory(thread->process->page_directory);
-    thread_switch(&thread->registers);
+    // paging_switch_directory(thread->process->page_directory);
+    // thread_switch(&thread->registers);
     return ALL_OK;
 }
 
@@ -199,13 +230,7 @@ int scheduler_switch_current_thread_page()
 
     ASSERT(process->state != ZOMBIE, "Trying to switch to a zombie thread");
 
-    if (process->thread->registers.cs == KERNEL_CODE_SELECTOR) {
-        set_kernel_mode_segments();
-    } else if (process->thread->registers.cs == USER_CODE_SELECTOR) {
-        set_user_mode_segments();
-    } else {
-        panic("Unknown code selector");
-    }
+    set_user_mode_segments();
 
     paging_switch_directory(scheduler_get_current_process()->page_directory);
 
@@ -230,10 +255,21 @@ void handle_pit_interrupt(int interrupt, const struct interrupt_frame *frame)
     }
 }
 
+extern struct page_directory *kernel_page_directory;
 void scheduler_init()
 {
     list_init(&thread_list);
     pit_set_interval(PIT_INTERVAL);
+
+    struct thread *this_task = &first_thread;
+    this_task->stack_top     = 0;
+    this_task->page_dir      = kernel_page_directory->directory_entry[0];
+    this_task->state         = TASK_RUNNING;
+    this_task->time_used     = 0;
+    this_task->name          = "[main]";
+
+    current_task = *this_task;
+
     idt_register_interrupt_callback(0x20, handle_pit_interrupt);
 }
 
@@ -278,7 +314,13 @@ int scheduler_get_processes(struct process_info **proc_info, int *count)
 /// @brief Check if the process is sleeping and should wake up
 void scheduler_check_sleeping(struct process *process)
 {
-    if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
+    if (process->signal == SIGWAKEUP && process->sleep_reason == SLEEP_REASON_STDIN) {
+        process->state  = RUNNING;
+        process->signal = NONE;
+        // Run the thread in kernel mode
+        // restore_cpu_context(&process->thread->kernel_state);
+        switch_tasks(process->thread);
+    } else if (process->signal == SIGWAKEUP && process->wait_pid != 0) {
         process->state  = WAITING;
         process->signal = NONE;
     } else if (process->signal == SIGWAKEUP && (int)process->sleep_until == -1) {
@@ -383,7 +425,6 @@ void schedule()
         next = scheduler_get_runnable_thread();
         if (!next) {
             scheduler_idle_thread();
-            return;
         } else {
             // If we found a runnable thread, put it in the front of the queue
             list_remove(&next->elem);

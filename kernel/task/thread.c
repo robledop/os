@@ -104,29 +104,29 @@ int thread_init(struct thread *thread, struct process *process)
         paging_create_directory(PAGING_DIRECTORY_ENTRY_IS_PRESENT | PAGING_DIRECTORY_ENTRY_SUPERVISOR);
 
     if (!thread->process->page_directory) {
-        dbgprintf("Failed to create page directory for thread %x\n", &thread);
-        ASSERT(false, "Failed to create page directory");
+        panic("Failed to create page directory");
         return -ENOMEM;
     }
 
     switch (process->file_type) {
     case PROCESS_FILE_TYPE_BINARY:
-        thread->registers.eip = PROGRAM_VIRTUAL_ADDRESS;
+        // thread->registers.eip = PROGRAM_VIRTUAL_ADDRESS;
         break;
     case PROCESS_FILE_TYPE_ELF:
-        thread->registers.eip = elf_header(process->elf_file)->e_entry;
+        // thread->registers.eip = elf_header(process->elf_file)->e_entry;
         break;
     default:
         panic("Unknown process file type");
         break;
     }
 
-    thread->registers.ss  = USER_DATA_SELECTOR;
-    thread->registers.cs  = USER_CODE_SELECTOR;
-    thread->registers.esp = USER_STACK_TOP;
-    thread->magic         = THREAD_MAGIC;
+    thread->page_dir = (uint32_t)thread->process->page_directory->directory_entry;
 
-    dbgprintf("Thread %x initialized\n", thread);
+    // thread->registers.ss  = USER_DATA_SELECTOR;
+    // thread->registers.cs  = USER_CODE_SELECTOR;
+    thread->stack_top = USER_STACK_TOP;
+    // thread->registers.ebp = USER_STACK_TOP;
+    thread->magic = THREAD_MAGIC;
 
     return ALL_OK;
 }
@@ -138,7 +138,7 @@ bool thread_is_valid(const struct thread *thread)
 
 void *thread_peek_stack_item(const struct thread *thread, const int index)
 {
-    const uint32_t *stack_pointer = (uint32_t *)thread->registers.esp;
+    const uint32_t *stack_pointer = (uint32_t *)thread->stack_top;
     thread_page_thread(thread);
     auto const result = (void *)stack_pointer[index];
     kernel_page();
@@ -150,58 +150,58 @@ void *thread_virtual_to_physical_address(const struct thread *thread, void *virt
     return paging_get_physical_address(thread->process->page_directory, virtual_address);
 }
 
-void thread_save_state(struct thread *thread, const struct interrupt_frame *frame)
-{
-    thread->registers.edi = frame->edi;
-    thread->registers.esi = frame->esi;
-    thread->registers.ebp = frame->ebp;
-    thread->registers.ebx = frame->ebx;
-    thread->registers.edx = frame->edx;
-    thread->registers.ecx = frame->ecx;
-    thread->registers.eax = frame->eax;
+// void thread_save_state(struct thread *thread, const struct interrupt_frame *frame)
+// {
+//     thread->registers.esp = frame->esp;
+//     thread->registers.edi = frame->edi;
+//     thread->registers.esi = frame->esi;
+//     thread->registers.ebp = frame->ebp;
+//     thread->registers.ebx = frame->ebx;
+//     thread->registers.edx = frame->edx;
+//     thread->registers.ecx = frame->ecx;
+//     thread->registers.eax = frame->eax;
+//
+//     thread->registers.eip    = frame->eip;
+//     thread->registers.cs     = frame->cs;
+//     thread->registers.eflags = frame->eflags;
+//     thread->registers.ss     = frame->ss;
+// }
+//
+// void thread_copy_registers(struct thread *dest, const struct thread *src)
+// {
+//     dest->registers.edi = src->registers.edi;
+//     dest->registers.esi = src->registers.esi;
+//     dest->registers.ebp = src->registers.ebp;
+//     dest->registers.ebx = src->registers.ebx;
+//     dest->registers.edx = src->registers.edx;
+//     dest->registers.ecx = src->registers.ecx;
+//     dest->registers.eax = src->registers.eax;
+//
+//     dest->registers.eip    = src->registers.eip;
+//     dest->registers.cs     = src->registers.cs;
+//     dest->registers.eflags = src->registers.eflags;
+//     dest->registers.esp    = src->registers.esp;
+//     dest->registers.ss     = src->registers.ss;
+// }
 
-    thread->registers.eip    = frame->eip;
-    thread->registers.cs     = frame->cs;
-    thread->registers.eflags = frame->eflags;
-    thread->registers.esp    = frame->esp;
-    thread->registers.ss     = frame->ss;
-}
-
-void thread_copy_registers(struct thread *dest, const struct thread *src)
-{
-    dest->registers.edi = src->registers.edi;
-    dest->registers.esi = src->registers.esi;
-    dest->registers.ebp = src->registers.ebp;
-    dest->registers.ebx = src->registers.ebx;
-    dest->registers.edx = src->registers.edx;
-    dest->registers.ecx = src->registers.ecx;
-    dest->registers.eax = src->registers.eax;
-
-    dest->registers.eip    = src->registers.eip;
-    dest->registers.cs     = src->registers.cs;
-    dest->registers.eflags = src->registers.eflags;
-    dest->registers.esp    = src->registers.esp;
-    dest->registers.ss     = src->registers.ss;
-}
-
-struct registers thread_load_current_registers()
-{
-    struct registers registers;
-    asm volatile("movl %0, %%edi\n\t"
-                 "movl %1, %%esi\n\t"
-                 "movl %2, %%ebp\n\t"
-                 "movl %3, %%ebx\n\t"
-                 "movl %4, %%edx\n\t"
-                 "movl %5, %%ecx\n\t"
-                 "movl %6, %%eax\n\t"
-                 :
-                 : "m"(registers.edi),
-                   "m"(registers.esi),
-                   "m"(registers.ebp),
-                   "m"(registers.ebx),
-                   "m"(registers.edx),
-                   "m"(registers.ecx),
-                   "m"(registers.eax)
-                 : "memory");
-    return registers;
-}
+// struct registers thread_load_current_registers()
+// {
+//     struct registers registers;
+//     asm volatile("movl %0, %%edi\n\t"
+//                  "movl %1, %%esi\n\t"
+//                  "movl %2, %%ebp\n\t"
+//                  "movl %3, %%ebx\n\t"
+//                  "movl %4, %%edx\n\t"
+//                  "movl %5, %%ecx\n\t"
+//                  "movl %6, %%eax\n\t"
+//                  :
+//                  : "m"(registers.edi),
+//                    "m"(registers.esi),
+//                    "m"(registers.ebp),
+//                    "m"(registers.ebx),
+//                    "m"(registers.edx),
+//                    "m"(registers.ecx),
+//                    "m"(registers.eax)
+//                  : "memory");
+//     return registers;
+// }

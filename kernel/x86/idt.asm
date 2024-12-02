@@ -1,5 +1,6 @@
 section .text
 
+extern kernel_stack_top
 extern syscall_handler
 extern interrupt_handler
 global interrupt_pointer_table

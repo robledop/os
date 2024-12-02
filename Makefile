@@ -38,7 +38,6 @@ STAGE2_FLAGS = -ffreestanding \
 	-Wno-unused-parameter \
 	-nostartfiles \
 	-nodefaultlibs \
-	-save-temps \
 	-Wextra \
 	-fsanitize=undefined \
 	-std=gnu23 \
@@ -46,6 +45,8 @@ STAGE2_FLAGS = -ffreestanding \
 	-Werror \
 	-Wextra \
 	-Wall
+	
+#	-save-temps \
 
 FLAGS = -ffreestanding \
 	 $(OPTIMIZATION_FLAGS) \
@@ -65,7 +66,6 @@ FLAGS = -ffreestanding \
 	-Wno-unused-parameter \
 	-nostartfiles \
 	-nodefaultlibs \
-	-save-temps \
 	-std=gnu23 \
 	-fstack-protector \
 	-fsanitize=undefined \
@@ -74,6 +74,7 @@ FLAGS = -ffreestanding \
 	-Wextra \
 	-Wall
 
+	# -save-temps \
 	# -masm=intel \
 	# -pedantic-errors \
 	# -fstack-protector \

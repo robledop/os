@@ -39,7 +39,7 @@ struct process_arguments {
 
 struct process {
     uint16_t pid;
-    int rand_id; // For debugging purposes
+    uint32_t rand_id; // For debugging purposes
     int tty_fd;
     int priority;
     char file_name[MAX_PATH_LENGTH];
@@ -65,20 +65,12 @@ struct process {
 
     struct file *file_descriptors[MAX_FILE_DESCRIPTORS];
     void *stack;
+    void *kernel_stack;
     uint32_t size;
-
-    // struct keyboard_buffer {
-    //     uint8_t buffer[KEYBOARD_BUFFER_SIZE];
-    //     int tail;
-    //     int head;
-    //
-    // } keyboard;
-
     struct process_arguments arguments;
     char *current_directory;
-
-    // TODO: Add file descriptors
 };
+
 __attribute__((nonnull)) int process_load_enqueue(const char file_name[static 1], struct process **process);
 __attribute__((nonnull)) int process_load(const char file_name[static 1], struct process **process);
 __attribute__((nonnull)) int process_load_for_slot(const char file_name[static 1], struct process **process,
@@ -108,3 +100,5 @@ __attribute__((nonnull)) void process_command_argument_free(struct command_argum
 struct file *process_get_file_descriptor(const struct process *process, uint32_t index);
 int process_new_file_descriptor(struct process *process, struct file **desc_out);
 void process_free_file_descriptor(struct process *process, struct file *desc);
+void save_kernel_stack_pointer(struct process *current_process);
+void restore_kernel_stack_pointer(struct process *next_process);

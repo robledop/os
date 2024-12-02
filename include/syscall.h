@@ -32,6 +32,7 @@ enum SysCalls {
     SYSCALL_YIELD,
     SYSCALL_PS,      // TODO: I should use a device file for this instead
     SYSCALL_MEMSTAT, // TODO: I should use a device file for this instead
+    SYSCALL_IDLE,
 };
 
 #ifdef __KERNEL__
@@ -68,6 +69,7 @@ void *sys_sleep(struct interrupt_frame *frame);
 void *sys_yield(struct interrupt_frame *frame);
 void *sys_ps(struct interrupt_frame *frame);
 void *sys_memstat(struct interrupt_frame *frame);
+void *sys_idle(struct interrupt_frame *frame);
 
 void *get_pointer_argument(int index);
 int get_integer_argument(int index);

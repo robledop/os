@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <inode.h>
 #include <kernel.h>
 #include <memory.h>
@@ -28,21 +29,9 @@ static struct tty tty;
 
 extern struct inode_operations memfs_directory_inode_ops;
 
-// static int tty_get_tail_index(void)
-// {
-//     return (int)tty_input_buffer.tail % KEYBOARD_BUFFER_SIZE;
-// }
-
-// void tty_backspace(void)
-// {
-//     tty_input_buffer.tail               = (tty_input_buffer.tail - 1) % KEYBOARD_BUFFER_SIZE;
-//     const int real_index                = tty_get_tail_index();
-//     tty_input_buffer.buffer[real_index] = 0x00;
-// }
-
-
 void tty_input_buffer_put(char c)
 {
+    ASSERT(c != 0x00, "Null character input");
     tty_input_buffer.buffer[tty_input_buffer.head] = c;
 
     tty_input_buffer.head = (tty_input_buffer.head + 1) % sizeof(tty_input_buffer.buffer);
@@ -50,7 +39,8 @@ void tty_input_buffer_put(char c)
 
 static char tty_input_buffer_get(void)
 {
-    char c                = tty_input_buffer.buffer[tty_input_buffer.tail];
+    char c = tty_input_buffer.buffer[tty_input_buffer.tail];
+    ASSERT(c != 0x00, "Null character output");
     tty_input_buffer.tail = (tty_input_buffer.tail + 1) % sizeof(tty_input_buffer.buffer);
     return c;
 }
@@ -61,14 +51,6 @@ static bool tty_input_buffer_is_empty(void)
     return tty_input_buffer.head == tty_input_buffer.tail;
 }
 
-static void wait_for_input()
-{
-    if (tty_input_buffer_is_empty()) {
-        scheduler_get_current_process()->state        = SLEEPING;
-        scheduler_get_current_process()->sleep_reason = SLEEP_REASON_STDIN;
-        sti();
-    }
-}
 
 static void *tty_open(const struct path_root *path_root, FILE_MODE mode, enum INODE_TYPE *type_out, uint32_t *size_out)
 {
@@ -81,10 +63,22 @@ static int tty_read(const void *descriptor, size_t size, off_t offset, char *out
     size_t bytes_read = 0;
     while (bytes_read < size) {
         while (tty_input_buffer_is_empty()) {
-            wait_for_input();
+            struct process *current_process = scheduler_get_current_process();
+            current_process->state          = SLEEPING;
+            current_process->sleep_reason   = SLEEP_REASON_STDIN;
+
+            // memset(&current_process->thread->kernel_state, 0, sizeof(current_process->thread->kernel_state));
+            // current_process->thread->has_kernel_state = true;
+            // save_cpu_context(&current_process->thread->kernel_state);
+
+            if (current_process != nullptr && current_process->state == SLEEPING) {
+                cli();
+                schedule();
+            }
         }
 
         const char c = tty_input_buffer_get();
+        ASSERT(c != 0x00, "Null character output");
 
         ((char *)out)[bytes_read++] = c;
         if (tty.mode == CANONICAL && c == '\n') {

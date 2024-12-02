@@ -36,6 +36,7 @@ void register_syscalls()
     register_syscall(SYSCALL_YIELD, sys_yield);
     register_syscall(SYSCALL_PS, sys_ps);
     register_syscall(SYSCALL_MEMSTAT, sys_memstat);
+    register_syscall(SYSCALL_IDLE, sys_idle);
 }
 
 /// @brief Get the pointer argument from the stack of the current task

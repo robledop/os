@@ -5,7 +5,7 @@
 
 #define TOTAL_INTERRUPTS 512
 
-#define HEAP_SIZE_BYTES  62 * 1024 * 1024
+#define HEAP_SIZE_BYTES 62 * 1024 * 1024
 #define HEAP_BLOCK_SIZE 4096
 
 // https://wiki.osdev.org/Memory_Map_(x86)
@@ -25,6 +25,8 @@
 
 // Must be aligned to 4096 bytes page size
 #define USER_STACK_SIZE (1024 * 512)
+
+#define KERNEL_STACK_SIZE (1024 * 8)
 
 #define KERNEL_CODE_SELECTOR 0x08
 #define KERNEL_DATA_SELECTOR 0x10

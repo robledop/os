@@ -1,5 +1,6 @@
 #include <idt.h>
 #include <io.h>
+#include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
 #include <pic.h>
@@ -102,12 +103,14 @@ void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame 
     // Delete key
     if (c > 0 && c != 233) {
         keyboard_push(c);
+
+        auto const thread = scheduler_get_thread_sleeping_for_keyboard();
+        if (thread) {
+            thread->process->signal = SIGWAKEUP;
+            // restore_cpu_context(&thread->kernel_state);
+        }
     }
 
-    auto const thread = scheduler_get_thread_sleeping_for_keyboard();
-    if (thread) {
-        thread->process->signal = SIGWAKEUP;
-    }
 
     spin_unlock(&keyboard_lock);
 }

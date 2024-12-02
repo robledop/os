@@ -279,6 +279,7 @@ FILE *fopen(const char *pathname, const char *mode)
         free(stream);
         return nullptr;
     }
+    memset(stream->buffer, 0, stream->buffer_size);
     stream->pos             = 0;
     stream->bytes_available = 0;
     stream->eof             = 0;
@@ -289,16 +290,18 @@ FILE *fopen(const char *pathname, const char *mode)
 }
 
 
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+size_t fread(void *ptr, const size_t size, const size_t nmemb, FILE *stream)
 {
-    size_t total_bytes = size * nmemb;
-    size_t bytes_read  = 0;
-    char *dest         = ptr;
+    const size_t total_bytes = size * nmemb;
+    size_t bytes_read        = 0;
+    char *dest               = ptr;
 
     while (bytes_read < total_bytes) {
         if (stream->bytes_available == 0) {
             // Buffer is empty; read from file
-            ssize_t n = read(stream->buffer, stream->buffer_size, 1, stream->fd);
+            ssize_t n = 0;
+
+            n = read(stream->buffer, stream->buffer_size, 1, stream->fd);
             if (n == -1) {
                 stream->error = 1;
                 return bytes_read / size;
@@ -411,15 +414,14 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     return bytes_written / size;
 }
 
-int fseek(FILE *stream, long offset, int whence)
+int fseek(FILE *stream, const long offset, const int whence)
 {
     // Flush write buffer if needed
     if (stream->mode & O_WRONLY || stream->mode & O_RDWR) {
         fflush(stream);
     }
 
-    // Adjust file position
-    off_t result = lseek(stream->fd, offset, whence);
+    const off_t result = lseek(stream->fd, offset, whence);
     if (result == (off_t)-1) {
         stream->error = 1;
         return -1;
@@ -433,7 +435,7 @@ int fseek(FILE *stream, long offset, int whence)
     return ALL_OK;
 }
 
-int ftell(FILE *stream)
+int ftell(const FILE *stream)
 {
     return lseek(stream->fd, 0, SEEK_CURRENT);
 }
@@ -450,45 +452,122 @@ int getc()
     return c;
 }
 
-int fputc(int c, FILE *stream)
+int ungetc(const int c, FILE *stream)
 {
-    char ch = c;
+    if (stream->pos > 0) {
+        stream->pos--;
+        stream->buffer[stream->pos] = (char)c;
+        return c;
+    }
+    return EOF;
+}
+
+int fputc(const int c, const FILE *stream)
+{
+    const char ch = (char)c;
     write(stream->fd, &ch, 1);
     return c;
 }
 
-int vfscanf(FILE *stream, const char *format, va_list args)
+int vfscanf(FILE *stream, const char *format, const va_list args)
 {
-    char c;
-    int ret = 0;
-    while ((c = fgetc(stream)) != EOF) {
-        if (c == '%') {
-            c = fgetc(stream);
-            if (c == 'd') {
-                int *i = va_arg(args, int *);
-                *i     = 0;
-                while ((c = fgetc(stream)) >= '0' && c <= '9') {
-                    *i = *i * 10 + c - '0';
-                }
-                ret++;
-            } else if (c == 's') {
-                char *s = va_arg(args, char *);
-                while ((c = fgetc(stream)) != ' ' && c != '\n') {
-                    *s++ = c;
-                }
-                *s = '\0';
-                ret++;
+    int matched = 0;
+    int ch;
+    const char *fmt = format;
+
+    while (*fmt) {
+        if (isspace(*fmt)) {
+            // Skip any whitespace in the format string
+            while (isspace(*fmt))
+                fmt++;
+            // Skip any whitespace in the input stream
+            while (isspace((char)(ch = fgetc(stream))) && ch != EOF)
+                ;
+            if (ch != EOF) {
+                ungetc(ch, stream);
             }
+        } else if (*fmt == '%') {
+            fmt++;
+            if (*fmt == 'd') {
+                // Read an integer
+                int *int_ptr = va_arg(args, int *);
+                int num      = 0;
+                int sign     = 1;
+                int started  = 0;
+
+                // Skip whitespace in input
+                while (isspace((char)(ch = fgetc(stream))) && ch != EOF)
+                    ;
+                if (ch == '-') {
+                    sign = -1;
+                    ch   = fgetc(stream);
+                }
+                while (isdigit((char)ch) && ch != EOF) {
+                    started = 1;
+                    num     = num * 10 + (ch - '0');
+                    ch      = fgetc(stream);
+                }
+                if (started) {
+                    *int_ptr = sign * num;
+                    matched++;
+                    if (ch != EOF) {
+                        ungetc(ch, stream);
+                    }
+                } else {
+                    if (ch != EOF) {
+                        ungetc(ch, stream);
+                    }
+                    break; // No match found
+                }
+            } else if (*fmt == 's') {
+                // Read a string
+                char *str_ptr = va_arg(args, char *);
+                int idx       = 0;
+
+                // Skip whitespace in input
+                while (isspace((char)(ch = fgetc(stream))) && ch != EOF)
+                    ;
+
+                if (ch == EOF) {
+                    break;
+                }
+
+                do {
+                    str_ptr[idx++] = (char)ch;
+                    ch             = fgetc(stream);
+                } while (!isspace((char)ch) && ch != EOF);
+
+                str_ptr[idx] = '\0';
+                matched++;
+                if (ch != EOF) {
+                    ungetc(ch, stream);
+                }
+            } else {
+                // Unsupported format specifier
+                return matched;
+            }
+            fmt++;
+        } else {
+            // Literal character match
+            ch = fgetc(stream);
+            if (ch != *fmt) {
+                if (ch != EOF) {
+                    ungetc(ch, stream);
+                }
+                break;
+            }
+            fmt++;
         }
     }
-    return ret;
+
+    return matched;
 }
 
 int scanf(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    int ret = vfscanf(stdin, format, args);
+    const int ret = vfscanf(stdin, format, args);
     va_end(args);
     return ret;
 }
@@ -497,26 +576,39 @@ int fscanf(FILE *stream, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    int ret = vfscanf(stream, format, args);
+    const int ret = vfscanf(stream, format, args);
     va_end(args);
     return ret;
 }
 
 int fgetc(FILE *stream)
 {
-    char c;
+    char c = -1;
+
+again:
+    // if (read(&c, 1, 1, stream->fd) == 0) {
+    //     return EOF;
+    // }
+
     if (fread(&c, 1, 1, stream) == 0) {
         return EOF;
     }
+
+    if (c == -1) {
+        goto again;
+    }
+
+    ASSERT(c != -1);
+
     return c;
 }
 
-int feof(FILE *stream)
+int feof(const FILE *stream)
 {
     return stream->eof;
 }
 
-int ferror(FILE *stream)
+int ferror(const FILE *stream)
 {
     return stream->error;
 }
@@ -527,7 +619,7 @@ void clearerr(FILE *stream)
     stream->error = 0;
 }
 
-bool isascii(int c)
+bool isascii(const int c)
 {
     return c >= 0 && c <= 127;
 }

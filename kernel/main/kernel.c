@@ -22,6 +22,7 @@
 #include <x86.h>
 
 void display_grub_info(const multiboot_info_t *mbd, unsigned int magic);
+void start_idle();
 
 #define STACK_CHK_GUARD 0xe2dee396
 uint32_t wait_for_network_start;
@@ -82,6 +83,7 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     keyboard_init();
     scheduler_start();
 
+    // start_idle();
 
     printf("\nStarting the shell");
 
@@ -90,6 +92,14 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     schedule();
 
     panic("Kernel finished");
+}
+
+void start_idle()
+{
+    struct process *process = nullptr;
+    process_load_enqueue("/bin/idle", &process);
+
+    process->priority = 0;
 }
 
 void start_shell(const int console)
