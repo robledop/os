@@ -1,8 +1,6 @@
 #include <debug.h>
-#include <idt.h>
 #include <kernel_heap.h>
 #include <string.h>
-#include <task.h>
 #include <x86.h>
 
 void print_registers();
@@ -107,21 +105,26 @@ void init_symbols(const multiboot_info_t *mbd)
 
 void print_registers()
 {
-    struct task *current_task     = get_current_task();
-    struct interrupt_frame *frame = current_task->trap_frame;
     printf(KBWHT "Registers:\n" KWHT);
-    printf("\tEAX: %#010lx", frame->eax);
-    printf("\tEBX: %#010lx", frame->ebx);
-    printf("\tECX: %#010lx", frame->ecx);
-    printf("\tEDX: %#010lx\n", frame->edx);
-    printf("\tESI: %#010lx", frame->esi);
-    printf("\tEDI: %#010lx", frame->edi);
-    printf("\tEBP: %#010lx", frame->ebp);
-    printf("\tESP: %#010lx\n", frame->esp);
-    printf("\tEIP: %#010lx", frame->eip);
-    printf("\tCS:  %#010lx", frame->cs);
-    printf("\tDS:  %#010lx", frame->ds);
-    printf("\tSS:  %#010lx\n", frame->ss);
+    uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
+    asm volatile("movl %%eax, %0" : "=r"(eax));
+    asm volatile("movl %%ebx, %0" : "=r"(ebx));
+    asm volatile("movl %%ecx, %0" : "=r"(ecx));
+    asm volatile("movl %%edx, %0" : "=r"(edx));
+    asm volatile("movl %%esi, %0" : "=r"(esi));
+    asm volatile("movl %%edi, %0" : "=r"(edi));
+    asm volatile("movl %%ebp, %0" : "=r"(ebp));
+    asm volatile("movl %%esp, %0" : "=r"(esp));
+    asm volatile("1: movl $1b, %0" : "=r"(eip));
+    printf("\tEAX: %#010lx", eax);
+    printf("\tEBX: %#010lx", ebx);
+    printf("\tECX: %#010lx", ecx);
+    printf("\tEDX: %#010lx\n", edx);
+    printf("\tESI: %#010lx", esi);
+    printf("\tEDI: %#010lx", edi);
+    printf("\tEBP: %#010lx", ebp);
+    printf("\tESP: %#010lx\n", esp);
+    printf("\tEIP: %#010lx", eip);
     auto eflags = read_eflags();
 
     printf("\tEFLAGS: %#010lx ", eflags);

@@ -2,7 +2,7 @@
 #include <vfs.h>
 
 // int lseek(int fd, int offset, int whence);
-void *sys_lseek(void)
+void *sys_lseek(struct interrupt_frame *frame)
 {
     const int fd     = get_integer_argument(2);
     const int offset = get_integer_argument(1);

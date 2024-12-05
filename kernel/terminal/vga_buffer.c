@@ -1,4 +1,5 @@
 #include <config.h>
+#include <debug.h>
 #include <io.h>
 #include <memory.h>
 #include <printf.h>
@@ -6,7 +7,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <vga_buffer.h>
-#include <assert.h>
 
 #define BYTES_PER_CHAR 2 // 1 byte for character, 1 byte for attribute (color)
 #define SCREEN_SIZE (VGA_WIDTH * VGA_HEIGHT * BYTES_PER_CHAR)

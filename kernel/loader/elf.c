@@ -252,5 +252,6 @@ out:
 void elf_close(struct elf_file *file)
 {
     kfree(file->elf_memory);
+    // kfree(file->segment_memory);
     kfree(file);
 }

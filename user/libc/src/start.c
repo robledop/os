@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <syscall.h>
 
 #define BUFSIZ 1024

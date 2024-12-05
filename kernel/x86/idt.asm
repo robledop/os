@@ -1,7 +1,5 @@
 section .text
 
-%include "config.asm"
-
 extern syscall_handler
 extern interrupt_handler
 global interrupt_pointer_table
@@ -25,34 +23,16 @@ idt_load:
 ;    uint32_t edi;
 ;    uint32_t esi;
 ;    uint32_t ebp;
-;    uint32_t reserved; // useless & ignored
+;    uint32_t reserved;
 ;    uint32_t ebx;
 ;    uint32_t edx;
 ;    uint32_t ecx;
 ;    uint32_t eax;
-;
-;    uint16_t gs;
-;    uint16_t padding1;
-;    uint16_t fs;
-;    uint16_t padding2;
-;    uint16_t es;
-;    uint16_t padding3;
-;    uint16_t ds;
-;    uint16_t padding4;
-;    uint32_t interrupt_number;
-;
-;    uint32_t error_code;
-;    uint32_t eip;
-;    uint16_t cs;
-;    uint16_t padding5;
-;    uint32_t eflags;
-;
+;    uint32_t ip;
+;    uint32_t cs;
+;    uint32_t flags;
 ;    uint32_t esp;
-;    uint16_t ss;
-;    uint16_t padding6;
-;} __attribute__((packed));
-
-
+;    uint32_t ss;
 
 %macro interrupt 1
     global int%1
@@ -60,42 +40,23 @@ idt_load:
         ; List of interrupts that push an error code onto the stack
         %if (%1 = 8) || (%1 = 10) || (%1 = 11) || (%1 = 12) || (%1 = 13) || (%1 = 14) || (%1 = 17) || (%1 = 18) || (%1 = 19)
             ; Interrupt pushes error code
+            ; Pop error code into EAX
+            ; The interrupt handler (C) will need to fetch the error code from EAX, not the stack
+            pop eax
+            pushad
         %else
             ; No error code
-            push dword 0
+            ; Leave EAX alone
+            pushad
         %endif
 
-        push dword %1                   ; push the interrupt number
-        push ds
-        push es
-        push fs
-        push gs
-        pushad
-        
-        ; Setup data segment
-        mov ax, KERNEL_DATA_SELECTOR
-        mov ds, ax
-        mov es, ax
-        
-        push esp                        ; pass the stack pointer as the argument. It contains the interrupt frame we just built
-        call interrupt_handler          ; void void interrupt_handler(struct interrupt_frame *frame)
-        add esp, 4
-        
-        jmp trap_return
-        
+        push esp                        ; pass the stack pointer as the second argument. It contains the interrupt frame
+        push dword %1                   ; pass the interrupt number as the first argument
+        call interrupt_handler          ; void void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
+        add esp, 8
+        popad
+        iret
 %endmacro
-
-; context switch if the interrupt is a system call
-global trap_return:function
-trap_return:
-    popad
-    pop gs
-    pop fs
-    pop es
-    pop ds
-    
-    add esp, 8                     ; remove the error code and the interrupt number from the stack
-    iret
 
 %assign i 0
 %rep 512
@@ -107,29 +68,23 @@ isr80h_wrapper:
     ; interrupt frame start
     ; already pushed by the processor:
     ; uint32_t ip, cs, flags, sp, ss;
-    
-    ; No error code
-    push dword 0
-    push 80                   ; push the interrupt number
-    push ds
-    push es
-    push fs
-    push gs
 
     ; pushes the general purpose registers to the stack
     pushad
-    
-    ; Setup data segment
-    mov ax, KERNEL_DATA_SELECTOR
-    mov ds, ax
-    mov es, ax
 
     ; push the stack pointer
     push esp
+
+    ; eax will contain the syscall id
+    push eax
     call syscall_handler
-    add esp, 4
-    
-    jmp trap_return
+    mov dword[tmp_response], eax ; saves the response of the system call
+    add esp, 8
+
+    ; pops the general purpose registers from the stack
+    popad
+    mov eax, [tmp_response] ; restores the response of the system call
+    iretd
 
 section .data
 ; stores the response of the system call

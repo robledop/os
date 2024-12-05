@@ -1,5 +1,5 @@
-#include <assert.h>
 #include <ata.h>
+#include <debug.h>
 #include <disk.h>
 #include <kernel.h>
 #include <memory.h>

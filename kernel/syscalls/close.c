@@ -5,7 +5,7 @@
 
 spinlock_t close_lock = 0;
 
-void *sys_close(void)
+void *sys_close(struct interrupt_frame *frame)
 {
     spin_lock(&close_lock);
 

@@ -1,11 +1,9 @@
 #include <config.h>
-// #include <debug.h>
-#include <assert.h>
+#include <debug.h>
 #include <heap.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memory.h>
-#include <printf.h>
 #include <serial.h>
 
 struct heap kernel_heap;
@@ -24,6 +22,7 @@ void kernel_heap_init()
     auto const end = (void *)(HEAP_ADDRESS + HEAP_SIZE_BYTES);
     const int res  = heap_create(&kernel_heap, (void *)HEAP_ADDRESS, end, &kernel_heap_table);
     if (res < 0) {
+        warningf("Failed to create heap\n");
         panic("Failed to create heap\n");
     }
 }
@@ -32,6 +31,7 @@ void *kmalloc(const size_t size)
 {
     allocations++;
     void *result = heap_malloc(&kernel_heap, size);
+    dbgprintf("kmalloc(): %p\t", result);
     return result;
 }
 
@@ -39,7 +39,8 @@ void *kzalloc(const size_t size)
 {
     void *ptr = kmalloc(size);
     if (!ptr) {
-        panic("Failed to allocate memory\n");
+        warningf("Failed to allocate memory\n");
+        ASSERT(false, "Failed to allocate memory");
         return NULL;
     }
     memset(ptr, 0x00, size);
@@ -54,6 +55,7 @@ void *krealloc(void *ptr, const size_t size)
 void kfree(void *ptr)
 {
     frees++;
+    dbgprintf("kfree: %p\n", ptr);
     heap_free(&kernel_heap, ptr);
 }
 

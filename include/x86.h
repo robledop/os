@@ -49,11 +49,6 @@ static inline void cli(void)
     asm volatile("cli");
 }
 
-static inline void ltr(uint16_t sel)
-{
-    asm volatile("ltr %0" : : "r"(sel));
-}
-
 /// @brief Enable interrupts
 static inline void sti(void)
 {

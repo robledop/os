@@ -1,9 +1,8 @@
-#include <assert.h>
+#include <debug.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memfs.h>
 #include <memory.h>
-#include <path_parser.h>
 #include <root_inode.h>
 #include <status.h>
 #include <string.h>

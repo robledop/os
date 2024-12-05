@@ -18,8 +18,7 @@
  */
 
 #include <kernel.h>
-// #include <scheduler.h>
-#include <task.h>
+#include <scheduler.h>
 #include <vga_buffer.h>
 
 #define SCRAM_UNDEFINED_BEHAVIOR 3
@@ -34,8 +33,10 @@ struct scram_undefined_behavior {
 
 void scram(const int event, const struct scram_undefined_behavior *info)
 {
-    if (get_current_task()) {
-        printf(KYEL "\nCurrent thread:" KWHT " %s (%d)\n", get_current_task()->name, get_current_process()->pid);
+    if (scheduler_get_current_thread()) {
+        printf(KYEL "\nCurrent thread:" KWHT " %s (%d)\n",
+                scheduler_get_current_process()->file_name,
+                scheduler_get_current_process()->pid);
     }
     printf(KYEL "Event:" KWHT " %d\n", event);
     printf(KYEL "File:" KWHT " %s\n", info->filename);

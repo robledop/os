@@ -4,7 +4,7 @@
 #error "This is a kernel header file. It should not be included in user-space."
 #endif
 
-#include <path_parser.h>
+#include <inode.h>
 #include <posix.h>
 #include <stddef.h>
 #include <vfs.h>

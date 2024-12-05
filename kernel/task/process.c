@@ -6,55 +6,85 @@
 #include <paging.h>
 #include <process.h>
 #include <rand.h>
+#include <scheduler.h>
 #include <serial.h>
 #include <spinlock.h>
 #include <status.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <thread.h>
 #include <vfs.h>
-#include <x86.h>
-
-struct {
-    spinlock_t lock;
-    struct process *processes[MAX_PROCESSES];
-} process_list;
 
 spinlock_t process_lock = 0;
 
-int process_get_free_pid()
+int process_get_child_count(const struct process *process)
 {
-    spin_lock(&process_list.lock);
+    int count                   = 0;
+    const struct process *child = process->children;
+    while (child) {
+        count++;
+        child = child->next;
+    }
+    return count;
+}
 
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (process_list.processes[i] == nullptr) {
-            spin_unlock(&process_list.lock);
-            return i;
+struct process *find_child_process_by_state(const struct process *parent, const enum PROCESS_STATE state)
+{
+    struct process *child = parent->children;
+    while (child) {
+        if (child->state == state) {
+            return child;
         }
+        child = child->next;
     }
-
-    spin_unlock(&process_list.lock);
-
-    return -EINSTKN;
-}
-
-struct process *process_get(const int pid)
-{
-    return process_list.processes[pid];
-}
-
-void process_set(const int pid, struct process *process)
-{
-    process_list.processes[pid] = process;
-}
-
-struct process *get_current_process(void)
-{
-    const struct task *current_task = get_current_task();
-    if (current_task) {
-        return current_task->process;
-    }
-
     return nullptr;
+}
+
+struct process *find_child_process_by_pid(const struct process *parent, const int pid)
+{
+    struct process *child = parent->children;
+    while (child) {
+        if (child->pid == pid) {
+            return child;
+        }
+        child = child->next;
+    }
+    return nullptr;
+}
+
+int process_add_child(struct process *parent, struct process *child)
+{
+    if (parent->children == nullptr) {
+        parent->children = child;
+        return ALL_OK;
+    }
+
+    struct process *current = parent->children;
+    while (current->next) {
+        current = current->next;
+    }
+
+    current->next = child;
+    return ALL_OK;
+}
+
+int process_remove_child(struct process *parent, const struct process *child)
+{
+    if (parent->children == child) {
+        parent->children = child->next;
+        return ALL_OK;
+    }
+
+    struct process *current = parent->children;
+    while (current->next) {
+        if (current->next == child) {
+            current->next = child->next;
+            return ALL_OK;
+        }
+        current = current->next;
+    }
+
+    return -ENOENT;
 }
 
 static int process_find_free_allocation_slot(const struct process *process)
@@ -65,7 +95,8 @@ static int process_find_free_allocation_slot(const struct process *process)
         }
     }
 
-    panic("Failed to find free allocation slot");
+    warningf("Failed to find free allocation slot for process %d\n", process->pid);
+    ASSERT(false, "Failed to find free allocation slot");
     return -ENOMEM;
 }
 
@@ -159,7 +190,7 @@ int process_zombify(struct process *process)
     }
     process->stack = nullptr;
     if (process->thread) {
-        // thread_free(process->thread);
+        thread_free(process->thread);
     }
     process->thread = nullptr;
     if (process->page_directory) {
@@ -168,7 +199,7 @@ int process_zombify(struct process *process)
     process->page_directory = nullptr;
 
     if (strlen(process->file_name) > 0) {
-        // scheduler_unlink_process(process);
+        scheduler_unlink_process(process);
     }
 
     spin_unlock(&process_lock);
@@ -349,6 +380,9 @@ static int process_load_binary(const char *file_name, struct process *process)
     process->file_type = PROCESS_FILE_TYPE_BINARY;
     process->pointer   = program;
     process->size      = fstat.st_size;
+
+    dbgprintf("Loaded binary %s to %x\n", file_name, program);
+    dbgprintf("Program size: %d\n", stat.size);
 
 out:
     if (res < 0) {
@@ -548,9 +582,12 @@ int process_unmap_memory(const struct process *process)
 
 int process_load_enqueue(const char file_name[static 1], struct process **process)
 {
+    dbgprintf("Loading and switching process %s\n", file_name);
+
     const int res = process_load(file_name, process);
     if (res == 0) {
-        (*process)->thread->wakeup_time = -1;
+        (*process)->sleep_until = -1;
+        scheduler_queue_thread((*process)->thread);
     }
 
     return res;
@@ -558,8 +595,9 @@ int process_load_enqueue(const char file_name[static 1], struct process **proces
 
 int process_load(const char file_name[static 1], struct process **process)
 {
+    dbgprintf("Loading process %s\n", file_name);
     int res       = 0;
-    const int pid = process_get_free_pid();
+    const int pid = scheduler_get_free_pid();
     if (pid < 0) {
         warningf("Failed to get free process slot\n");
         ASSERT(false, "Failed to get free process slot");
@@ -569,7 +607,6 @@ int process_load(const char file_name[static 1], struct process **process)
 
     res = process_load_for_slot(file_name, process, pid);
 
-    process_set(pid, *process);
 out:
     return res;
 }
@@ -577,12 +614,15 @@ out:
 int process_load_for_slot(const char file_name[static 1], struct process **process, const uint16_t pid)
 {
     int res                     = 0;
-    struct task *thread         = nullptr;
+    struct thread *thread       = nullptr;
     struct process *proc        = nullptr;
     void *program_stack_pointer = nullptr;
 
-    if (process_get(pid) != nullptr) {
-        panic("Process slot is not empty\n");
+    dbgprintf("Loading process %s to slot %d\n", file_name, pid);
+
+    if (scheduler_get_process(pid) != nullptr) {
+        warningf("Process slot is not empty\n");
+        ASSERT(false, "Process slot is not empty");
         res = -EINSTKN;
         goto out;
     }
@@ -594,6 +634,7 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
         res = -ENOMEM;
         goto out;
     }
+
 
     res = process_load_data(file_name, proc);
     if (res < 0) {
@@ -636,9 +677,11 @@ int process_load_for_slot(const char file_name[static 1], struct process **proce
     proc->state = RUNNING;
     memset(proc->file_descriptors, 0, sizeof(proc->file_descriptors));
 
+    // proc->tty_fd = fopen("/dev/tty", "w");
+
     *process = proc;
 
-    // scheduler_set_process(pid, proc);
+    scheduler_set_process(pid, proc);
 
 out:
     if (ISERR(res)) {
@@ -665,80 +708,54 @@ int process_set_current_directory(struct process *process, const char directory[
     return ALL_OK;
 }
 
-void process_sleep(void *chan, spinlock_t lock)
+int process_wait_pid(struct process *process, const int pid)
 {
-    struct process *p = get_current_process();
-
-    if (lock != process_list.lock) {
-        spin_lock(&process_list.lock);
-        spin_unlock(&process_list.lock);
+    if (process_get_child_count(process) == 0) {
+        return -1;
     }
 
-    p->thread->wait_channel = chan;
-    tasks_block_current(TASK_BLOCKED);
+    struct process *child = nullptr;
 
-    sched();
-
-    p->thread->wait_channel = nullptr;
-
-    if (lock != process_list.lock) {
-        spin_unlock(&process_list.lock);
-        spin_lock(&lock);
-    }
-}
-
-int process_wait_pid(int child_pid)
-{
-    struct process *p               = nullptr;
-    struct process *current_process = get_current_process();
-    int children                    = 0;
-    spin_lock(&process_list.lock);
-
-    while (true) {
-        for (int i = 0; i < MAX_PROCESSES; i++) {
-            p = process_list.processes[i];
-            if (!p || p->parent != current_process) {
-                continue;
-            };
-            children = 1;
-            if (p->thread->state == TASK_STOPPED) {
-                const int pid = p->pid;
-                // kfree(p->stack);
-                // paging_free_directory(p->page_directory);
-                // p->pid          = -1;
-                // p->parent       = nullptr;
-                // p->file_name[0] = '\0';
-                // p->state        = EMPTY;
-                spin_unlock(&process_list.lock);
-                return pid;
-            }
-        }
-
-        if (!children || current_process->killed) {
-            spin_unlock(&process_list.lock);
+    if (pid == -1) {
+        child = find_child_process_by_state(process, ZOMBIE);
+        if (child == nullptr) {
+            process->state    = WAITING;
+            process->wait_pid = pid;
+            schedule();
             return -1;
         }
-
-        process_sleep(current_process, process_list.lock);
     }
-}
 
-void process_wakeup(const void *wait_channel)
-{
-    // spin_unlock(&process_list.lock);
+    if (pid > 0) {
+        child = find_child_process_by_pid(process, pid);
+    }
 
-    struct process *p = nullptr;
+    if (child == nullptr) {
+        process->state    = RUNNING;
+        process->wait_pid = 0;
+        return -1;
+    }
 
-    for (int i = 0; i < MAX_PROCESSES; i++) {
-        p = process_list.processes[i];
-        if (p && p->thread->state == TASK_BLOCKED && p->thread->wait_channel == wait_channel) {
-
-            wakeup(p->thread);
-            return;
+    if (child->state == ZOMBIE) {
+        process_remove_child(process, child);
+        scheduler_unlink_process(child);
+        if (child->thread) {
+            thread_free(child->thread);
         }
+
+        const int status  = child->exit_code;
+        process->state    = RUNNING;
+        process->wait_pid = 0;
+        kfree(child);
+        return status;
     }
 
-    // spin_unlock(&process_list.lock);
+    // No child has terminated; block the parent process
+    process->state    = WAITING;
+    process->wait_pid = pid;
+
+    schedule(); // Context switch to another process
+    return -1;  // No child to wait for
 }
 
 int process_copy_allocations(struct process *dest, const struct process *src)
@@ -805,11 +822,11 @@ void process_copy_arguments(struct process *dest, const struct process *src)
 
 void process_copy_thread(struct process *dest, const struct process *src)
 {
-    struct task *thread = thread_create(dest);
+    struct thread *thread = thread_create(dest);
     if (ISERR(thread)) {
         panic("Failed to create thread");
     }
-    // thread_copy_registers(thread, src->thread);
+    thread_copy_registers(thread, src->thread);
     dest->thread          = thread;
     dest->thread->process = dest;
 }
@@ -824,8 +841,7 @@ struct process *process_clone(struct process *process)
     }
 
 
-    // const int pid = scheduler_get_free_pid();
-    const int pid = 1;
+    const int pid = scheduler_get_free_pid();
     if (pid < 0) {
         kfree(clone);
         panic("No free process slot");
@@ -844,8 +860,9 @@ struct process *process_clone(struct process *process)
     process_map_memory(clone);
     process_copy_allocations(clone, process);
 
-    // scheduler_set_process(clone->pid, clone);
-    // scheduler_queue_thread(clone->thread);
+    process_add_child(process, clone);
+    scheduler_set_process(clone->pid, clone);
+    scheduler_queue_thread(clone->thread);
     clone->state = RUNNING;
 
     clone->rand_id = rand();

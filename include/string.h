@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pci.h>
 #include <stddef.h>
 #include <stdint.h>
 

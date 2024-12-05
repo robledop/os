@@ -1,28 +1,28 @@
 #include <kernel.h>
 #include <kernel_heap.h>
+#include <scheduler.h>
 #include <syscall.h>
-#include <task.h>
 #include <x86.h>
 
-[[noreturn]] void *sys_exit(void)
+[[noreturn]] void *sys_exit(struct interrupt_frame *frame)
 {
-    // auto const process = get_current_task()->process;
-    // auto const parent  = process->parent;
+    auto const process = scheduler_get_current_process();
+    auto const parent  = process->parent;
 
     // The parent is not waiting for you, so you can safely remove yourself from the parent's child list.
     // If the parent is waiting for you, then the waitpid() syscall will take care of everything
-    // if ((parent && parent->state != WAITING) ||
-    //     (parent && parent->state == WAITING && parent->wait_pid != -1 && parent->wait_pid != process->pid)) {
-    // }
+    if ((parent && parent->state != WAITING) ||
+        (parent && parent->state == WAITING && parent->wait_pid != -1 && parent->wait_pid != process->pid)) {
+        process_remove_child(parent, process);
+    }
 
-    // process_zombify(process);
-    // if (!process->parent) {
-    //     kfree(process);
-    // }
-
-    tasks_exit();
+    process_zombify(process);
+    if (!process->parent) {
+        kfree(process);
+    }
 
     cli();
+    schedule();
 
     panic("Trying to schedule a dead thread");
 

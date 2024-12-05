@@ -4,6 +4,7 @@
 
 enum SysCalls {
     SYSCALL_EXIT,
+    // SYSCALL_GETKEY,
     SYSCALL_PUTCHAR,
     SYSCALL_PRINT,
     SYSCALL_MALLOC,
@@ -38,35 +39,35 @@ void register_syscalls();
 
 struct interrupt_frame;
 
-[[noreturn]] void *sys_exit(void);
-void *sys_getkey(void);
-void *sys_putchar(void);
-void *sys_print(void);
-void *sys_malloc(void);
-void *sys_free(void);
-void *sys_create_process(void);
-void *sys_get_program_arguments(void);
-void *sys_open(void);
-void *sys_close(void);
-void *sys_stat(void);
-void *sys_read(void);
-void *sys_write(void);
-void *sys_lseek(void);
-void *sys_mkdir(void);
-void *sys_getdents(void);
-void *sys_chdir(void);
-void *sys_getcwd(void);
-void *sys_wait_pid(void);
-void *sys_reboot(void);
-void *sys_shutdown(void);
-void *sys_calloc(void);
-void *sys_fork(void);
-void *sys_exec(void);
-void *sys_getpid(void);
-void *sys_sleep(void);
-void *sys_yield(void);
-void *sys_ps(void);
-void *sys_memstat(void);
+[[noreturn]] void *sys_exit(struct interrupt_frame *frame);
+// void *sys_getkey(struct interrupt_frame *frame);
+void *sys_putchar(struct interrupt_frame *frame);
+void *sys_print(struct interrupt_frame *frame);
+void *sys_malloc(struct interrupt_frame *frame);
+void *sys_free(struct interrupt_frame *frame);
+void *sys_create_process(struct interrupt_frame *frame);
+void *sys_get_program_arguments(struct interrupt_frame *frame);
+void *sys_open(struct interrupt_frame *frame);
+void *sys_close(struct interrupt_frame *frame);
+void *sys_stat(struct interrupt_frame *frame);
+void *sys_read(struct interrupt_frame *frame);
+void *sys_write(struct interrupt_frame *frame);
+void *sys_lseek(struct interrupt_frame *frame);
+void *sys_mkdir(struct interrupt_frame *frame);
+void *sys_getdents(struct interrupt_frame *frame);
+void *sys_chdir(struct interrupt_frame *frame);
+void *sys_getcwd(struct interrupt_frame *frame);
+void *sys_wait_pid(struct interrupt_frame *frame);
+void *sys_reboot(struct interrupt_frame *frame);
+void *sys_shutdown(struct interrupt_frame *frame);
+void *sys_calloc(struct interrupt_frame *frame);
+void *sys_fork(struct interrupt_frame *frame);
+void *sys_exec(struct interrupt_frame *frame);
+void *sys_getpid(struct interrupt_frame *frame);
+void *sys_sleep(struct interrupt_frame *frame);
+void *sys_yield(struct interrupt_frame *frame);
+void *sys_ps(struct interrupt_frame *frame);
+void *sys_memstat(struct interrupt_frame *frame);
 
 void *get_pointer_argument(int index);
 int get_integer_argument(int index);

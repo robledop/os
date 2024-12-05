@@ -1,13 +1,10 @@
 #include "idt.h"
-
-#include <assert.h>
-#include <debug.h>
-#include <paging.h>
 #include <pic.h>
+#include <scheduler.h>
 #include <string.h>
-#include <task.h>
 #include <x86.h>
 #include "config.h"
+#include "debug.h"
 #include "kernel.h"
 #include "memory.h"
 #include "serial.h"
@@ -59,27 +56,27 @@ char *exception_messages[] = {"Division By Zero",
 struct idt_desc idt_descriptors[TOTAL_INTERRUPTS];
 struct idtr_desc idtr_descriptor;
 
-void no_interrupt_handler(struct interrupt_frame *frame)
+void no_interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
-    warningf("No handler for interrupt: %d\n", frame->interrupt_number);
-    pic_acknowledge((int)frame->interrupt_number);
+    warningf("No handler for interrupt: %d\n", interrupt);
+    pic_acknowledge(interrupt);
 }
 
-void interrupt_handler(struct interrupt_frame *frame)
+void interrupt_handler(const int interrupt, const struct interrupt_frame *frame)
 {
-    int interrupt = (int)frame->interrupt_number;
+    if (interrupt_callbacks[interrupt] != nullptr) {
+        kernel_page();
+        scheduler_save_current_thread(frame);
+        interrupt_callbacks[interrupt](interrupt, frame);
+        scheduler_switch_current_thread_page();
+    }
+
     // External interrupts are special.
     //   We only handle one at a time (so interrupts must be off)
     //   and they need to be acknowledged on the PIC (see below).
     //   An external interrupt handler cannot sleep.
     if (interrupt >= 0x20 && interrupt < 0x30) {
         pic_acknowledge(interrupt);
-    }
-
-    if (interrupt_callbacks[interrupt] != nullptr) {
-        kernel_page();
-        interrupt_callbacks[interrupt](frame);
-        current_task_page();
     }
 }
 
@@ -112,10 +109,8 @@ void idt_set(const int interrupt, const INTERRUPT_HANDLER_FUNCTION handler, cons
     desc->offset_2 = (uint32_t)handler >> 16;
 }
 
-void idt_exception_handler(struct interrupt_frame *frame)
+void idt_exception_handler(int interrupt, const struct interrupt_frame *frame)
 {
-    current_task->trap_frame = frame;
-    int interrupt            = (int)frame->interrupt_number;
     // Page fault exception
     if (interrupt == 14) {
         const uint32_t faulting_address = read_cr2();
@@ -151,12 +146,11 @@ void idt_exception_handler(struct interrupt_frame *frame)
 
     debug_stats();
 
-    if (get_current_task()) {
-        const int pid = get_current_process()->pid;
+    if (scheduler_get_current_process()) {
+        const int pid = scheduler_get_current_process()->pid;
         char name[MAX_PATH_LENGTH];
-        strncpy(name, get_current_task()->file_name, sizeof(name));
-        tasks_block_current(TASK_STOPPED);
-        // process_zombify(get_current_task());
+        strncpy(name, scheduler_get_current_process()->file_name, sizeof(name));
+        process_zombify(scheduler_get_current_process());
         printf("The process" KBBLU " %s " KWHT "(%d) has been terminated.\n", name, pid);
     }
 
@@ -197,9 +191,11 @@ void idt_init()
     idt_load(&idtr_descriptor);
 }
 
-int idt_register_interrupt_callback(const int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
+int idt_register_interrupt_callback(const int interrupt, const INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
 {
     ASSERT(interrupt >= 0 && interrupt < TOTAL_INTERRUPTS, "Interrupt out of bounds");
+
+    dbgprintf("Registering interrupt callback: %d\n", interrupt);
 
     interrupt_callbacks[interrupt] = interrupt_callback;
     return ALL_OK;
@@ -213,14 +209,23 @@ void register_syscall(const int syscall, const SYSCALL_HANDLER_FUNCTION handler)
     syscalls[syscall] = handler;
 }
 
-void syscall_handler(struct interrupt_frame *frame)
+void *handle_syscall(const int syscall, struct interrupt_frame *frame)
 {
-    int syscall = (int)frame->eax;
     ASSERT(syscall >= 0 && syscall < MAX_SYSCALLS, "Invalid syscall");
+    auto const handler = syscalls[syscall];
+    ASSERT(handler);
 
-    current_task->trap_frame = frame;
+    return handler(frame);
+}
 
+void *syscall_handler(const int syscalll, struct interrupt_frame *frame)
+{
     kernel_page();
-    current_task->trap_frame->eax = (uint32_t)syscalls[syscall]();
-    current_task_page();
+    scheduler_save_current_thread(frame);
+
+    void *res = handle_syscall(syscalll, frame);
+
+    scheduler_switch_current_thread_page();
+
+    return res;
 }

@@ -1,9 +1,9 @@
-#include <assert.h>
+#include <inode.h>
 #include <kernel.h>
 #include <memory.h>
 #include <root_inode.h>
+#include <scheduler.h>
 #include <status.h>
-#include <task.h>
 #include <tty.h>
 #include <vfs.h>
 #include <vga_buffer.h>
@@ -27,7 +27,6 @@ static struct tty_input_buffer tty_input_buffer;
 static struct tty tty;
 
 extern struct inode_operations memfs_directory_inode_ops;
-extern struct task_sync keyboard_sync;
 
 // static int tty_get_tail_index(void)
 // {
@@ -65,7 +64,8 @@ static bool tty_input_buffer_is_empty(void)
 static void wait_for_input()
 {
     if (tty_input_buffer_is_empty()) {
-        tasks_sync_block(&keyboard_sync);
+        scheduler_get_current_process()->state        = SLEEPING;
+        scheduler_get_current_process()->sleep_reason = SLEEP_REASON_STDIN;
         sti();
     }
 }

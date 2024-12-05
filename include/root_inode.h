@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vfs.h>
+#include <inode.h>
 
 void root_inode_init(void);
 int root_inode_lookup(const char *name, struct inode **inode);

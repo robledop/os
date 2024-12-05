@@ -6,7 +6,6 @@ QEMU_NETWORK=-netdev tap,id=net0,ifname=tap0,script=no,downscript=no -device e10
 CC=i686-elf-gcc
 AS=nasm
 LD=i686-elf-ld
-OBJCOPY=i686-elf-objcopy
 SRC_DIRS := $(shell find ./kernel -type d ! -path './kernel/boot')
 BUILD_DIRS := $(patsubst ./kernel/%,./build/%,$(SRC_DIRS))
 $(shell mkdir -p $(BUILD_DIRS))
@@ -142,14 +141,8 @@ grub: ./bin/kernel-grub.bin apps FORCE
 # The GRUB build does not include kernel.asm. It also does not include anything in the boot directory,
 # but that is already filtered in SRC_DIRS
 ./bin/kernel-grub.bin: $(filter-out ./build/main/%.asm.o, $(FILES)) FORCE
-	#$(LD) $(DEBUG_FLAGS) -relocatable $(filter-out ./build/main/%.asm.o, $(FILES)) -b binary ./build/apps/blank -o ./build/kernelfull.o
 	$(LD) $(DEBUG_FLAGS) -relocatable $(filter-out ./build/main/%.asm.o, $(FILES)) -o ./build/kernelfull.o
 	$(CC) $(FLAGS) $(DEBUG_FLAGS) -T ./kernel/grub/linker.ld -o ./rootfs/boot/myos.bin ./build/kernelfull.o
-
-#./build/apps/blank: ./kernel/apps/blank.asm FORCE
-#	$(AS) $(AS_INCLUDES) -f elf $(DEBUG_FLAGS) $< -o $@
-#	$(LD) $(DEBUG_FLAGS) -N -e init_start -Ttext 0 -o ./build/apps/blank.o ./build/apps/blank.asm.o
-#	$(OBJCOPY) -S -O binary ./build/apps/blank.o ./build/apps/blank
 
 # Generates an .iso file. The kernel does not yet have a CD-ROM driver.
 .PHONY: iso
