@@ -3,15 +3,16 @@
 #include <kernel_heap.h>
 #include <keyboard.h>
 #include <pic.h>
+#include <process.h>
 #include <ps2_kbd.h>
-#include <scheduler.h>
 #include <spinlock.h>
 #include <string.h>
 
+struct task_sync keyboard_sync   = {nullptr};
 spinlock_t keyboard_lock         = 0;
 spinlock_t keyboard_getchar_lock = 0;
 int ps2_keyboard_init();
-void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame *frame);
+void ps2_keyboard_interrupt_handler(struct interrupt_frame *frame);
 
 #define PS2_CAPSLOCK 0x3A
 
@@ -92,11 +93,11 @@ int ps2_keyboard_init()
     return 0;
 }
 
-void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame *frame)
+void ps2_keyboard_interrupt_handler(struct interrupt_frame *frame)
 {
-    spin_lock(&keyboard_lock);
+    // spin_lock(&keyboard_lock);
 
-    pic_acknowledge(interrupt);
+    pic_acknowledge((int)frame->interrupt_number);
 
     const uint8_t c = keyboard_get_char();
     // Delete key
@@ -104,12 +105,9 @@ void ps2_keyboard_interrupt_handler(int interrupt, const struct interrupt_frame 
         keyboard_push(c);
     }
 
-    auto const thread = scheduler_get_thread_sleeping_for_keyboard();
-    if (thread) {
-        thread->process->signal = SIGWAKEUP;
-    }
+    tasks_sync_unblock(&keyboard_sync);
 
-    spin_unlock(&keyboard_lock);
+    // spin_unlock(&keyboard_lock);
 }
 
 struct keyboard *ps2_init()
@@ -117,6 +115,8 @@ struct keyboard *ps2_init()
     struct keyboard *kbd = kzalloc(sizeof(struct keyboard));
     strncpy(kbd->name, "ps2", sizeof(kbd->name));
     kbd->init = ps2_keyboard_init;
+    tasks_sync_init(&keyboard_sync);
+    keyboard_sync.dbg_name = "keyboard";
 
     return kbd;
 }

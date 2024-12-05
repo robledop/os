@@ -4,7 +4,6 @@
 #error "This is a kernel header, and should not be included in userspace"
 #endif
 
-#include <process.h>
 
 #define KEYBOARD_CAPSLOCK_ON 0x01
 #define KEYBOARD_CAPSLOCK_OFF 0x00

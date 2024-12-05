@@ -1,17 +1,17 @@
+#include <idt.h>
 #include <process.h>
-#include <scheduler.h>
 #include <spinlock.h>
 #include <syscall.h>
 
 spinlock_t fork_lock = 0;
 
-void *sys_fork(struct interrupt_frame *frame)
+void *sys_fork(void)
 {
     spin_lock(&fork_lock);
 
-    auto const parent            = scheduler_get_current_process();
-    auto const child             = process_clone(parent);
-    child->thread->registers.eax = 0;
+    auto const parent              = get_current_task()->process;
+    auto const child               = process_clone(parent);
+    child->thread->trap_frame->eax = 0;
 
     spin_unlock(&fork_lock);
 

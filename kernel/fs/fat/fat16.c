@@ -1,13 +1,13 @@
+#include <assert.h>
 #include <config.h>
-#include <debug.h>
 #include <disk.h>
 #include <fat16.h>
-#include <inode.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memfs.h>
 #include <memory.h>
 #include <path_parser.h>
+#include <printf.h>
 #include <serial.h>
 #include <spinlock.h>
 #include <status.h>
@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <vfs.h>
 
 
 #define FAT16_SIGNATURE 0x29

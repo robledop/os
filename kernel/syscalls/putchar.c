@@ -1,7 +1,7 @@
 #include <printf.h>
 #include <syscall.h>
 
-void *sys_putchar(struct interrupt_frame *frame)
+void *sys_putchar(void)
 {
     const char c = (char)get_integer_argument(0);
     putchar(c);

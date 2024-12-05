@@ -1,12 +1,14 @@
 #pragma once
 
 #include <spinlock.h>
-#include <stdint.h>
+#include <task.h>
 
 struct sleeplock {
-    uint32_t locked;
-    spinlock_t lk;
-
+    spinlock_t lock;
+    struct task_list waiting;
     char *name;
-    int pid;
 };
+
+void sleeplock_init(struct sleeplock *sleeplock, char *name);
+void sleeplock_acquire(struct sleeplock *lock);
+void sleeplock_release(struct sleeplock *lock);

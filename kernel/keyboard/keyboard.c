@@ -1,4 +1,4 @@
-#include <debug.h>
+#include <kernel.h>
 #include <keyboard.h>
 #include <ps2_kbd.h>
 #include <status.h>

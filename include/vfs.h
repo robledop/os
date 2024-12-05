@@ -7,9 +7,11 @@
 #include <config.h>
 #include <dirent.h>
 #include <disk.h>
-#include <inode.h>
+#include <path_parser.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <task.h>
+#include <time.h>
 
 #define MAX_MOUNT_POINTS 10
 

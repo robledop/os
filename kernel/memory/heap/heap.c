@@ -1,6 +1,10 @@
 #include "heap.h"
 
-#include <debug.h>
+// #include <debug.h>
+
+#include <assert.h>
+#include <kernel.h>
+
 
 #include "memory.h"
 #include "serial.h"
@@ -176,7 +180,7 @@ void *heap_malloc_blocks(const struct heap *heap, const uint32_t blocks_needed)
 
     // If no free blocks were found, return
     if (start_block < 0) {
-        warningf("Failed to find free blocks\n");
+        panic("Failed to find free blocks\n");
         return address;
     }
 

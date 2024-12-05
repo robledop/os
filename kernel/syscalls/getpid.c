@@ -1,7 +1,7 @@
-#include <scheduler.h>
 #include <syscall.h>
+#include <task.h>
 
-void *sys_getpid(struct interrupt_frame *frame)
+void *sys_getpid(void)
 {
-    return (void *)(int)scheduler_get_current_process()->pid;
+    return (void *)(int)get_current_task()->process->pid;
 }

@@ -1,5 +1,9 @@
 #include "paging.h"
-#include "debug.h"
+// #include "debug.h"
+#include <assert.h>
+#include <kernel.h>
+
+
 #include "kernel_heap.h"
 #include "serial.h"
 #include "status.h"
@@ -8,7 +12,7 @@
 
 struct page_directory *kernel_page_directory = nullptr;
 
-static uint32_t *current_directory = nullptr;
+static uint32_t *current_page_directory = nullptr;
 // Defined in paging.asm
 void paging_load_directory(uint32_t *directory);
 
@@ -16,11 +20,9 @@ bool paging_is_video_memory(const uint32_t address)
 {
     return address >= 0xB8000 && address <= 0xBFFFF;
 }
-
 /// @brief Set the kernel mode segments and switch to the kernel page directory
 void kernel_page()
 {
-    set_kernel_mode_segments();
     paging_switch_directory(kernel_page_directory);
 }
 
@@ -69,7 +71,7 @@ struct page_directory *paging_create_directory(const uint8_t flags)
 
 void paging_free_directory(struct page_directory *page_directory)
 {
-    ASSERT(page_directory->directory_entry);
+    // ASSERT(page_directory->directory_entry);
 
     dbgprintf("Freeing page directory %x\n", &page_directory);
 
@@ -87,12 +89,12 @@ void paging_switch_directory(const struct page_directory *directory)
 {
     ASSERT(directory->directory_entry);
 
-    if (current_directory == directory->directory_entry) {
+    if (current_page_directory == directory->directory_entry) {
         return;
     }
 
     paging_load_directory(directory->directory_entry);
-    current_directory = directory->directory_entry;
+    current_page_directory = directory->directory_entry;
 }
 
 uint32_t *paging_get_directory(const struct page_directory *directory)

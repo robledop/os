@@ -11,9 +11,9 @@ uint64_t fib(uint64_t n)
 
 int main(const int argc, char **argv)
 {
-    putchar('\n');
+    // putchar('\n');
     printf("Calculating fibonacci of 42 using recursion.\n");
-    const uint32_t result = fib(42);
+    const uint32_t result = fib(30);
     printf("\nResult: %lu", result);
 
     // uint64_t a = 0, b = 1, c, i, n = 100;

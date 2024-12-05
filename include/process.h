@@ -1,7 +1,7 @@
 #pragma once
 
 #include <config.h>
-#include <thread.h>
+#include <task.h>
 
 #define PROCESS_FILE_TYPE_ELF 0
 #define PROCESS_FILE_TYPE_BINARY 1
@@ -17,8 +17,6 @@ enum PROCESS_STATE {
     /// The process is waiting for a signal
     SLEEPING
 };
-enum PROCESS_SIGNAL { NONE, SIGKILL, SIGSTOP, SIGCONT, SIGTERM, SIGWAKEUP };
-enum SLEEP_REASON { SLEEP_REASON_NONE, SLEEP_REASON_STDIN };
 
 struct command_argument {
     char argument[512];
@@ -36,7 +34,6 @@ struct process_arguments {
     char **argv;
 };
 
-
 struct process {
     uint16_t pid;
     int rand_id; // For debugging purposes
@@ -45,17 +42,11 @@ struct process {
     char file_name[MAX_PATH_LENGTH];
     struct page_directory *page_directory;
     struct process *parent;
-    // TODO: Abstract this into a separate data structure for linked lists
-    struct process *next;
-    struct list_elem elem;
-    struct process *children;
-    struct thread *thread;
     enum PROCESS_STATE state;
-    enum PROCESS_SIGNAL signal;
-    enum SLEEP_REASON sleep_reason;
+    struct task *thread;
     int wait_pid;
     int exit_code;
-    uint32_t sleep_until;
+    bool killed;
     struct process_allocation allocations[MAX_PROGRAM_ALLOCATIONS];
     PROCESS_FILE_TYPE file_type;
     union {
@@ -66,19 +57,10 @@ struct process {
     struct file *file_descriptors[MAX_FILE_DESCRIPTORS];
     void *stack;
     uint32_t size;
-
-    // struct keyboard_buffer {
-    //     uint8_t buffer[KEYBOARD_BUFFER_SIZE];
-    //     int tail;
-    //     int head;
-    //
-    // } keyboard;
-
     struct process_arguments arguments;
     char *current_directory;
-
-    // TODO: Add file descriptors
 };
+
 __attribute__((nonnull)) int process_load_enqueue(const char file_name[static 1], struct process **process);
 __attribute__((nonnull)) int process_load(const char file_name[static 1], struct process **process);
 __attribute__((nonnull)) int process_load_for_slot(const char file_name[static 1], struct process **process,
@@ -91,12 +73,6 @@ __attribute__((nonnull)) int process_inject_arguments(struct process *process,
                                                       const struct command_argument *root_argument);
 __attribute__((nonnull)) int process_zombify(struct process *process);
 __attribute__((nonnull)) int process_set_current_directory(struct process *process, const char directory[static 1]);
-__attribute__((nonnull)) int process_wait_pid(struct process *process, int pid);
-__attribute__((nonnull)) struct process *find_child_process_by_pid(const struct process *parent, int pid);
-__attribute__((nonnull)) struct process *find_child_process_by_state(const struct process *parent,
-                                                                     enum PROCESS_STATE state);
-__attribute__((nonnull)) int process_add_child(struct process *parent, struct process *child);
-__attribute__((nonnull)) int process_remove_child(struct process *parent, const struct process *child);
 __attribute__((nonnull)) struct process *process_clone(struct process *process);
 __attribute__((nonnull)) int process_load_data(const char file_name[static 1], struct process *process);
 __attribute__((nonnull)) int process_map_memory(struct process *process);
@@ -108,3 +84,9 @@ __attribute__((nonnull)) void process_command_argument_free(struct command_argum
 struct file *process_get_file_descriptor(const struct process *process, uint32_t index);
 int process_new_file_descriptor(struct process *process, struct file **desc_out);
 void process_free_file_descriptor(struct process *process, struct file *desc);
+struct process *get_current_process(void);
+int process_get_free_pid();
+void process_set(int pid, struct process *process);
+struct process *process_get(int pid);
+int process_wait_pid(int child_pid);
+void process_wakeup(const void *wait_channel);

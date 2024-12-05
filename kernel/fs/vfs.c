@@ -1,15 +1,17 @@
+#include <assert.h>
 #include <config.h>
-#include <debug.h>
 #include <disk.h>
 #include <fat16.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <memfs.h>
 #include <memory.h>
+#include <path_parser.h>
 #include <root_inode.h>
 #include <serial.h>
 #include <status.h>
 #include <string.h>
+#include <task.h>
 #include <vfs.h>
 
 
@@ -239,7 +241,7 @@ int vfs_open(const char path[static 1], const FILE_MODE mode)
 
     struct file *desc = nullptr;
 
-    struct process *current_process = scheduler_get_current_process();
+    struct process *current_process = get_current_process();
     if (current_process) {
         res = process_new_file_descriptor(current_process, &desc);
     } else {
@@ -291,7 +293,7 @@ out:
 int vfs_stat(const int fd, struct stat *stat)
 {
     struct file *desc;
-    const struct process *current_process = scheduler_get_current_process();
+    const struct process *current_process = get_current_process();
     if (current_process) {
         desc = process_get_file_descriptor(current_process, fd);
     } else {
@@ -308,7 +310,7 @@ int vfs_stat(const int fd, struct stat *stat)
 int vfs_seek(const int fd, const int offset, const enum FILE_SEEK_MODE whence)
 {
     struct file *desc;
-    const struct process *current_process = scheduler_get_current_process();
+    const struct process *current_process = get_current_process();
     if (current_process) {
         desc = process_get_file_descriptor(current_process, fd);
     } else {
@@ -325,7 +327,7 @@ int vfs_seek(const int fd, const int offset, const enum FILE_SEEK_MODE whence)
 int vfs_read(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
 {
     struct file *desc;
-    const struct process *current_process = scheduler_get_current_process();
+    const struct process *current_process = get_current_process();
     if (current_process) {
         desc = process_get_file_descriptor(current_process, fd);
     } else {
@@ -342,7 +344,7 @@ int vfs_read(void *ptr, const uint32_t size, const uint32_t nmemb, const int fd)
 int vfs_close(const int fd)
 {
     struct file *desc;
-    struct process *current_process = scheduler_get_current_process();
+    struct process *current_process = get_current_process();
     if (current_process) {
         desc = process_get_file_descriptor(current_process, fd);
     } else {
@@ -369,7 +371,7 @@ int vfs_close(const int fd)
 int vfs_write(const int fd, const char *buffer, const size_t size)
 {
     struct file *desc;
-    struct process *current_process = scheduler_get_current_process();
+    struct process *current_process = get_current_process();
     if (current_process) {
         desc = process_get_file_descriptor(current_process, fd);
     } else {
@@ -442,7 +444,7 @@ int vfs_getdents(const uint32_t fd, void *buffer, const int count)
     }
 
     struct file *file;
-    const struct process *current_process = scheduler_get_current_process();
+    const struct process *current_process = get_current_process();
     if (current_process) {
         file = process_get_file_descriptor(current_process, fd);
     } else {
@@ -509,7 +511,7 @@ int vfs_mkdir(const char *path)
 int vfs_lseek(const int fd, const int offset, const enum FILE_SEEK_MODE whence)
 {
     struct file *desc;
-    struct process *current_process = scheduler_get_current_process();
+    struct process *current_process = get_current_process();
     if (current_process) {
         desc = process_get_file_descriptor(current_process, fd);
     } else {

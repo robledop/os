@@ -1,4 +1,5 @@
-#include <debug.h>
+// #include <debug.h>
+#include <assert.h>
 #include <list.h>
 
 /** Our doubly linked lists have two header elements: the "head"

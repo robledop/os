@@ -1,22 +1,21 @@
+#include <config.h>
 #include <debug.h>
-#include <disk.h>
 #include <gdt.h>
 #include <idt.h>
 #include <io.h>
 #include <kernel.h>
 #include <kernel_heap.h>
 #include <keyboard.h>
-#include <net/network.h>
+#include <memory.h>
 #include <paging.h>
-#include <pci.h>
 #include <pic.h>
 #include <pit.h>
 #include <printf.h>
-#include <process.h>
 #include <root_inode.h>
-#include <scheduler.h>
 #include <serial.h>
 #include <syscall.h>
+#include <task.h>
+#include <timer.h>
 #include <vfs.h>
 #include <vga_buffer.h>
 #include <x86.h>
@@ -32,7 +31,7 @@ uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
 [[noreturn]] void panic(const char *msg)
 {
     printf(KRED "\nKERNEL PANIC: " KWHT "%s\n", msg);
-    debug_stats();
+    // debug_stats();
 
     while (1) {
         hlt();
@@ -41,19 +40,61 @@ uintptr_t __stack_chk_guard = STACK_CHK_GUARD; // NOLINT(*-reserved-identifier)
     __builtin_unreachable();
 }
 
-void wait_for_network()
+void idle()
 {
-    wait_for_network_start = scheduler_get_jiffies();
-    sti();
-    while (!network_is_ready() && scheduler_get_jiffies() - wait_for_network_start < wait_for_network_timeout) {
+    while (true) {
+        // printf(KBMAG ".");
+        // sti();
         hlt();
     }
-    cli();
-    if (!network_is_ready()) {
-        printf("[ " KBRED "FAIL" KWHT " ] ");
-        printf(KBYEL "Network failed to start\n" KWHT);
+}
+
+void yellow()
+{
+    for (int i = 0; i < 10; i++) {
+        // int i = 0;
+        // while (true) {
+        printf(KBYEL ".");
     }
 }
+
+void cyan()
+{
+    for (int i = 0; i < 10; i++) {
+        // int i = 0;
+        // while (true) {
+        printf(KBCYN ".");
+    }
+}
+
+// Set up first user process.
+// void user_init(void)
+// {
+//     extern char _binary___build_apps_blank_start[], _binary___build_apps_blank_size[]; //
+//     NOLINT(*-reserved-identifier)
+//
+//     char *program_start = _binary___build_apps_blank_start;
+//     size_t program_size = (size_t)_binary___build_apps_blank_size;
+//
+//     struct task *new_task = tasks_new(nullptr, nullptr, TASK_PAUSED, "init", USER_MODE);
+//     void *program         = kzalloc(program_size);
+//     memcpy(program, program_start, program_size);
+//     paging_map_to(new_task->page_directory,
+//                   (void *)PROGRAM_VIRTUAL_ADDRESS,
+//                   program,
+//                   paging_align_address((char *)program + program_size),
+//                   PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+//                       PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+//     void *user_stack = kzalloc(USER_STACK_SIZE);
+//     paging_map_to(new_task->page_directory,
+//                   (void *)USER_STACK_BOTTOM,
+//                   user_stack,
+//                   paging_align_address((char *)user_stack + USER_STACK_SIZE),
+//                   PAGING_DIRECTORY_ENTRY_IS_WRITABLE | PAGING_DIRECTORY_ENTRY_IS_PRESENT |
+//                       PAGING_DIRECTORY_ENTRY_SUPERVISOR);
+//     tasks_unblock(new_task);
+// }
+
 
 void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
 {
@@ -69,27 +110,27 @@ void kernel_main(const multiboot_info_t *mbd, const uint32_t magic)
     idt_init();
     pic_init();
     pit_init();
+    timer_init(1000);
     display_grub_info(mbd, magic);
     init_symbols(mbd);
-    scheduler_init();
     vfs_init();
-    pci_scan();
-    wait_for_network();
     disk_init();
     root_inode_init();
-
     register_syscalls();
     keyboard_init();
-    scheduler_start();
 
+    tasks_init();
 
-    printf("\nStarting the shell");
+    struct task idle_task;
+    idle_task.priority = -1;
+    current_task       = tasks_new(idle, &idle_task, TASK_PAUSED, "idle", KERNEL_MODE);
+    tasks_set_idle_task(current_task);
 
     start_shell(0);
 
-    schedule();
+    tasks_block_current(TASK_PAUSED);
 
-    panic("Kernel finished");
+    panic("Kernel terminated");
 }
 
 void start_shell(const int console)
@@ -106,7 +147,10 @@ void start_shell(const int console)
     }
 
     process->priority = 1;
+
+    tasks_unblock(process->thread);
 }
+
 
 void display_grub_info(const multiboot_info_t *mbd, const unsigned int magic)
 {

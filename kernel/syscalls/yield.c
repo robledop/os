@@ -1,9 +1,8 @@
-#include <scheduler.h>
 #include <syscall.h>
 
-void *sys_yield(struct interrupt_frame *frame)
+void *sys_yield(void)
 {
-    schedule();
+    // schedule();
 
     return nullptr;
 }

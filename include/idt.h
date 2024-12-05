@@ -35,22 +35,34 @@ struct interrupt_frame {
     uint32_t edi;
     uint32_t esi;
     uint32_t ebp;
-    uint32_t reserved;
+    uint32_t reserved; // useless & ignored
     uint32_t ebx;
     uint32_t edx;
     uint32_t ecx;
     uint32_t eax;
+
+    // These registers are uint16_t plus padding to align the next field
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t es;
+    uint32_t ds;
+    uint32_t interrupt_number;
+
+    // Defined by the x86 architecture
+    uint32_t error_code;
     uint32_t eip;
-    uint32_t cs;
+    uint32_t cs; // uint16_t plus padding
     uint32_t eflags;
+
+    // Used only when crossing rings, such as from user to kernel
     uint32_t esp;
     uint32_t ss;
-} __attribute__((packed));
+};
 
 void idt_init(void);
 
-typedef void *(*SYSCALL_HANDLER_FUNCTION)(struct interrupt_frame *frame);
-typedef void (*INTERRUPT_CALLBACK_FUNCTION)(int interrupt, const struct interrupt_frame *frame);
+typedef void *(*SYSCALL_HANDLER_FUNCTION)();
+typedef void (*INTERRUPT_CALLBACK_FUNCTION)(struct interrupt_frame *frame);
 
 __attribute__((nonnull)) void register_syscall(int syscall, SYSCALL_HANDLER_FUNCTION handler);
 __attribute__((nonnull)) int idt_register_interrupt_callback(int interrupt,

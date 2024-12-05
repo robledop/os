@@ -1,5 +1,6 @@
-#include <debug.h>
+#include <assert.h>
 #include <disk.h>
+#include <kernel.h>
 #include <kernel_heap.h>
 #include <serial.h>
 #include <stream.h>
